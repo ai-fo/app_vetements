@@ -172,36 +172,41 @@ AI_API_KEY=
 ```
 main                    # Production stable
 ├── develop            # Intégration
-    ├── feature/auth-module        # Agent 1
-    ├── feature/catalog-module     # Agent 2
-    ├── feature/ai-assistant       # Agent 3
-    └── feature/cart-module        # Agent 4
+    ├── feature/auth-login         # Fonctionnalité 1
+    ├── feature/auth-register      # Fonctionnalité 2
+    ├── feature/product-list       # Fonctionnalité 3
+    ├── feature/ai-recommendations # Fonctionnalité 4
+    └── feature/shopping-cart      # Fonctionnalité 5
 ```
+
+### ⚠️ IMPORTANT: Une branche par fonctionnalité
+**TOUJOURS créer une nouvelle branche pour CHAQUE fonctionnalité demandée**
 
 ### Workflow pour chaque fonctionnalité
 ```bash
-# 1. Créer une branche depuis develop
+# 1. OBLIGATOIRE: Créer une branche depuis develop
 git checkout develop
 git pull origin develop
-git checkout -b feature/[nom-module]
+git checkout -b feature/[nom-fonctionnalité]
 
-# 2. Développer dans le module isolé
-# src/features/[mon-module]/...
+# 2. Développer la fonctionnalité
+# src/features/[module]/...
 
 # 3. Commit atomiques
-git add src/features/[mon-module]/
+git add .
 git commit -m "feat([module]): description claire"
 
-# 4. Push et PR
-git push origin feature/[nom-module]
-# Créer PR vers develop avec description détaillée
+# 4. Push et créer PR
+git push origin feature/[nom-fonctionnalité]
+gh pr create --title "feat: [nom fonctionnalité]" --body "[description]"
 ```
 
 ### Règles de collaboration
-1. **Un module = Une branche = Un agent**
-2. **Jamais toucher aux modules des autres**
-3. **Communication via interfaces uniquement**
-4. **PR avec tests passants obligatoires**
+1. **Une fonctionnalité = Une branche = Une PR**
+2. **Nom de branche descriptif** : `feature/user-profile`, pas `feature/update1`
+3. **Branches courtes** : 1-3 jours max, sinon découper
+4. **Jamais travailler sur develop ou main directement**
+5. **PR avec tests passants obligatoires**
 
 ## Bonnes pratiques obligatoires
 
