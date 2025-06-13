@@ -1,12 +1,13 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from backend.core.config import settings
+from core.config import settings
 
 # Import routers from modules when they're implemented
 # from backend.modules.auth import router as auth_router
 # from backend.modules.catalog import router as catalog_router
 # from backend.modules.cart import router as cart_router
 # from backend.modules.ai import router as ai_router
+from modules.chatgpt import router as chatgpt_router
 
 app = FastAPI(
     title="Vêtements API",
@@ -28,6 +29,7 @@ app.add_middleware(
 # app.include_router(catalog_router, prefix="/api/catalog", tags=["catalog"])
 # app.include_router(cart_router, prefix="/api/cart", tags=["cart"])
 # app.include_router(ai_router, prefix="/api/ai", tags=["ai"])
+app.include_router(chatgpt_router, tags=["chatgpt"])
 
 @app.get("/")
 def read_root():

@@ -4,27 +4,24 @@ __pycache__/
 *$py.class
 *.so
 .Python
-env/
 venv/
 ENV/
+env/
 .venv
-pip-log.txt
-pip-delete-this-directory.txt
-.pytest_cache/
-*.cover
-.coverage
-.coverage.*
-coverage.xml
-*.log
 
-# Environment
-.env
-.env.local
-.env.*.local
+# Testing
+.pytest_cache/
+.coverage
+htmlcov/
+.tox/
+.nox/
+coverage.xml
+*.cover
+.hypothesis/
 
 # IDE
-.vscode/
 .idea/
+.vscode/
 *.swp
 *.swo
 *~
@@ -33,7 +30,18 @@ coverage.xml
 .DS_Store
 Thumbs.db
 
-# Project specific
-logs/
+# Logs
+*.log
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+# Database
+*.db
+*.sqlite3
+
+# Temp files
+tmp/
 temp/
-uploads/
