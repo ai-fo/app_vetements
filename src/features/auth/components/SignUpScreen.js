@@ -11,32 +11,49 @@ import {
   ActivityIndicator,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
-import { useAuth } from '../contexts/AuthContext';
+import { useAuth } from '../hooks/useAuth';
 import Svg, { Path } from 'react-native-svg';
 
-export default function LoginScreen({ navigation }) {
+export default function SignUpScreen({ navigation }) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
-  const { signIn, signInWithGoogle } = useAuth();
+  const { signUp, signInWithGoogle } = useAuth();
 
-  const handleLogin = async () => {
-    if (!email || !password) {
+  const handleSignUp = async () => {
+    if (!email || !password || !confirmPassword) {
       Alert.alert('Erreur', 'Veuillez remplir tous les champs');
       return;
     }
 
+    if (password !== confirmPassword) {
+      Alert.alert('Erreur', 'Les mots de passe ne correspondent pas');
+      return;
+    }
+
+    if (password.length < 6) {
+      Alert.alert('Erreur', 'Le mot de passe doit contenir au moins 6 caractères');
+      return;
+    }
+
     setLoading(true);
-    const { error } = await signIn(email, password);
+    const { error } = await signUp(email, password);
     setLoading(false);
 
     if (error) {
-      Alert.alert('Erreur de connexion', error.message);
+      Alert.alert('Erreur d\'inscription', error.message);
+    } else {
+      Alert.alert(
+        'Inscription réussie',
+        'Un email de confirmation vous a été envoyé. Veuillez vérifier votre boîte mail.',
+        [{ text: 'OK', onPress: () => navigation.navigate('Login') }]
+      );
     }
   };
 
-  const handleGoogleLogin = async () => {
+  const handleGoogleSignUp = async () => {
     setGoogleLoading(true);
     const { error } = await signInWithGoogle();
     setGoogleLoading(false);
@@ -66,7 +83,7 @@ export default function LoginScreen({ navigation }) {
       >
         <View style={styles.content}>
           <Text style={styles.title}>Liquid Design</Text>
-          <Text style={styles.subtitle}>Connexion</Text>
+          <Text style={styles.subtitle}>Inscription</Text>
 
           <View style={styles.form}>
             <TextInput
@@ -88,15 +105,24 @@ export default function LoginScreen({ navigation }) {
               secureTextEntry
             />
 
+            <TextInput
+              style={styles.input}
+              placeholder="Confirmer le mot de passe"
+              placeholderTextColor="#rgba(255,255,255,0.7)"
+              value={confirmPassword}
+              onChangeText={setConfirmPassword}
+              secureTextEntry
+            />
+
             <TouchableOpacity
               style={styles.button}
-              onPress={handleLogin}
+              onPress={handleSignUp}
               disabled={loading}
             >
               {loading ? (
                 <ActivityIndicator color="#667eea" />
               ) : (
-                <Text style={styles.buttonText}>Se connecter</Text>
+                <Text style={styles.buttonText}>S'inscrire</Text>
               )}
             </TouchableOpacity>
 
@@ -108,7 +134,7 @@ export default function LoginScreen({ navigation }) {
 
             <TouchableOpacity
               style={styles.googleButton}
-              onPress={handleGoogleLogin}
+              onPress={handleGoogleSignUp}
               disabled={googleLoading}
             >
               {googleLoading ? (
@@ -116,17 +142,17 @@ export default function LoginScreen({ navigation }) {
               ) : (
                 <View style={styles.googleButtonContent}>
                   <GoogleIcon />
-                  <Text style={styles.googleButtonText}>Continuer avec Google</Text>
+                  <Text style={styles.googleButtonText}>S'inscrire avec Google</Text>
                 </View>
               )}
             </TouchableOpacity>
 
             <TouchableOpacity
               style={styles.linkButton}
-              onPress={() => navigation.navigate('SignUp')}
+              onPress={() => navigation.navigate('Login')}
             >
               <Text style={styles.linkText}>
-                Pas de compte ? Inscrivez-vous
+                Déjà un compte ? Connectez-vous
               </Text>
             </TouchableOpacity>
           </View>

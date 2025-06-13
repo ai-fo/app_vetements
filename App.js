@@ -1,9 +1,7 @@
 import React from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createStackNavigator } from '@react-navigation/stack';
-import { AuthProvider, useAuth } from './src/contexts/AuthContext';
-import LoginScreen from './src/screens/LoginScreen';
-import SignUpScreen from './src/screens/SignUpScreen';
+import { AuthProvider, useAuth, LoginScreen, SignUpScreen } from './src/features/auth';
 import HomeScreen from './src/screens/HomeScreen';
 import { ActivityIndicator, View } from 'react-native';
 
