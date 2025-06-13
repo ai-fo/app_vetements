@@ -1,0 +1,289 @@
+# Guide de développement pour Claude Code
+
+## Vue d'ensemble du projet
+Application React Native (vêtements) avec backend Python pour l'IA.
+
+## Architecture modulaire
+
+### Principe de contexte minimal
+Chaque fonctionnalité est **autonome** et **isolée**. Pour ajouter une fonctionnalité, vous n'avez besoin que de:
+1. Le nom du module concerné
+2. Les interfaces d'entrée/sortie
+3. Les conventions du module
+
+### Structure Frontend - React Native
+```
+src/
+  features/           # Fonctionnalités autonomes
+    auth/            # Module complet: composants, logique, types
+    catalog/         # Module complet: composants, logique, types
+    cart/            # Module complet: composants, logique, types
+    ai-assistant/    # Module complet: composants, logique, types
+  shared/            # Code partagé minimal
+    api/             # Client API centralisé
+    types/           # Types globaux uniquement
+    ui/              # Composants UI de base
+```
+
+### Structure Backend - Python
+```
+backend/
+  modules/           # Modules autonomes
+    auth/           # Routes, services, modèles
+    catalog/        # Routes, services, modèles
+    cart/           # Routes, services, modèles
+    ai/             # Routes, services, modèles
+  core/             # Noyau minimal
+    database.py     # Connexion DB
+    config.py       # Configuration
+```
+
+## Conventions par module
+
+### Module Frontend type
+```typescript
+// features/[module]/index.ts - Point d'entrée unique
+export * from './components'
+export * from './hooks'
+export * from './types'
+export * from './api'
+
+// features/[module]/types.ts - Types du module
+export interface ModuleState { /* ... */ }
+
+// features/[module]/api.ts - API du module
+export const moduleAPI = {
+  get: async (id: string) => { /* ... */ },
+  create: async (data: any) => { /* ... */ }
+}
+```
+
+### Module Backend type
+```python
+# modules/[module]/__init__.py - Point d'entrée
+from .router import router
+from .service import Service
+
+# modules/[module]/router.py - Routes du module
+@router.get("/{id}")
+async def get_item(id: str): pass
+
+# modules/[module]/service.py - Logique métier
+class Service:
+    def process(self, data): pass
+```
+
+## Interfaces de communication
+
+### API Frontend → Backend
+```typescript
+// shared/api/client.ts
+interface APIResponse<T> {
+  data?: T
+  error?: string
+}
+
+// Chaque module expose son API
+import { authAPI } from '@/features/auth'
+import { catalogAPI } from '@/features/catalog'
+```
+
+### Contrats d'interface minimaux
+```typescript
+// Types partagés uniquement si nécessaires
+interface User { id: string; email: string }
+interface Product { id: string; name: string; price: number }
+interface CartItem { productId: string; quantity: number }
+```
+
+## Guide d'ajout de fonctionnalité
+
+### Nouvelle fonctionnalité Frontend
+1. Créer dossier `src/features/[nouvelle-feature]/`
+2. Implémenter avec structure standard:
+   - `index.ts` - Exports
+   - `components/` - UI
+   - `hooks/` - Logique
+   - `api.ts` - Appels API
+   - `types.ts` - Types locaux
+
+### Nouvelle fonctionnalité Backend
+1. Créer dossier `backend/modules/[nouveau-module]/`
+2. Implémenter avec structure standard:
+   - `__init__.py` - Exports
+   - `router.py` - Endpoints
+   - `service.py` - Logique
+   - `models.py` - Modèles
+
+### Exemple: Ajouter "Favoris"
+```bash
+# Frontend
+src/features/favorites/
+  ├── index.ts
+  ├── components/FavoritesList.tsx
+  ├── hooks/useFavorites.ts
+  ├── api.ts
+  └── types.ts
+
+# Backend
+backend/modules/favorites/
+  ├── __init__.py
+  ├── router.py
+  ├── service.py
+  └── models.py
+```
+
+## Commandes essentielles
+
+```bash
+# Frontend
+npm install && npx expo start
+npm run lint && npm test
+
+# Backend
+pip install -r requirements.txt
+uvicorn backend.main:app --reload
+pytest && pylint backend/
+```
+
+## Configuration minimale (.env)
+```
+# Frontend
+EXPO_PUBLIC_API_URL=http://localhost:8000
+EXPO_PUBLIC_SUPABASE_URL=
+EXPO_PUBLIC_SUPABASE_ANON_KEY=
+
+# Backend
+DATABASE_URL=
+SUPABASE_SERVICE_KEY=
+AI_API_KEY=
+```
+
+## Principes clés
+1. **Isolation**: Chaque module est indépendant
+2. **Contrats clairs**: Interfaces définies et stables
+3. **Découplage**: Communication via API uniquement
+4. **Documentation locale**: Chaque module a son README
+5. **Tests unitaires**: Par module, pas d'intégration complexe
+
+## Workflow Git - Collaboration multi-agents
+
+### Stratégie de branches
+```
+main                    # Production stable
+├── develop            # Intégration
+    ├── feature/auth-module        # Agent 1
+    ├── feature/catalog-module     # Agent 2
+    ├── feature/ai-assistant       # Agent 3
+    └── feature/cart-module        # Agent 4
+```
+
+### Workflow pour chaque fonctionnalité
+```bash
+# 1. Créer une branche depuis develop
+git checkout develop
+git pull origin develop
+git checkout -b feature/[nom-module]
+
+# 2. Développer dans le module isolé
+# src/features/[mon-module]/...
+
+# 3. Commit atomiques
+git add src/features/[mon-module]/
+git commit -m "feat([module]): description claire"
+
+# 4. Push et PR
+git push origin feature/[nom-module]
+# Créer PR vers develop avec description détaillée
+```
+
+### Règles de collaboration
+1. **Un module = Une branche = Un agent**
+2. **Jamais toucher aux modules des autres**
+3. **Communication via interfaces uniquement**
+4. **PR avec tests passants obligatoires**
+
+## Bonnes pratiques obligatoires
+
+### Tests par module
+```typescript
+// src/features/[module]/__tests__/
+├── components.test.tsx    # Tests UI
+├── hooks.test.ts         # Tests logique
+├── api.test.ts          # Tests API
+└── integration.test.ts   # Tests du module complet
+```
+
+```python
+# backend/modules/[module]/tests/
+├── test_router.py       # Tests endpoints
+├── test_service.py      # Tests logique
+└── test_integration.py  # Tests module complet
+```
+
+### Checklist avant PR
+- [ ] Tests unitaires passants (coverage > 80%)
+- [ ] Linting sans erreurs
+- [ ] Types TypeScript corrects
+- [ ] Documentation du module à jour
+- [ ] Pas de modifications hors du module
+- [ ] Interface respectée
+- [ ] Pas de secrets dans le code
+
+### Structure de test standard
+```typescript
+// Frontend - Exemple test hook
+describe('useModuleName', () => {
+  it('should handle initial state', () => {})
+  it('should handle success case', () => {})
+  it('should handle error case', () => {})
+})
+```
+
+```python
+# Backend - Exemple test service
+def test_service_process_valid_data():
+    """Test avec données valides"""
+    assert service.process(valid_data) == expected
+
+def test_service_process_invalid_data():
+    """Test avec données invalides"""
+    with pytest.raises(ValidationError):
+        service.process(invalid_data)
+```
+
+## Gestion des conflits
+
+### Prévention
+- Modules isolés = Pas de conflits
+- Interfaces stables = Pas de breaking changes
+- Communication asynchrone via PR
+
+### Si conflit sur shared/
+1. Discuter dans la PR
+2. Créer une PR séparée pour shared/
+3. Merger shared/ en premier
+4. Rebaser les branches features
+
+## Template de PR
+```markdown
+## Module: [nom-module]
+
+### Description
+[Que fait ce module]
+
+### Checklist
+- [ ] Tests passants
+- [ ] Documentation à jour
+- [ ] Pas d'impact sur autres modules
+- [ ] Interface respectée
+
+### API exposée
+```typescript
+// Endpoints ou méthodes publiques
+```
+
+### Dépendances
+- Aucune dépendance inter-modules
+- Utilise uniquement shared/api
+```
