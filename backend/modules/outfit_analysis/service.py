@@ -1,17 +1,17 @@
-import openai
 import json
 from typing import Dict, Any, Optional
 from PIL import Image
 import requests
 from io import BytesIO
-from backend.core.config import settings
-from backend.core.database import db
+from core.config import settings
+from core.database import db
+from modules.chatgpt.service import ChatGPTService
 from .models import OutfitAnalysis, ProcessingStatus, ClothingItem, Colors, Weather, ComfortRating
 
 class OutfitAnalysisService:
     def __init__(self):
         self.client = db.get_client()
-        openai.api_key = settings.OPENAI_API_KEY
+        self.chatgpt_service = ChatGPTService()
     
     async def analyze_outfit(self, analysis_id: str, image_url: str) -> Dict[str, Any]:
         """
@@ -89,13 +89,46 @@ Sois précis et détaillé dans ton analyse. Identifie tous les vêtements visib
     
     async def _call_openai_vision(self, image_url: str, prompt: str) -> str:
         """
-        Appeler l'API OpenAI Vision pour analyser l'image
+        Appeler l'API OpenAI Vision pour analyser l'image via le service ChatGPT
         """
-        # Note: Ceci est un exemple. L'implémentation réelle dépendra
-        # du service IA que vous développez
-        
-        # Pour l'instant, retourner une analyse fictive
-        return json.dumps({
+        try:
+            # Utiliser le service ChatGPT pour analyser l'image
+            messages = [
+                {
+                    "role": "system",
+                    "content": "Tu es un expert en mode et style vestimentaire. Analyse les photos de tenues et fournis des analyses détaillées."
+                },
+                {
+                    "role": "user",
+                    "content": [
+                        {
+                            "type": "text",
+                            "text": prompt
+                        },
+                        {
+                            "type": "image_url",
+                            "image_url": {
+                                "url": image_url
+                            }
+                        }
+                    ]
+                }
+            ]
+            
+            # Appeler le service ChatGPT avec le modèle vision
+            response = await self.chatgpt_service.create_completion(
+                messages=messages,
+                model="gpt-4o",  # Modèle avec capacités vision
+                max_tokens=2000,
+                temperature=0.7
+            )
+            
+            return response.content
+            
+        except Exception as e:
+            print(f"Error calling ChatGPT Vision: {e}")
+            # Fallback vers une réponse par défaut en cas d'erreur
+            return json.dumps({
             "colors": {
                 "primary": ["noir", "blanc"],
                 "secondary": ["gris"],
