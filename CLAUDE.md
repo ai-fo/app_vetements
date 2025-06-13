@@ -3,6 +3,13 @@
 ## Vue d'ensemble du projet
 Application React Native (vêtements) avec backend Python pour l'IA.
 
+### ⚠️ IMPORTANT: Mode de développement
+**Le backend Python gérant l'IA est temporairement exclu du Git**. 
+- Toutes les fonctionnalités IA doivent être simulées (mock) côté frontend
+- Les appels API vers le backend doivent être commentés avec `// TODO: Activer quand le backend est prêt`
+- Utiliser des données factices pour les réponses IA
+- Le backend sera réintégré ultérieurement
+
 ## Architecture modulaire
 
 ### Principe de contexte minimal
@@ -104,8 +111,12 @@ interface CartItem { productId: string; quantity: number }
    - `index.ts` - Exports
    - `components/` - UI
    - `hooks/` - Logique
-   - `api.ts` - Appels API
+   - `api.ts` - Appels API (avec mocks pour l'IA)
    - `types.ts` - Types locaux
+3. Pour les fonctionnalités IA:
+   - Simuler les réponses dans les hooks
+   - Ajouter `// TODO: Activer l'API réelle`
+   - Utiliser des délais artificiels pour simuler l'attente
 
 ### Nouvelle fonctionnalité Backend
 1. Créer dossier `backend/modules/[nouveau-module]/`
@@ -121,16 +132,34 @@ interface CartItem { productId: string; quantity: number }
 src/features/favorites/
   ├── index.ts
   ├── components/FavoritesList.tsx
-  ├── hooks/useFavorites.ts
-  ├── api.ts
+  ├── hooks/useFavorites.ts      # Contient les mocks temporaires
+  ├── api.ts                     # API commentée, retourne des mocks
   └── types.ts
 
-# Backend
+# Backend (exclu temporairement du Git)
 backend/modules/favorites/
   ├── __init__.py
   ├── router.py
   ├── service.py
   └── models.py
+```
+
+### Exemple de mock pour l'IA
+```javascript
+// hooks/useOutfitAnalysis.js
+const analyzeOutfit = async (imageUri, userId) => {
+  // TODO: Activer quand le backend est prêt
+  // const result = await outfitAnalysisAPI.analyzeImage(imageUri);
+  
+  // Simulation temporaire
+  await new Promise(resolve => setTimeout(resolve, 2000));
+  return {
+    style: 'moderne',
+    category: 'casual',
+    colors: { primary: ['noir', 'blanc'] },
+    // ... autres données factices
+  };
+};
 ```
 
 ## Commandes essentielles

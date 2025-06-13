@@ -1,4 +1,4 @@
-import React, { useRef } from 'react';
+import React, { useRef, useEffect, useState } from 'react';
 import {
   StyleSheet,
   Text,
@@ -6,63 +6,54 @@ import {
   TouchableOpacity,
   Animated,
   Dimensions,
+  ScrollView,
+  Image,
 } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { useAuth } from '../features/auth';
+import { useOutfitAnalysis } from '../features/outfit-analysis';
+import { useNavigation } from '@react-navigation/native';
+import DailyRecommendation from '../features/outfit-analysis/components/DailyRecommendation';
 
 const { width } = Dimensions.get('window');
 
 export default function HomeScreen() {
   const { user, signOut } = useAuth();
-  const scaleAnim = useRef(new Animated.Value(1)).current;
-  const rippleAnim = useRef(new Animated.Value(0)).current;
-  const opacityAnim = useRef(new Animated.Value(0)).current;
+  const { analyses, getUserAnalyses } = useOutfitAnalysis();
+  const navigation = useNavigation();
+  const [refreshing, setRefreshing] = useState(false);
+  const fadeAnim = useRef(new Animated.Value(0)).current;
 
-  const handlePress = () => {
-    Animated.parallel([
-      Animated.sequence([
-        Animated.timing(scaleAnim, {
-          toValue: 0.95,
-          duration: 100,
-          useNativeDriver: true,
-        }),
-        Animated.timing(scaleAnim, {
-          toValue: 1,
-          duration: 100,
-          useNativeDriver: true,
-        }),
-      ]),
-      Animated.parallel([
-        Animated.timing(rippleAnim, {
-          toValue: 1,
-          duration: 600,
-          useNativeDriver: true,
-        }),
-        Animated.timing(opacityAnim, {
-          toValue: 1,
-          duration: 300,
-          useNativeDriver: true,
-        }),
-      ]),
-    ]).start(() => {
-      setTimeout(() => {
-        rippleAnim.setValue(0);
-        opacityAnim.setValue(0);
-      }, 300);
-    });
+  useEffect(() => {
+    loadAnalyses();
+    Animated.timing(fadeAnim, {
+      toValue: 1,
+      duration: 800,
+      useNativeDriver: true,
+    }).start();
+  }, []);
+
+  const loadAnalyses = async () => {
+    if (user?.id) {
+      setRefreshing(true);
+      try {
+        await getUserAnalyses(user.id);
+      } catch (error) {
+        console.error('Error loading analyses:', error);
+      }
+      setRefreshing(false);
+    }
   };
 
-  const rippleScale = rippleAnim.interpolate({
-    inputRange: [0, 1],
-    outputRange: [0.5, 2],
-  });
+  const handleAddOutfit = () => {
+    navigation.navigate('AddOutfit');
+  };
 
-  const rippleOpacity = rippleAnim.interpolate({
-    inputRange: [0, 0.5, 1],
-    outputRange: [0.4, 0.2, 0],
-  });
+  const handleOutfitPress = (analysisId) => {
+    navigation.navigate('AnalysisResult', { analysisId });
+  };
 
   return (
     <LinearGradient
@@ -78,48 +69,77 @@ export default function HomeScreen() {
         <Ionicons name="log-out-outline" size={24} color="#fff" />
       </TouchableOpacity>
 
-      <View style={styles.content}>
-        <Text style={styles.title}>Liquid Design</Text>
-        <Text style={styles.subtitle}>
-          Bienvenue, {user?.email?.split('@')[0]}
-        </Text>
+      <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
+        <Animated.View style={[styles.content, { opacity: fadeAnim }]}>
+          <View style={styles.header}>
+            <View>
+              <Text style={styles.greeting}>Bonjour,</Text>
+              <Text style={styles.userName}>{user?.email?.split('@')[0]}</Text>
+            </View>
+            <View style={{ width: 50 }} />
+          </View>
 
-        <View style={styles.buttonContainer}>
-          <Animated.View
-            style={[
-              styles.ripple,
-              {
-                transform: [{ scale: rippleScale }],
-                opacity: rippleOpacity,
-              },
-            ]}
-          />
-          <Animated.View
-            style={{
-              transform: [{ scale: scaleAnim }],
-            }}
-          >
-            <TouchableOpacity
-              style={styles.button}
-              onPress={handlePress}
-              activeOpacity={0.8}
-            >
-              <Ionicons name="shirt-outline" size={40} color="#667eea" />
-            </TouchableOpacity>
-          </Animated.View>
-        </View>
+          <DailyRecommendation analyses={analyses} navigation={navigation} />
 
-        <Animated.Text
-          style={[
-            styles.message,
-            {
-              opacity: opacityAnim,
-            },
-          ]}
+
+          <View style={styles.section}>
+            <View style={styles.sectionHeader}>
+              <Text style={styles.sectionTitle}>Mes tenues</Text>
+              {analyses.length > 0 && (
+                <TouchableOpacity onPress={loadAnalyses}>
+                  <Ionicons name="refresh" size={20} color="#667eea" />
+                </TouchableOpacity>
+              )}
+            </View>
+
+            {analyses.length === 0 ? (
+              <View style={styles.emptyState}>
+                <LinearGradient
+                  colors={['rgba(102,126,234,0.1)', 'rgba(118,75,162,0.1)']}
+                  style={styles.emptyStateGradient}
+                >
+                  <Ionicons name="images-outline" size={48} color="#667eea" />
+                  <Text style={styles.emptyStateText}>Votre garde-robe est vide</Text>
+                  <Text style={styles.emptyStateSubtext}>Utilisez le bouton caméra pour ajouter vos tenues</Text>
+                </LinearGradient>
+              </View>
+            ) : (
+              <View style={styles.outfitGrid}>
+                {analyses.map((analysis) => (
+                  <TouchableOpacity
+                    key={analysis.id}
+                    style={styles.outfitCard}
+                    onPress={() => handleOutfitPress(analysis.id)}
+                  >
+                    <Image
+                      source={{ uri: analysis.image_url }}
+                      style={styles.outfitImage}
+                    />
+                    {analysis.processing_status === 'completed' && (
+                      <View style={styles.outfitBadge}>
+                        <Ionicons name="checkmark-circle" size={20} color="#10b981" />
+                      </View>
+                    )}
+                  </TouchableOpacity>
+                ))}
+              </View>
+            )}
+          </View>
+        </Animated.View>
+      </ScrollView>
+      
+      <TouchableOpacity 
+        style={styles.floatingButton} 
+        onPress={handleAddOutfit}
+        activeOpacity={0.8}
+      >
+        <LinearGradient
+          colors={['#667eea', '#764ba2']}
+          style={styles.floatingButtonGradient}
         >
-          Tenue sélectionnée
-        </Animated.Text>
-      </View>
+          <Ionicons name="camera" size={28} color="#fff" />
+        </LinearGradient>
+      </TouchableOpacity>
     </LinearGradient>
   );
 }
@@ -135,58 +155,105 @@ const styles = StyleSheet.create({
     zIndex: 10,
     padding: 10,
   },
-  content: {
+  scrollView: {
     flex: 1,
-    alignItems: 'center',
-    justifyContent: 'center',
+  },
+  content: {
+    paddingTop: 90,
     paddingHorizontal: 20,
+    paddingBottom: 20,
   },
-  title: {
-    fontSize: 42,
-    fontWeight: 'bold',
-    color: '#fff',
-    marginBottom: 10,
-    textAlign: 'center',
-  },
-  subtitle: {
-    fontSize: 18,
-    color: 'rgba(255,255,255,0.8)',
-    marginBottom: 50,
-    textAlign: 'center',
-  },
-  buttonContainer: {
-    width: 150,
-    height: 150,
+  header: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
     alignItems: 'center',
-    justifyContent: 'center',
     marginBottom: 30,
   },
-  button: {
-    width: 120,
-    height: 120,
-    borderRadius: 60,
-    backgroundColor: '#fff',
-    alignItems: 'center',
-    justifyContent: 'center',
+  greeting: {
+    fontSize: 16,
+    color: 'rgba(255,255,255,0.8)',
+  },
+  userName: {
+    fontSize: 28,
+    fontWeight: 'bold',
+    color: '#fff',
+  },
+  floatingButton: {
+    position: 'absolute',
+    bottom: 30,
+    right: 20,
+    width: 64,
+    height: 64,
+    borderRadius: 32,
     shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 4,
-    },
+    shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
     shadowRadius: 8,
     elevation: 8,
   },
-  ripple: {
-    position: 'absolute',
-    width: 120,
-    height: 120,
-    borderRadius: 60,
-    backgroundColor: '#fff',
+  floatingButtonGradient: {
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
-  message: {
-    fontSize: 20,
+  section: {
+    marginTop: 10,
+  },
+  sectionHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 20,
+  },
+  sectionTitle: {
+    fontSize: 24,
+    fontWeight: 'bold',
     color: '#fff',
-    fontWeight: '500',
+  },
+  emptyState: {
+    marginTop: 20,
+  },
+  emptyStateGradient: {
+    paddingVertical: 60,
+    paddingHorizontal: 40,
+    borderRadius: 20,
+    alignItems: 'center',
+  },
+  emptyStateText: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#667eea',
+    marginTop: 20,
+  },
+  emptyStateSubtext: {
+    fontSize: 14,
+    color: '#9ca3af',
+    marginTop: 8,
+  },
+  outfitGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    marginHorizontal: -7.5,
+  },
+  outfitCard: {
+    width: '50%',
+    paddingHorizontal: 7.5,
+    marginBottom: 15,
+  },
+  outfitImage: {
+    width: '100%',
+    aspectRatio: 3/4,
+    borderRadius: 15,
+    backgroundColor: 'rgba(255,255,255,0.1)',
+  },
+  outfitBadge: {
+    position: 'absolute',
+    top: 10,
+    right: 17.5,
+    backgroundColor: 'rgba(255,255,255,0.9)',
+    borderRadius: 12,
+    padding: 2,
   },
 });

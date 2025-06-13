@@ -15,9 +15,9 @@ import { useOutfitAnalysis } from '../hooks/useOutfitAnalysis';
 
 export default function AnalysisResultScreen({ route, navigation }) {
   const { analysisId } = route.params;
+  const { getAnalysisById, deleteAnalysis } = useOutfitAnalysis();
   const [analysis, setAnalysis] = useState(null);
   const [loading, setLoading] = useState(true);
-  const { getAnalysisById } = useOutfitAnalysis();
 
   useEffect(() => {
     loadAnalysis();
@@ -34,9 +34,18 @@ export default function AnalysisResultScreen({ route, navigation }) {
     }
   };
 
+  const handleDelete = async () => {
+    try {
+      await deleteAnalysis(analysisId);
+      navigation.goBack();
+    } catch (error) {
+      console.error('Error deleting analysis:', error);
+    }
+  };
+
   if (loading) {
     return (
-      <View style={styles.loadingContainer}>
+      <View style={styles.centerContainer}>
         <ActivityIndicator size="large" color="#667eea" />
       </View>
     );
@@ -44,46 +53,14 @@ export default function AnalysisResultScreen({ route, navigation }) {
 
   if (!analysis) {
     return (
-      <View style={styles.errorContainer}>
+      <View style={styles.centerContainer}>
         <Text style={styles.errorText}>Analyse non trouvée</Text>
       </View>
     );
   }
 
-  const renderColorPalette = () => {
-    const allColors = [
-      ...(analysis.colors?.primary || []),
-      ...(analysis.colors?.secondary || []),
-      ...(analysis.colors?.accent || []),
-    ];
-
-    return (
-      <View style={styles.colorPalette}>
-        {allColors.map((color, index) => (
-          <View
-            key={index}
-            style={[styles.colorSwatch, { backgroundColor: color }]}
-          />
-        ))}
-      </View>
-    );
-  };
-
-  const renderRating = (rating, maxRating = 10) => {
-    return (
-      <View style={styles.ratingContainer}>
-        {[...Array(maxRating)].map((_, index) => (
-          <Ionicons
-            key={index}
-            name={index < rating ? 'star' : 'star-outline'}
-            size={16}
-            color={index < rating ? '#fbbf24' : '#e5e7eb'}
-          />
-        ))}
-        <Text style={styles.ratingText}>{rating}/10</Text>
-      </View>
-    );
-  };
+  const isProcessing = analysis.processing_status === 'pending';
+  const hasFailed = analysis.processing_status === 'failed';
 
   return (
     <SafeAreaView style={styles.container}>
@@ -91,154 +68,112 @@ export default function AnalysisResultScreen({ route, navigation }) {
         colors={['#667eea', '#764ba2']}
         style={styles.header}
       >
-        <TouchableOpacity
-          onPress={() => navigation.goBack()}
-          style={styles.backButton}
-        >
+        <TouchableOpacity onPress={() => navigation.goBack()}>
           <Ionicons name="arrow-back" size={28} color="#fff" />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Analyse de tenue</Text>
-        <TouchableOpacity style={styles.shareButton}>
-          <Ionicons name="share-outline" size={24} color="#fff" />
+        <Text style={styles.headerTitle}>Détails de la tenue</Text>
+        <TouchableOpacity onPress={handleDelete}>
+          <Ionicons name="trash-outline" size={24} color="#fff" />
         </TouchableOpacity>
       </LinearGradient>
 
-      <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
-        {/* Image de la tenue */}
-        <Image source={{ uri: analysis.image_url }} style={styles.outfitImage} />
+      <ScrollView showsVerticalScrollIndicator={false}>
+        <Image source={{ uri: analysis.image_url }} style={styles.image} />
 
-        {/* Palette de couleurs */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Palette de couleurs</Text>
-          {renderColorPalette()}
-        </View>
-
-        {/* Caractéristiques générales */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Caractéristiques</Text>
-          <View style={styles.infoGrid}>
-            <View style={styles.infoItem}>
-              <Text style={styles.infoLabel}>Catégorie</Text>
-              <Text style={styles.infoValue}>{analysis.category}</Text>
-            </View>
-            <View style={styles.infoItem}>
-              <Text style={styles.infoLabel}>Style</Text>
-              <Text style={styles.infoValue}>{analysis.style}</Text>
-            </View>
-          </View>
-        </View>
-
-        {/* Évaluations */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Évaluations</Text>
-          <View style={styles.ratingItem}>
-            <Text style={styles.ratingLabel}>Formalité</Text>
-            {renderRating(analysis.formality)}
-          </View>
-          <View style={styles.ratingItem}>
-            <Text style={styles.ratingLabel}>Polyvalence</Text>
-            {renderRating(analysis.versatility)}
-          </View>
-          {analysis.comfort?.rating && (
-            <View style={styles.ratingItem}>
-              <Text style={styles.ratingLabel}>Confort</Text>
-              {renderRating(analysis.comfort.rating)}
-            </View>
-          )}
-        </View>
-
-        {/* Occasions */}
-        {analysis.occasions?.length > 0 && (
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Occasions</Text>
-            <View style={styles.tagContainer}>
-              {analysis.occasions.map((occasion, index) => (
-                <View key={index} style={styles.tag}>
-                  <Text style={styles.tagText}>{occasion}</Text>
-                </View>
-              ))}
-            </View>
+        {isProcessing && (
+          <View style={styles.processingContainer}>
+            <ActivityIndicator size="large" color="#667eea" />
+            <Text style={styles.processingText}>Analyse en cours...</Text>
           </View>
         )}
 
-        {/* Saisons */}
-        {analysis.seasons?.length > 0 && (
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Saisons</Text>
-            <View style={styles.tagContainer}>
-              {analysis.seasons.map((season, index) => (
-                <View key={index} style={[styles.tag, styles.seasonTag]}>
-                  <Text style={styles.tagText}>{season}</Text>
-                </View>
-              ))}
-            </View>
+        {hasFailed && (
+          <View style={styles.errorContainer}>
+            <Ionicons name="alert-circle" size={48} color="#ef4444" />
+            <Text style={styles.errorText}>L'analyse a échoué</Text>
+            {analysis.error_message && (
+              <Text style={styles.errorDetails}>{analysis.error_message}</Text>
+            )}
           </View>
         )}
 
-        {/* Température recommandée */}
-        {analysis.weather?.temperature && (
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Température recommandée</Text>
-            <View style={styles.temperatureContainer}>
-              <Ionicons name="thermometer-outline" size={24} color="#667eea" />
-              <Text style={styles.temperatureText}>
-                {analysis.weather.temperature.min}°C - {analysis.weather.temperature.max}°C
+        {analysis.processing_status === 'completed' && (
+          <View style={styles.content}>
+            <View style={styles.section}>
+              <Text style={styles.sectionTitle}>Informations générales</Text>
+              <View style={styles.infoCard}>
+                <View style={styles.infoRow}>
+                  <Text style={styles.infoLabel}>Style</Text>
+                  <Text style={styles.infoValue}>{analysis.style || 'Non défini'}</Text>
+                </View>
+                <View style={styles.infoRow}>
+                  <Text style={styles.infoLabel}>Catégorie</Text>
+                  <Text style={styles.infoValue}>{analysis.category || 'Non défini'}</Text>
+                </View>
+                <View style={styles.infoRow}>
+                  <Text style={styles.infoLabel}>Formalité</Text>
+                  <View style={styles.scoreBar}>
+                    <View style={[styles.scoreFill, { width: `${(analysis.formality || 0) * 10}%` }]} />
+                  </View>
+                </View>
+                <View style={styles.infoRow}>
+                  <Text style={styles.infoLabel}>Polyvalence</Text>
+                  <View style={styles.scoreBar}>
+                    <View style={[styles.scoreFill, { width: `${(analysis.versatility || 0) * 10}%` }]} />
+                  </View>
+                </View>
+              </View>
+            </View>
+
+            {analysis.colors && (
+              <View style={styles.section}>
+                <Text style={styles.sectionTitle}>Couleurs</Text>
+                <View style={styles.colorSection}>
+                  <Text style={styles.colorLabel}>Principales</Text>
+                  <View style={styles.colorList}>
+                    {analysis.colors.primary?.map((color, index) => (
+                      <View key={index} style={styles.colorChip}>
+                        <Text style={styles.colorText}>{color}</Text>
+                      </View>
+                    ))}
+                  </View>
+                </View>
+              </View>
+            )}
+
+            {analysis.occasions && analysis.occasions.length > 0 && (
+              <View style={styles.section}>
+                <Text style={styles.sectionTitle}>Occasions</Text>
+                <View style={styles.tagList}>
+                  {analysis.occasions.map((occasion, index) => (
+                    <View key={index} style={styles.tag}>
+                      <Text style={styles.tagText}>{occasion}</Text>
+                    </View>
+                  ))}
+                </View>
+              </View>
+            )}
+
+            {analysis.seasons && analysis.seasons.length > 0 && (
+              <View style={styles.section}>
+                <Text style={styles.sectionTitle}>Saisons</Text>
+                <View style={styles.tagList}>
+                  {analysis.seasons.map((season, index) => (
+                    <View key={index} style={styles.tag}>
+                      <Text style={styles.tagText}>{season}</Text>
+                    </View>
+                  ))}
+                </View>
+              </View>
+            )}
+
+            <View style={styles.dateInfo}>
+              <Text style={styles.dateText}>
+                Ajoutée le {new Date(analysis.created_at).toLocaleDateString('fr-FR')}
               </Text>
             </View>
           </View>
         )}
-
-        {/* Vêtements détectés */}
-        {analysis.items?.length > 0 && (
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Vêtements détectés</Text>
-            {analysis.items.map((item, index) => (
-              <View key={index} style={styles.itemCard}>
-                <Text style={styles.itemType}>{item.type}</Text>
-                <Text style={styles.itemDetails}>
-                  {item.color} {item.material && `• ${item.material}`}
-                </Text>
-              </View>
-            ))}
-          </View>
-        )}
-
-        {/* Suggestions */}
-        {analysis.matching_suggestions?.length > 0 && (
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Suggestions d'association</Text>
-            {analysis.matching_suggestions.map((suggestion, index) => (
-              <View key={index} style={styles.suggestionItem}>
-                <Ionicons name="bulb-outline" size={20} color="#667eea" />
-                <Text style={styles.suggestionText}>{suggestion}</Text>
-              </View>
-            ))}
-          </View>
-        )}
-
-        {/* Améliorations */}
-        {analysis.improvements?.length > 0 && (
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Améliorations possibles</Text>
-            {analysis.improvements.map((improvement, index) => (
-              <View key={index} style={styles.suggestionItem}>
-                <Ionicons name="trending-up-outline" size={20} color="#f59e0b" />
-                <Text style={styles.suggestionText}>{improvement}</Text>
-              </View>
-            ))}
-          </View>
-        )}
-
-        {/* Bouton sauvegarder */}
-        <TouchableOpacity style={styles.saveButton}>
-          <LinearGradient
-            colors={['#667eea', '#764ba2']}
-            style={styles.saveGradient}
-          >
-            <Ionicons name="bookmark-outline" size={24} color="#fff" />
-            <Text style={styles.saveButtonText}>Sauvegarder dans ma garde-robe</Text>
-          </LinearGradient>
-        </TouchableOpacity>
       </ScrollView>
     </SafeAreaView>
   );
@@ -249,177 +184,155 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#f9fafb',
   },
-  loadingContainer: {
+  centerContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-  },
-  errorContainer: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-  },
-  errorText: {
-    fontSize: 18,
-    color: '#6b7280',
   },
   header: {
     flexDirection: 'row',
-    alignItems: 'center',
     justifyContent: 'space-between',
+    alignItems: 'center',
     paddingTop: 50,
-    paddingBottom: 20,
     paddingHorizontal: 20,
-  },
-  backButton: {
-    padding: 5,
+    paddingBottom: 20,
   },
   headerTitle: {
-    fontSize: 20,
-    fontWeight: '600',
     color: '#fff',
+    fontSize: 18,
+    fontWeight: '600',
   },
-  shareButton: {
-    padding: 5,
-  },
-  content: {
-    flex: 1,
-  },
-  outfitImage: {
+  image: {
     width: '100%',
-    height: 400,
+    aspectRatio: 3/4,
     resizeMode: 'cover',
   },
-  section: {
+  processingContainer: {
+    padding: 40,
+    alignItems: 'center',
+  },
+  processingText: {
+    marginTop: 20,
+    fontSize: 16,
+    color: '#667eea',
+  },
+  errorContainer: {
+    padding: 40,
+    alignItems: 'center',
+  },
+  errorText: {
+    marginTop: 20,
+    fontSize: 18,
+    color: '#ef4444',
+    fontWeight: '600',
+  },
+  errorDetails: {
+    marginTop: 10,
+    fontSize: 14,
+    color: '#6b7280',
+    textAlign: 'center',
+  },
+  content: {
     padding: 20,
-    borderBottomWidth: 1,
-    borderBottomColor: '#e5e7eb',
+  },
+  section: {
+    marginBottom: 30,
   },
   sectionTitle: {
-    fontSize: 18,
+    fontSize: 20,
     fontWeight: '600',
     color: '#1f2937',
     marginBottom: 15,
   },
-  colorPalette: {
+  infoCard: {
+    backgroundColor: '#fff',
+    borderRadius: 15,
+    padding: 20,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  infoRow: {
     flexDirection: 'row',
-    gap: 10,
-  },
-  colorSwatch: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    borderWidth: 1,
-    borderColor: '#e5e7eb',
-  },
-  infoGrid: {
-    flexDirection: 'row',
-    gap: 20,
-  },
-  infoItem: {
-    flex: 1,
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 15,
   },
   infoLabel: {
-    fontSize: 14,
+    fontSize: 16,
     color: '#6b7280',
-    marginBottom: 5,
   },
   infoValue: {
     fontSize: 16,
-    fontWeight: '500',
+    fontWeight: '600',
     color: '#1f2937',
+    textTransform: 'capitalize',
   },
-  ratingItem: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+  scoreBar: {
+    flex: 1,
+    height: 8,
+    backgroundColor: '#e5e7eb',
+    borderRadius: 4,
+    marginLeft: 20,
+    overflow: 'hidden',
+  },
+  scoreFill: {
+    height: '100%',
+    backgroundColor: '#667eea',
+    borderRadius: 4,
+  },
+  colorSection: {
     marginBottom: 15,
   },
-  ratingLabel: {
-    fontSize: 16,
-    color: '#4b5563',
-  },
-  ratingContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 2,
-  },
-  ratingText: {
-    marginLeft: 10,
+  colorLabel: {
     fontSize: 14,
     color: '#6b7280',
+    marginBottom: 10,
   },
-  tagContainer: {
+  colorList: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 10,
+  },
+  colorChip: {
+    backgroundColor: '#e5e7eb',
+    paddingHorizontal: 15,
+    paddingVertical: 8,
+    borderRadius: 20,
+  },
+  colorText: {
+    fontSize: 14,
+    color: '#1f2937',
+    textTransform: 'capitalize',
+  },
+  tagList: {
     flexDirection: 'row',
     flexWrap: 'wrap',
     gap: 10,
   },
   tag: {
-    backgroundColor: '#e0e7ff',
+    backgroundColor: 'rgba(102,126,234,0.1)',
     paddingHorizontal: 15,
     paddingVertical: 8,
     borderRadius: 20,
   },
-  seasonTag: {
-    backgroundColor: '#dbeafe',
-  },
   tagText: {
     fontSize: 14,
-    color: '#4338ca',
-  },
-  temperatureContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 10,
-  },
-  temperatureText: {
-    fontSize: 16,
-    color: '#4b5563',
-  },
-  itemCard: {
-    backgroundColor: '#fff',
-    padding: 15,
-    borderRadius: 10,
-    marginBottom: 10,
-    borderWidth: 1,
-    borderColor: '#e5e7eb',
-  },
-  itemType: {
-    fontSize: 16,
+    color: '#667eea',
     fontWeight: '500',
-    color: '#1f2937',
-    marginBottom: 5,
+    textTransform: 'capitalize',
   },
-  itemDetails: {
+  dateInfo: {
+    marginTop: 20,
+    paddingTop: 20,
+    borderTopWidth: 1,
+    borderTopColor: '#e5e7eb',
+  },
+  dateText: {
     fontSize: 14,
     color: '#6b7280',
-  },
-  suggestionItem: {
-    flexDirection: 'row',
-    gap: 10,
-    marginBottom: 15,
-  },
-  suggestionText: {
-    flex: 1,
-    fontSize: 14,
-    color: '#4b5563',
-    lineHeight: 20,
-  },
-  saveButton: {
-    margin: 20,
-    marginBottom: 40,
-  },
-  saveGradient: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 10,
-    paddingVertical: 15,
-    borderRadius: 25,
-  },
-  saveButtonText: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#fff',
+    textAlign: 'center',
   },
 });

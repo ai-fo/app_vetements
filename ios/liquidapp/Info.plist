@@ -70,5 +70,11 @@
     <string>Light</string>
     <key>UIViewControllerBasedStatusBarAppearance</key>
     <false/>
+    <key>NSCameraUsageDescription</key>
+    <string>Cette application a besoin d'accéder à votre caméra pour prendre des photos de vos tenues</string>
+    <key>NSPhotoLibraryUsageDescription</key>
+    <string>Cette application a besoin d'accéder à votre galerie pour sélectionner des photos de vos tenues</string>
+    <key>NSPhotoLibraryAddUsageDescription</key>
+    <string>Cette application a besoin de sauvegarder des photos dans votre galerie</string>
   </dict>
 </plist>

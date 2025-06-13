@@ -8,47 +8,59 @@ import {
   ActivityIndicator,
   Image,
   SafeAreaView,
+  Platform,
 } from 'react-native';
-import { Camera, CameraType } from 'expo-camera';
 import * as ImagePicker from 'expo-image-picker';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useAuth } from '../../auth';
 import { useOutfitAnalysis } from '../hooks/useOutfitAnalysis';
 
-export default function CameraScreen({ navigation }) {
+// Import Camera conditionnellement
+let Camera = null;
+try {
+  const ExpoCamera = require('expo-camera');
+  Camera = ExpoCamera.Camera;
+} catch (error) {
+  console.log('expo-camera not available');
+}
+
+export default function CameraScreen({ navigation, route }) {
+  const itemType = route.params?.itemType || 'outfit';
   const [hasPermission, setHasPermission] = useState(null);
-  const [type, setType] = useState(CameraType.back);
+  const [type, setType] = useState('back');
   const [capturedImage, setCapturedImage] = useState(null);
   const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [showCamera, setShowCamera] = useState(false);
   const cameraRef = useRef(null);
   const { user } = useAuth();
   const { analyzeOutfit } = useOutfitAnalysis();
 
   useEffect(() => {
     (async () => {
-      const { status } = await Camera.requestCameraPermissionsAsync();
-      setHasPermission(status === 'granted');
+      if (Platform.OS === 'ios' || Platform.OS === 'android') {
+        const { status: cameraStatus } = await ImagePicker.requestCameraPermissionsAsync();
+        const { status: mediaStatus } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+        setHasPermission(cameraStatus === 'granted' && mediaStatus === 'granted');
+      }
     })();
   }, []);
 
-  const takePicture = async () => {
-    if (cameraRef.current) {
-      try {
-        const photo = await cameraRef.current.takePictureAsync({
-          quality: 0.8,
-          base64: false,
-        });
-        setCapturedImage(photo);
-      } catch (error) {
-        Alert.alert('Erreur', 'Impossible de prendre la photo');
-      }
+  const takePictureWithImagePicker = async () => {
+    const result = await ImagePicker.launchCameraAsync({
+      allowsEditing: true,
+      aspect: [3, 4],
+      quality: 0.8,
+    });
+
+    if (!result.canceled) {
+      setCapturedImage(result.assets[0]);
     }
   };
 
   const pickImage = async () => {
     const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      mediaTypes: ['images'],
       allowsEditing: true,
       aspect: [3, 4],
       quality: 0.8,
@@ -64,14 +76,20 @@ export default function CameraScreen({ navigation }) {
 
     setIsAnalyzing(true);
     try {
-      const result = await analyzeOutfit(capturedImage.uri, user.id);
-      
-      // Naviguer vers l'écran de résultats
-      navigation.navigate('AnalysisResult', { analysisId: result.id });
+      if (itemType === 'outfit') {
+        const result = await analyzeOutfit(capturedImage.uri, user.id);
+        navigation.navigate('AnalysisResult', { analysisId: result.id });
+      } else {
+        // Pour les vêtements séparés, on navigue vers un écran de catégorisation
+        navigation.navigate('ClothingItemForm', { 
+          imageUri: capturedImage.uri,
+          userId: user.id 
+        });
+      }
     } catch (error) {
       Alert.alert(
         'Erreur',
-        "L'analyse a échoué. Veuillez réessayer."
+        "L'enregistrement a échoué. Veuillez réessayer."
       );
     } finally {
       setIsAnalyzing(false);
@@ -92,29 +110,40 @@ export default function CameraScreen({ navigation }) {
 
   if (hasPermission === false) {
     return (
-      <View style={styles.container}>
-        <Text style={styles.noPermissionText}>
-          Pas d'accès à la caméra
-        </Text>
-        <TouchableOpacity style={styles.button} onPress={pickImage}>
-          <Text style={styles.buttonText}>
-            Choisir depuis la galerie
+      <SafeAreaView style={styles.container}>
+        <View style={styles.centerContainer}>
+          <Ionicons name="camera-off" size={64} color="#999" />
+          <Text style={styles.noPermissionText}>
+            Pas d'accès à la caméra
           </Text>
-        </TouchableOpacity>
-      </View>
+          <Text style={styles.noPermissionSubtext}>
+            Veuillez autoriser l'accès dans les paramètres
+          </Text>
+          <TouchableOpacity style={styles.button} onPress={pickImage}>
+            <Text style={styles.buttonText}>
+              Choisir depuis la galerie
+            </Text>
+          </TouchableOpacity>
+        </View>
+      </SafeAreaView>
     );
   }
 
   if (capturedImage) {
     return (
-      <SafeAreaView style={styles.container}>
-        <View style={styles.header}>
-          <TouchableOpacity onPress={retakePicture}>
-            <Ionicons name="arrow-back" size={28} color="#fff" />
-          </TouchableOpacity>
-          <Text style={styles.headerTitle}>Analyser la tenue</Text>
-          <View style={{ width: 28 }} />
-        </View>
+      <LinearGradient
+        colors={['#f9fafb', '#fff']}
+        style={styles.container}
+      >
+        <SafeAreaView style={styles.safeArea}>
+          <View style={styles.captureHeader}>
+            <TouchableOpacity 
+              style={styles.backButton}
+              onPress={retakePicture}
+            >
+              <Ionicons name="arrow-back" size={24} color="#667eea" />
+            </TouchableOpacity>
+          </View>
 
         <Image source={{ uri: capturedImage.uri }} style={styles.preview} />
 
@@ -123,7 +152,7 @@ export default function CameraScreen({ navigation }) {
             <View style={styles.analyzingContainer}>
               <ActivityIndicator size="large" color="#667eea" />
               <Text style={styles.analyzingText}>
-                Analyse en cours...
+                {itemType === 'outfit' ? 'Analyse en cours...' : 'Traitement en cours...'}
               </Text>
             </View>
           ) : (
@@ -138,7 +167,7 @@ export default function CameraScreen({ navigation }) {
                 >
                   <Ionicons name="sparkles" size={24} color="#fff" />
                   <Text style={styles.analyzeButtonText}>
-                    Analyser la tenue
+                    Enregistrer
                   </Text>
                 </LinearGradient>
               </TouchableOpacity>
@@ -153,161 +182,200 @@ export default function CameraScreen({ navigation }) {
               </TouchableOpacity>
             </>
           )}
-        </View>
-      </SafeAreaView>
+          </View>
+        </SafeAreaView>
+      </LinearGradient>
     );
   }
 
+  // Interface principale - choix entre caméra et galerie
   return (
-    <View style={styles.container}>
-      <Camera
-        style={styles.camera}
-        type={type}
-        ref={cameraRef}
-      >
-        <View style={styles.cameraHeader}>
-          <TouchableOpacity
-            onPress={() => navigation.goBack()}
-            style={styles.backButton}
-          >
-            <Ionicons name="arrow-back" size={28} color="#fff" />
-          </TouchableOpacity>
-          
-          <TouchableOpacity
-            style={styles.flipButton}
-            onPress={() => {
-              setType(
-                type === CameraType.back
-                  ? CameraType.front
-                  : CameraType.back
-              );
-            }}
-          >
-            <Ionicons name="camera-reverse" size={28} color="#fff" />
-          </TouchableOpacity>
-        </View>
+    <LinearGradient
+      colors={['#667eea', '#764ba2']}
+      style={styles.container}
+    >
+      <SafeAreaView style={styles.safeArea}>
+        <TouchableOpacity 
+          style={styles.closeButton}
+          onPress={() => navigation.goBack()}
+        >
+          <Ionicons name="close" size={28} color="#667eea" />
+        </TouchableOpacity>
 
-        <View style={styles.overlay}>
-          <View style={styles.overlayBorder} />
-          <Text style={styles.overlayText}>
-            Cadrez votre tenue complète
+        <View style={styles.mainContent}>
+          <Text style={styles.mainTitle}>
+            {itemType === 'outfit' ? 'Ajouter une tenue' : 'Ajouter un vêtement'}
           </Text>
+          <Text style={styles.mainSubtitle}>
+            {itemType === 'outfit' 
+              ? 'Photographiez votre tenue complète'
+              : 'Photographiez un vêtement seul sur fond neutre'}
+          </Text>
+
+          <View style={styles.optionsContainer}>
+            <TouchableOpacity
+              style={styles.optionButton}
+              onPress={takePictureWithImagePicker}
+              activeOpacity={0.8}
+            >
+              <View style={styles.optionCard}>
+                <Ionicons name="camera" size={48} color="#667eea" />
+                <Text style={styles.optionText}>Prendre une photo</Text>
+              </View>
+            </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.optionButton}
+              onPress={pickImage}
+              activeOpacity={0.8}
+            >
+              <View style={styles.optionCard}>
+                <Ionicons name="images" size={48} color="#667eea" />
+                <Text style={styles.optionText}>Choisir de la galerie</Text>
+              </View>
+            </TouchableOpacity>
+          </View>
+
+          <View style={styles.tipsContainer}>
+            <Text style={styles.tipsTitle}>Conseils pour une bonne photo</Text>
+            <View style={styles.tipsList}>
+              <View style={styles.tipItem}>
+                <Ionicons name="checkmark-circle" size={18} color="rgba(255,255,255,0.8)" />
+                <Text style={styles.tipText}>Cadrez la tenue complète</Text>
+              </View>
+              <View style={styles.tipItem}>
+                <Ionicons name="checkmark-circle" size={18} color="rgba(255,255,255,0.8)" />
+                <Text style={styles.tipText}>Bon éclairage</Text>
+              </View>
+              <View style={styles.tipItem}>
+                <Ionicons name="checkmark-circle" size={18} color="rgba(255,255,255,0.8)" />
+                <Text style={styles.tipText}>Fond neutre de préférence</Text>
+              </View>
+            </View>
+          </View>
         </View>
-      </Camera>
-
-      <View style={styles.controls}>
-        <TouchableOpacity
-          style={styles.galleryButton}
-          onPress={pickImage}
-        >
-          <Ionicons name="images" size={32} color="#fff" />
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          style={styles.captureButton}
-          onPress={takePicture}
-        >
-          <View style={styles.captureInner} />
-        </TouchableOpacity>
-
-        <View style={{ width: 32 }} />
-      </View>
-    </View>
+      </SafeAreaView>
+    </LinearGradient>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#000',
   },
-  camera: {
+  safeArea: {
     flex: 1,
   },
-  cameraHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    paddingTop: 50,
-    paddingHorizontal: 20,
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    zIndex: 10,
-  },
-  backButton: {
-    padding: 10,
-    backgroundColor: 'rgba(0,0,0,0.3)',
-    borderRadius: 20,
-  },
-  flipButton: {
-    padding: 10,
-    backgroundColor: 'rgba(0,0,0,0.3)',
-    borderRadius: 20,
-  },
-  overlay: {
+  centerContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
     padding: 20,
   },
-  overlayBorder: {
-    width: 250,
-    height: 350,
-    borderWidth: 2,
-    borderColor: 'rgba(255,255,255,0.5)',
-    borderRadius: 20,
-    borderStyle: 'dashed',
-  },
-  overlayText: {
-    color: '#fff',
-    fontSize: 16,
-    marginTop: 20,
-    textAlign: 'center',
-    backgroundColor: 'rgba(0,0,0,0.5)',
-    paddingHorizontal: 20,
-    paddingVertical: 10,
-    borderRadius: 20,
-  },
-  controls: {
-    flexDirection: 'row',
-    justifyContent: 'space-around',
+  closeButton: {
+    position: 'absolute',
+    top: 50,
+    right: 20,
+    zIndex: 10,
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: 'rgba(255,255,255,0.9)',
     alignItems: 'center',
-    paddingVertical: 30,
-    paddingHorizontal: 20,
+    justifyContent: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
   },
-  captureButton: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
-    backgroundColor: '#fff',
-    padding: 5,
-  },
-  captureInner: {
+  mainContent: {
     flex: 1,
-    borderRadius: 35,
-    backgroundColor: '#fff',
-    borderWidth: 3,
-    borderColor: '#000',
-  },
-  galleryButton: {
-    padding: 15,
-    backgroundColor: 'rgba(255,255,255,0.2)',
-    borderRadius: 25,
-  },
-  header: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingTop: 50,
+    paddingTop: 120,
     paddingHorizontal: 20,
-    paddingBottom: 20,
-    backgroundColor: '#000',
+    alignItems: 'center',
   },
-  headerTitle: {
+  mainTitle: {
+    fontSize: 32,
+    fontWeight: 'bold',
     color: '#fff',
-    fontSize: 18,
+    marginBottom: 10,
+    textAlign: 'center',
+  },
+  mainSubtitle: {
+    fontSize: 16,
+    color: 'rgba(255,255,255,0.9)',
+    textAlign: 'center',
+    marginBottom: 50,
+  },
+  optionsContainer: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    gap: 20,
+    marginBottom: 60,
+  },
+  optionButton: {
+    width: 150,
+  },
+  optionCard: {
+    backgroundColor: 'rgba(255,255,255,0.95)',
+    paddingVertical: 35,
+    paddingHorizontal: 20,
+    borderRadius: 25,
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.15,
+    shadowRadius: 8,
+    elevation: 5,
+  },
+  optionText: {
+    color: '#667eea',
+    fontSize: 15,
     fontWeight: '600',
+    marginTop: 12,
+    textAlign: 'center',
+  },
+  tipsContainer: {
+    backgroundColor: 'rgba(255,255,255,0.1)',
+    borderRadius: 20,
+    padding: 25,
+    marginTop: 'auto',
+    marginBottom: 40,
+    width: '100%',
+  },
+  tipsTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#fff',
+    marginBottom: 15,
+    textAlign: 'center',
+  },
+  tipsList: {
+    gap: 12,
+  },
+  tipItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  },
+  tipText: {
+    fontSize: 14,
+    color: 'rgba(255,255,255,0.9)',
+  },
+  captureHeader: {
+    position: 'absolute',
+    top: 50,
+    left: 20,
+    zIndex: 10,
+  },
+  backButton: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: 'rgba(103,126,234,0.1)',
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   preview: {
     flex: 1,
@@ -315,7 +383,7 @@ const styles = StyleSheet.create({
   },
   bottomContainer: {
     padding: 20,
-    backgroundColor: '#000',
+    backgroundColor: 'transparent',
   },
   analyzeButton: {
     marginBottom: 15,
@@ -351,16 +419,25 @@ const styles = StyleSheet.create({
     marginTop: 15,
   },
   noPermissionText: {
-    color: '#fff',
-    fontSize: 18,
+    color: '#1f2937',
+    fontSize: 20,
+    fontWeight: '600',
     textAlign: 'center',
-    marginBottom: 20,
+    marginTop: 20,
+    marginBottom: 10,
+  },
+  noPermissionSubtext: {
+    color: '#6b7280',
+    fontSize: 16,
+    textAlign: 'center',
+    marginBottom: 30,
   },
   button: {
     backgroundColor: '#667eea',
     paddingHorizontal: 30,
     paddingVertical: 15,
     borderRadius: 25,
+    marginTop: 20,
   },
   buttonText: {
     color: '#fff',
