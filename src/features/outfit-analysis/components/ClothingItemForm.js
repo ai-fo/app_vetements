@@ -14,6 +14,7 @@ import {
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { supabase } from '../../../shared/api/supabase';
+import { ItemType } from '../../virtual-wardrobe/types';
 
 const clothingTypes = [
   { id: 'top', label: 'Haut', icon: 'shirt-outline' },

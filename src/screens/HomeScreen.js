@@ -81,6 +81,24 @@ export default function HomeScreen() {
 
           <DailyRecommendation analyses={analyses} navigation={navigation} />
 
+          <TouchableOpacity 
+            style={styles.wardrobeButton}
+            onPress={() => navigation.navigate('WardrobeScreen')}
+          >
+            <LinearGradient
+              colors={['rgba(102,126,234,0.1)', 'rgba(118,75,162,0.1)']}
+              style={styles.wardrobeButtonGradient}
+            >
+              <View style={styles.wardrobeButtonContent}>
+                <Ionicons name="shirt-outline" size={32} color="#667eea" />
+                <View style={styles.wardrobeButtonText}>
+                  <Text style={styles.wardrobeButtonTitle}>Ma Garde-robe</Text>
+                  <Text style={styles.wardrobeButtonSubtitle}>Gérez votre collection</Text>
+                </View>
+              </View>
+              <Ionicons name="chevron-forward" size={24} color="#667eea" />
+            </LinearGradient>
+          </TouchableOpacity>
 
           <View style={styles.section}>
             <View style={styles.sectionHeader}>
@@ -255,5 +273,32 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(255,255,255,0.9)',
     borderRadius: 12,
     padding: 2,
+  },
+  wardrobeButton: {
+    marginVertical: 20,
+  },
+  wardrobeButtonGradient: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    padding: 20,
+    borderRadius: 16,
+  },
+  wardrobeButtonContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  wardrobeButtonText: {
+    marginLeft: 16,
+  },
+  wardrobeButtonTitle: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#667eea',
+  },
+  wardrobeButtonSubtitle: {
+    fontSize: 14,
+    color: '#9ca3af',
+    marginTop: 2,
   },
 });

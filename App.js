@@ -9,6 +9,7 @@ import {
   AddItemTypeSelector,
   ClothingItemForm 
 } from './src/features/outfit-analysis';
+import { WardrobeScreen, ItemEditor } from './src/features/virtual-wardrobe';
 import { ActivityIndicator, View } from 'react-native';
 
 const Stack = createStackNavigator();
@@ -46,6 +47,20 @@ function MainStack() {
       <Stack.Screen 
         name="ClothingItemForm" 
         component={ClothingItemForm}
+        options={{
+          presentation: 'modal',
+        }}
+      />
+      <Stack.Screen 
+        name="WardrobeScreen" 
+        component={WardrobeScreen}
+        options={{
+          animation: 'slide_from_right',
+        }}
+      />
+      <Stack.Screen 
+        name="ItemEditor" 
+        component={ItemEditor}
         options={{
           presentation: 'modal',
         }}

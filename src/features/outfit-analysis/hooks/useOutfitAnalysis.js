@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { supabase } from '../../../shared/api/supabase';
 import { outfitAnalysisAPI } from '../api';
+import { ItemType } from '../../virtual-wardrobe/types';
 
 export const useOutfitAnalysis = () => {
   const [loading, setLoading] = useState(false);
