@@ -77,7 +77,7 @@ export default function WardrobeScreen({ navigation }) {
         <FavoriteButton
           isFavorite={item.isFavorite}
           onToggle={() => toggleFavorite(item.id)}
-          size={20}
+          size={16}
         />
       </View>
 
@@ -112,23 +112,11 @@ export default function WardrobeScreen({ navigation }) {
       <View style={styles.listItemContent}>
         <View style={styles.listItemHeader}>
           <Text style={styles.listItemName}>{item.name}</Text>
-          <View style={styles.listItemHeaderRight}>
-            {item.isFavorite && (
-              <Ionicons 
-                name="star" 
-                size={16} 
-                color="#f59e0b" 
-                style={{ marginRight: 8 }}
-              />
-            )}
-            <View style={[styles.itemTypeIndicator, styles.listItemTypeIndicator]}>
-              <Ionicons 
-                name={item.itemType === ItemType.OUTFIT ? 'body' : 'shirt'} 
-                size={14} 
-                color="#fff" 
-              />
-            </View>
-          </View>
+          <FavoriteButton
+            isFavorite={item.isFavorite}
+            onToggle={() => toggleFavorite(item.id)}
+            size={16}
+          />
         </View>
         
         <Text style={styles.listItemBrand}>{item.brand}</Text>
@@ -140,14 +128,6 @@ export default function WardrobeScreen({ navigation }) {
             </View>
           ))}
         </View>
-      </View>
-      
-      <View style={{ padding: 8 }}>
-        <FavoriteButton
-          isFavorite={item.isFavorite}
-          onToggle={() => toggleFavorite(item.id)}
-          size={20}
-        />
       </View>
     </TouchableOpacity>
   );
@@ -362,20 +342,15 @@ const styles = StyleSheet.create({
     right: 10,
     backgroundColor: 'rgba(102, 126, 234, 0.9)',
     borderRadius: 20,
-    padding: 6,
+    width: 32,
+    height: 32,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   favoriteButton: {
     position: 'absolute',
     top: 10,
     left: 10,
-    backgroundColor: 'rgba(255, 255, 255, 0.9)',
-    borderRadius: 20,
-    padding: 4,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
   },
   itemInfo: {
     padding: 12,
@@ -443,13 +418,6 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: '#1f2937',
     flex: 1,
-  },
-  listItemHeaderRight: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  listItemTypeIndicator: {
-    marginLeft: 8,
   },
   listItemBrand: {
     fontSize: 14,
