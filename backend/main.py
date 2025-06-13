@@ -2,11 +2,9 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from backend.core.config import settings
 
-# Import routers from modules when they're implemented
-# from backend.modules.auth import router as auth_router
-# from backend.modules.catalog import router as catalog_router
-# from backend.modules.cart import router as cart_router
-# from backend.modules.ai import router as ai_router
+# Import routers from modules
+from backend.modules.auth import router as auth_router
+from backend.modules.outfit_analysis import router as outfit_analysis_router
 
 app = FastAPI(
     title="Vêtements API",
@@ -23,11 +21,9 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Include routers when implemented
-# app.include_router(auth_router, prefix="/api/auth", tags=["auth"])
-# app.include_router(catalog_router, prefix="/api/catalog", tags=["catalog"])
-# app.include_router(cart_router, prefix="/api/cart", tags=["cart"])
-# app.include_router(ai_router, prefix="/api/ai", tags=["ai"])
+# Include routers
+app.include_router(auth_router, prefix="/api/auth", tags=["auth"])
+app.include_router(outfit_analysis_router, prefix="/api/outfit-analysis", tags=["outfit-analysis"])
 
 @app.get("/")
 def read_root():
