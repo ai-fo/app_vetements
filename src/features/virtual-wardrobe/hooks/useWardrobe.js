@@ -9,7 +9,8 @@ export function useWardrobe(userId) {
     category: null,
     season: null,
     color: null,
-    brand: null
+    brand: null,
+    isFavorite: false
   });
 
   useEffect(() => {
@@ -40,7 +41,8 @@ export function useWardrobe(userId) {
           brand: 'Zara',
           name: 'Tenue décontractée',
           createdAt: new Date().toISOString(),
-          tags: ['casual', 'work']
+          tags: ['casual', 'work'],
+          isFavorite: true
         },
         {
           id: '2',
@@ -54,7 +56,8 @@ export function useWardrobe(userId) {
           brand: 'H&M',
           name: 'T-shirt basique',
           createdAt: new Date().toISOString(),
-          tags: ['basic', 'casual']
+          tags: ['basic', 'casual'],
+          isFavorite: false
         }
       ];
 
@@ -107,6 +110,32 @@ export function useWardrobe(userId) {
     setFilters(newFilters);
   };
 
+  const toggleFavorite = async (itemId) => {
+    try {
+      const item = items.find(i => i.id === itemId);
+      if (!item) return;
+      
+      const newFavoriteStatus = !item.isFavorite;
+      
+      // TODO: Activer quand le backend est prêt
+      // await wardrobeAPI.updateItem(itemId, { isFavorite: newFavoriteStatus });
+      
+      // Simulation temporaire
+      await new Promise(resolve => setTimeout(resolve, 300));
+      
+      setItems(prevItems => 
+        prevItems.map(item => 
+          item.id === itemId ? { ...item, isFavorite: newFavoriteStatus } : item
+        )
+      );
+      
+      return true;
+    } catch (error) {
+      console.error('Error toggling favorite:', error);
+      return false;
+    }
+  };
+
   const getFilteredItems = () => {
     return items.filter(item => {
       if (filters.itemType && item.itemType !== filters.itemType) return false;
@@ -114,6 +143,7 @@ export function useWardrobe(userId) {
       if (filters.season && !item.seasons.includes(filters.season)) return false;
       if (filters.color && !item.colors.includes(filters.color)) return false;
       if (filters.brand && item.brand.toLowerCase() !== filters.brand.toLowerCase()) return false;
+      if (filters.isFavorite && !item.isFavorite) return false;
       return true;
     });
   };
@@ -125,6 +155,7 @@ export function useWardrobe(userId) {
     applyFilters,
     updateItem,
     deleteItem,
+    toggleFavorite,
     refreshWardrobe: loadWardrobeItems
   };
 }

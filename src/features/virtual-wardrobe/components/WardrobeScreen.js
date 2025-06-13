@@ -23,7 +23,7 @@ const ITEM_WIDTH = (width - 60) / 2;
 
 export default function WardrobeScreen({ navigation }) {
   const { user } = useAuth();
-  const { items, loading, filters, applyFilters, refreshWardrobe } = useWardrobe(user?.id);
+  const { items, loading, filters, applyFilters, refreshWardrobe, toggleFavorite } = useWardrobe(user?.id);
   const [selectedItem, setSelectedItem] = useState(null);
   const [refreshing, setRefreshing] = useState(false);
   const [viewMode, setViewMode] = useState('grid'); // 'grid' or 'list'
@@ -72,6 +72,20 @@ export default function WardrobeScreen({ navigation }) {
         />
       </View>
 
+      <TouchableOpacity
+        style={styles.favoriteButton}
+        onPress={(e) => {
+          e.stopPropagation();
+          toggleFavorite(item.id);
+        }}
+      >
+        <Ionicons 
+          name={item.isFavorite ? 'star' : 'star-outline'} 
+          size={20} 
+          color={item.isFavorite ? '#f59e0b' : '#fff'} 
+        />
+      </TouchableOpacity>
+
       <View style={styles.itemInfo}>
         <Text style={styles.itemName} numberOfLines={1}>{item.name}</Text>
         <View style={styles.itemDetails}>
@@ -103,12 +117,22 @@ export default function WardrobeScreen({ navigation }) {
       <View style={styles.listItemContent}>
         <View style={styles.listItemHeader}>
           <Text style={styles.listItemName}>{item.name}</Text>
-          <View style={[styles.itemTypeIndicator, styles.listItemTypeIndicator]}>
-            <Ionicons 
-              name={item.itemType === ItemType.OUTFIT ? 'body' : 'shirt'} 
-              size={14} 
-              color="#fff" 
-            />
+          <View style={styles.listItemHeaderRight}>
+            {item.isFavorite && (
+              <Ionicons 
+                name="star" 
+                size={16} 
+                color="#f59e0b" 
+                style={{ marginRight: 8 }}
+              />
+            )}
+            <View style={[styles.itemTypeIndicator, styles.listItemTypeIndicator]}>
+              <Ionicons 
+                name={item.itemType === ItemType.OUTFIT ? 'body' : 'shirt'} 
+                size={14} 
+                color="#fff" 
+              />
+            </View>
           </View>
         </View>
         
@@ -123,7 +147,19 @@ export default function WardrobeScreen({ navigation }) {
         </View>
       </View>
       
-      <Ionicons name="chevron-forward" size={20} color="#9ca3af" />
+      <TouchableOpacity
+        onPress={(e) => {
+          e.stopPropagation();
+          toggleFavorite(item.id);
+        }}
+        style={{ padding: 8 }}
+      >
+        <Ionicons 
+          name={item.isFavorite ? 'star' : 'star-outline'} 
+          size={20} 
+          color={item.isFavorite ? '#f59e0b' : '#9ca3af'} 
+        />
+      </TouchableOpacity>
     </TouchableOpacity>
   );
 
@@ -215,6 +251,13 @@ export default function WardrobeScreen({ navigation }) {
           onEdit={(item) => {
             navigation.navigate('ItemEditor', { item });
             setSelectedItem(null);
+          }}
+          onToggleFavorite={() => {
+            toggleFavorite(selectedItem.id);
+            setSelectedItem({
+              ...selectedItem,
+              isFavorite: !selectedItem.isFavorite
+            });
           }}
         />
       )}
@@ -332,6 +375,14 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     padding: 6,
   },
+  favoriteButton: {
+    position: 'absolute',
+    top: 10,
+    left: 10,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    borderRadius: 20,
+    padding: 6,
+  },
   itemInfo: {
     padding: 12,
   },
@@ -390,6 +441,7 @@ const styles = StyleSheet.create({
   listItemHeader: {
     flexDirection: 'row',
     alignItems: 'center',
+    justifyContent: 'space-between',
     marginBottom: 4,
   },
   listItemName: {
@@ -397,6 +449,10 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: '#1f2937',
     flex: 1,
+  },
+  listItemHeaderRight: {
+    flexDirection: 'row',
+    alignItems: 'center',
   },
   listItemTypeIndicator: {
     marginLeft: 8,

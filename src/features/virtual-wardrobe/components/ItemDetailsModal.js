@@ -15,7 +15,7 @@ import { ItemType } from '../types';
 
 const { width, height } = Dimensions.get('window');
 
-export default function ItemDetailsModal({ item, visible, onClose, onEdit }) {
+export default function ItemDetailsModal({ item, visible, onClose, onEdit, onToggleFavorite }) {
   if (!item) return null;
 
   const getColorHex = (colorName) => {
@@ -74,16 +74,29 @@ export default function ItemDetailsModal({ item, visible, onClose, onEdit }) {
               <Ionicons name="close" size={24} color="#4b5563" />
             </TouchableOpacity>
             
-            <View style={styles.typeIndicator}>
-              <Ionicons 
-                name={item.itemType === ItemType.OUTFIT ? 'body' : 'shirt'} 
-                size={20} 
-                color="#fff" 
-              />
-              <Text style={styles.typeText}>
-                {item.itemType === ItemType.OUTFIT ? 'Tenue complète' : 'Pièce unique'}
-              </Text>
+            <View style={styles.headerCenter}>
+              <View style={styles.typeIndicator}>
+                <Ionicons 
+                  name={item.itemType === ItemType.OUTFIT ? 'body' : 'shirt'} 
+                  size={20} 
+                  color="#fff" 
+                />
+                <Text style={styles.typeText}>
+                  {item.itemType === ItemType.OUTFIT ? 'Tenue complète' : 'Pièce unique'}
+                </Text>
+              </View>
             </View>
+
+            <TouchableOpacity 
+              onPress={onToggleFavorite} 
+              style={styles.favoriteHeaderButton}
+            >
+              <Ionicons 
+                name={item.isFavorite ? 'star' : 'star-outline'} 
+                size={24} 
+                color={item.isFavorite ? '#f59e0b' : '#4b5563'} 
+              />
+            </TouchableOpacity>
           </View>
 
           <ScrollView showsVerticalScrollIndicator={false}>
@@ -196,6 +209,15 @@ const styles = StyleSheet.create({
   },
   closeButton: {
     padding: 4,
+    width: 32,
+  },
+  headerCenter: {
+    flex: 1,
+    alignItems: 'center',
+  },
+  favoriteHeaderButton: {
+    padding: 4,
+    width: 32,
   },
   typeIndicator: {
     flexDirection: 'row',

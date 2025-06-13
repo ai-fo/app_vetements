@@ -28,6 +28,7 @@ export default function ItemEditor({ navigation, route }) {
     materials: item.materials,
     seasons: item.seasons,
     tags: item.tags || [],
+    isFavorite: item.isFavorite || false,
   });
   
   const [loading, setLoading] = useState(false);
@@ -134,9 +135,21 @@ export default function ItemEditor({ navigation, route }) {
           
           <Text style={styles.headerTitle}>Modifier l'article</Text>
           
-          <TouchableOpacity onPress={handleDelete}>
-            <Ionicons name="trash-outline" size={24} color="#fff" />
-          </TouchableOpacity>
+          <View style={styles.headerActions}>
+            <TouchableOpacity 
+              onPress={() => setFormData({ ...formData, isFavorite: !formData.isFavorite })}
+              style={{ marginRight: 16 }}
+            >
+              <Ionicons 
+                name={formData.isFavorite ? 'star' : 'star-outline'} 
+                size={24} 
+                color={formData.isFavorite ? '#f59e0b' : '#fff'} 
+              />
+            </TouchableOpacity>
+            <TouchableOpacity onPress={handleDelete}>
+              <Ionicons name="trash-outline" size={24} color="#fff" />
+            </TouchableOpacity>
+          </View>
         </View>
       </LinearGradient>
 
@@ -398,6 +411,10 @@ const styles = StyleSheet.create({
     fontSize: 20,
     fontWeight: 'bold',
     color: '#fff',
+  },
+  headerActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
   },
   content: {
     flex: 1,

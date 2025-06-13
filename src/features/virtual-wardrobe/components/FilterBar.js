@@ -26,6 +26,7 @@ export default function FilterBar({ filters, onFiltersChange }) {
   };
 
   const quickFilters = [
+    { key: 'isFavorite', value: true, label: '⭐ Favoris' },
     { key: 'itemType', value: ItemType.OUTFIT, label: '👔 Tenues' },
     { key: 'itemType', value: ItemType.SINGLE_PIECE, label: '👕 Pièces' },
     { key: 'season', value: Season.SUMMER, label: '☀️ Été' },
