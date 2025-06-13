@@ -8,6 +8,7 @@ import {
   Modal,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
+import { LinearGradient } from 'expo-linear-gradient';
 import { ItemType, ClothingCategory, Season } from '../types';
 
 export default function FilterBar({ filters, onFiltersChange }) {
@@ -26,7 +27,7 @@ export default function FilterBar({ filters, onFiltersChange }) {
   };
 
   const quickFilters = [
-    { key: 'isFavorite', value: true, label: '⭐ Favoris' },
+    { key: 'isFavorite', value: true, label: '✨ Favoris', special: true },
     { key: 'itemType', value: ItemType.OUTFIT, label: '👔 Tenues' },
     { key: 'itemType', value: ItemType.SINGLE_PIECE, label: '👕 Pièces' },
     { key: 'season', value: Season.SUMMER, label: '☀️ Été' },
@@ -52,19 +53,61 @@ export default function FilterBar({ filters, onFiltersChange }) {
           </TouchableOpacity>
 
           {quickFilters.map((filter, index) => {
-            const isActive = filters[filter.key] === filter.value;
+            const isActive = filter.key === 'isFavorite' 
+              ? filters.isFavorite === true  
+              : filters[filter.key] === filter.value;
+            
+            if (filter.special && isActive) {
+              return (
+                <TouchableOpacity
+                  key={index}
+                  style={styles.quickFilterSpecialContainer}
+                  onPress={() => {
+                    onFiltersChange({
+                      ...filters,
+                      isFavorite: false
+                    });
+                  }}
+                >
+                  <LinearGradient
+                    colors={['#f59e0b', '#ec4899']}
+                    style={styles.quickFilterSpecialGradient}
+                    start={{ x: 0, y: 0 }}
+                    end={{ x: 1, y: 1 }}
+                  >
+                    <Text style={styles.quickFilterTextSpecial}>
+                      {filter.label}
+                    </Text>
+                  </LinearGradient>
+                </TouchableOpacity>
+              );
+            }
+            
             return (
               <TouchableOpacity
                 key={index}
-                style={[styles.quickFilter, isActive && styles.quickFilterActive]}
+                style={[
+                  styles.quickFilter, 
+                  isActive && styles.quickFilterActive
+                ]}
                 onPress={() => {
-                  onFiltersChange({
-                    ...filters,
-                    [filter.key]: isActive ? null : filter.value
-                  });
+                  if (filter.key === 'isFavorite') {
+                    onFiltersChange({
+                      ...filters,
+                      isFavorite: !filters.isFavorite
+                    });
+                  } else {
+                    onFiltersChange({
+                      ...filters,
+                      [filter.key]: isActive ? null : filter.value
+                    });
+                  }
                 }}
               >
-                <Text style={[styles.quickFilterText, isActive && styles.quickFilterTextActive]}>
+                <Text style={[
+                  styles.quickFilterText, 
+                  isActive && styles.quickFilterTextActive
+                ]}>
                   {filter.label}
                 </Text>
               </TouchableOpacity>
@@ -279,6 +322,19 @@ const styles = StyleSheet.create({
   },
   quickFilterTextActive: {
     color: '#fff',
+  },
+  quickFilterSpecialContainer: {
+    marginRight: 10,
+  },
+  quickFilterSpecialGradient: {
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 20,
+  },
+  quickFilterTextSpecial: {
+    color: '#fff',
+    fontSize: 14,
+    fontWeight: '600',
   },
   clearButton: {
     paddingHorizontal: 16,

@@ -14,6 +14,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useWardrobe } from '../hooks/useWardrobe';
 import { ItemType, ClothingCategory, Season, Material } from '../types';
+import FavoriteButton from './FavoriteButton';
 
 export default function ItemEditor({ navigation, route }) {
   const { item } = route.params;
@@ -136,16 +137,13 @@ export default function ItemEditor({ navigation, route }) {
           <Text style={styles.headerTitle}>Modifier l'article</Text>
           
           <View style={styles.headerActions}>
-            <TouchableOpacity 
-              onPress={() => setFormData({ ...formData, isFavorite: !formData.isFavorite })}
-              style={{ marginRight: 16 }}
-            >
-              <Ionicons 
-                name={formData.isFavorite ? 'star' : 'star-outline'} 
-                size={24} 
-                color={formData.isFavorite ? '#f59e0b' : '#fff'} 
+            <View style={{ marginRight: 16 }}>
+              <FavoriteButton
+                isFavorite={formData.isFavorite}
+                onToggle={() => setFormData({ ...formData, isFavorite: !formData.isFavorite })}
+                size={24}
               />
-            </TouchableOpacity>
+            </View>
             <TouchableOpacity onPress={handleDelete}>
               <Ionicons name="trash-outline" size={24} color="#fff" />
             </TouchableOpacity>

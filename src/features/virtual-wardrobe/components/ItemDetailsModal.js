@@ -12,6 +12,7 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { ItemType } from '../types';
+import FavoriteButton from './FavoriteButton';
 
 const { width, height } = Dimensions.get('window');
 
@@ -87,16 +88,13 @@ export default function ItemDetailsModal({ item, visible, onClose, onEdit, onTog
               </View>
             </View>
 
-            <TouchableOpacity 
-              onPress={onToggleFavorite} 
-              style={styles.favoriteHeaderButton}
-            >
-              <Ionicons 
-                name={item.isFavorite ? 'star' : 'star-outline'} 
-                size={24} 
-                color={item.isFavorite ? '#f59e0b' : '#4b5563'} 
+            <View style={styles.favoriteHeaderButton}>
+              <FavoriteButton
+                isFavorite={item.isFavorite}
+                onToggle={onToggleFavorite}
+                size={24}
               />
-            </TouchableOpacity>
+            </View>
           </View>
 
           <ScrollView showsVerticalScrollIndicator={false}>

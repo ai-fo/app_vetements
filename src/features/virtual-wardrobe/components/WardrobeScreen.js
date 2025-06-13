@@ -17,6 +17,7 @@ import { useWardrobe } from '../hooks/useWardrobe';
 import { ItemType, ClothingCategory, Season } from '../types';
 import ItemDetailsModal from './ItemDetailsModal';
 import FilterBar from './FilterBar';
+import FavoriteButton from './FavoriteButton';
 
 const { width } = Dimensions.get('window');
 const ITEM_WIDTH = (width - 60) / 2;
@@ -72,19 +73,13 @@ export default function WardrobeScreen({ navigation }) {
         />
       </View>
 
-      <TouchableOpacity
-        style={styles.favoriteButton}
-        onPress={(e) => {
-          e.stopPropagation();
-          toggleFavorite(item.id);
-        }}
-      >
-        <Ionicons 
-          name={item.isFavorite ? 'star' : 'star-outline'} 
-          size={20} 
-          color={item.isFavorite ? '#f59e0b' : '#fff'} 
+      <View style={styles.favoriteButton}>
+        <FavoriteButton
+          isFavorite={item.isFavorite}
+          onToggle={() => toggleFavorite(item.id)}
+          size={20}
         />
-      </TouchableOpacity>
+      </View>
 
       <View style={styles.itemInfo}>
         <Text style={styles.itemName} numberOfLines={1}>{item.name}</Text>
@@ -147,19 +142,13 @@ export default function WardrobeScreen({ navigation }) {
         </View>
       </View>
       
-      <TouchableOpacity
-        onPress={(e) => {
-          e.stopPropagation();
-          toggleFavorite(item.id);
-        }}
-        style={{ padding: 8 }}
-      >
-        <Ionicons 
-          name={item.isFavorite ? 'star' : 'star-outline'} 
-          size={20} 
-          color={item.isFavorite ? '#f59e0b' : '#9ca3af'} 
+      <View style={{ padding: 8 }}>
+        <FavoriteButton
+          isFavorite={item.isFavorite}
+          onToggle={() => toggleFavorite(item.id)}
+          size={20}
         />
-      </TouchableOpacity>
+      </View>
     </TouchableOpacity>
   );
 
@@ -379,9 +368,14 @@ const styles = StyleSheet.create({
     position: 'absolute',
     top: 10,
     left: 10,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    backgroundColor: 'rgba(255, 255, 255, 0.9)',
     borderRadius: 20,
-    padding: 6,
+    padding: 4,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
   },
   itemInfo: {
     padding: 12,
