@@ -192,9 +192,9 @@ const styles = StyleSheet.create({
   },
   safeArea: {
     flex: 1,
-    paddingTop: 24,
+    paddingTop: 16,
     paddingBottom: 40,
-    paddingHorizontal: 20,
+    paddingHorizontal: 24,
   },
   header: {
     flexDirection: 'row',
@@ -206,6 +206,8 @@ const styles = StyleSheet.create({
     fontSize: 24,
     fontWeight: '700',
     color: '#fff',
+    flex: 1,
+    paddingRight: 16,
   },
   closeButton: {
     width: 36,
@@ -214,8 +216,6 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(255,255,255,0.2)',
     alignItems: 'center',
     justifyContent: 'center',
-    marginRight: -4,
-    marginTop: -4,
   },
   subtitle: {
     fontSize: 16,
