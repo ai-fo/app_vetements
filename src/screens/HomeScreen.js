@@ -8,6 +8,7 @@ import {
   Dimensions,
   ScrollView,
   Image,
+  TouchableWithoutFeedback,
 } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -24,6 +25,7 @@ export default function HomeScreen() {
   const { analyses, getUserAnalyses } = useOutfitAnalysis();
   const navigation = useNavigation();
   const [refreshing, setRefreshing] = useState(false);
+  const [showUserMenu, setShowUserMenu] = useState(false);
   const fadeAnim = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
@@ -62,22 +64,66 @@ export default function HomeScreen() {
     >
       <StatusBar style="light" />
       
-      <TouchableOpacity
-        style={styles.logoutButton}
-        onPress={signOut}
+      <ScrollView 
+        style={styles.scrollView} 
+        showsVerticalScrollIndicator={false}
+        onScrollBeginDrag={() => showUserMenu && setShowUserMenu(false)}
       >
-        <Ionicons name="log-out-outline" size={24} color="#fff" />
-      </TouchableOpacity>
-
-      <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
         <Animated.View style={[styles.content, { opacity: fadeAnim }]}>
-          <View style={styles.header}>
-            <View>
-              <Text style={styles.greeting}>Bonjour,</Text>
-              <Text style={styles.userName}>{user?.email?.split('@')[0]}</Text>
+          {/* Header minimaliste avec menu utilisateur */}
+          <TouchableOpacity 
+            style={styles.userMenu}
+            onPress={() => setShowUserMenu(!showUserMenu)}
+            activeOpacity={0.7}
+          >
+            <View style={styles.userAvatar}>
+              <Text style={styles.userInitial}>
+                {user?.email?.charAt(0).toUpperCase() || 'U'}
+              </Text>
             </View>
-            <View style={{ width: 50 }} />
-          </View>
+            <Ionicons name="chevron-down" size={16} color="rgba(255,255,255,0.8)" />
+          </TouchableOpacity>
+
+          {showUserMenu && (
+            <Animated.View style={styles.dropdownMenu}>
+              <View style={styles.dropdownContent}>
+                <View style={styles.dropdownHeader}>
+                  <Text style={styles.dropdownEmail}>{user?.email}</Text>
+                </View>
+                <TouchableOpacity 
+                  style={styles.dropdownItem}
+                  onPress={() => {
+                    setShowUserMenu(false);
+                    navigation.navigate('Profile');
+                  }}
+                >
+                  <Ionicons name="person-outline" size={20} color="#667eea" />
+                  <Text style={styles.dropdownText}>Mon profil</Text>
+                </TouchableOpacity>
+                <TouchableOpacity 
+                  style={styles.dropdownItem}
+                  onPress={() => {
+                    setShowUserMenu(false);
+                    navigation.navigate('Settings');
+                  }}
+                >
+                  <Ionicons name="settings-outline" size={20} color="#667eea" />
+                  <Text style={styles.dropdownText}>Paramètres</Text>
+                </TouchableOpacity>
+                <View style={styles.dropdownDivider} />
+                <TouchableOpacity 
+                  style={styles.dropdownItem}
+                  onPress={() => {
+                    setShowUserMenu(false);
+                    signOut();
+                  }}
+                >
+                  <Ionicons name="log-out-outline" size={20} color="#ef4444" />
+                  <Text style={[styles.dropdownText, { color: '#ef4444' }]}>Déconnexion</Text>
+                </TouchableOpacity>
+              </View>
+            </Animated.View>
+          )}
 
           <DailyRecommendation analyses={analyses} navigation={navigation} />
 
@@ -142,35 +188,80 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
-  logoutButton: {
-    position: 'absolute',
-    top: 50,
-    right: 20,
-    zIndex: 10,
-    padding: 10,
-  },
   scrollView: {
     flex: 1,
   },
   content: {
-    paddingTop: 90,
+    paddingTop: 60,
     paddingHorizontal: 20,
     paddingBottom: 20,
   },
-  header: {
+  userMenu: {
+    position: 'absolute',
+    top: 10,
+    right: 0,
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 30,
+    gap: 5,
+    zIndex: 100,
   },
-  greeting: {
+  userAvatar: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: 'rgba(255,255,255,0.2)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.3)',
+  },
+  userInitial: {
     fontSize: 16,
-    color: 'rgba(255,255,255,0.8)',
-  },
-  userName: {
-    fontSize: 28,
-    fontWeight: 'bold',
+    fontWeight: '600',
     color: '#fff',
+  },
+  dropdownMenu: {
+    position: 'absolute',
+    top: 50,
+    right: 0,
+    zIndex: 101,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 8,
+    elevation: 5,
+  },
+  dropdownContent: {
+    backgroundColor: '#fff',
+    borderRadius: 12,
+    paddingVertical: 8,
+    minWidth: 200,
+  },
+  dropdownHeader: {
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#e5e7eb',
+  },
+  dropdownEmail: {
+    fontSize: 14,
+    color: '#6b7280',
+  },
+  dropdownItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+  },
+  dropdownText: {
+    fontSize: 15,
+    color: '#1f2937',
+  },
+  dropdownDivider: {
+    height: 1,
+    backgroundColor: '#e5e7eb',
+    marginVertical: 4,
   },
   floatingButton: {
     position: 'absolute',

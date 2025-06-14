@@ -1,72 +1,46 @@
-# Outfit Analysis Module
+# Module Outfit Analysis
 
-Module d'analyse de tenue par IA pour l'application Vêtements.
+## Description
+Module d'analyse IA des tenues vestimentaires. Permet de capturer des photos, analyser le style et obtenir des recommandations.
 
-## Fonctionnalités
+## Interface publique
 
-- 📸 Capture photo ou sélection depuis la galerie
-- 🤖 Analyse IA complète de la tenue
-- 🎨 Détection des couleurs et palette
-- 👔 Identification des vêtements
-- 🌡️ Recommandations de température
-- 💡 Suggestions d'amélioration
-- 💾 Sauvegarde dans la base de données
+### Composants
+- `CameraScreen` - Écran de capture photo
+- `AnalysisResultScreen` - Affichage des résultats d'analyse
+- `AddItemTypeSelector` - Sélecteur de type d'item
+- `ClothingItemForm` - Formulaire d'ajout de vêtement
+- `DailyRecommendation` - Widget de recommandation quotidienne
 
-## Structure
-```
-outfit-analysis/
-├── components/          # Composants UI
-│   ├── CameraScreen.js     # Écran de capture photo
-│   └── AnalysisResultScreen.js # Écran de résultats
-├── hooks/              # Hooks personnalisés
-│   └── useOutfitAnalysis.js # Logique d'analyse
-├── api.js             # API calls vers le backend
-├── types.js           # Types et constantes
-├── __tests__/         # Tests unitaires
-└── index.js           # Exports du module
-```
+### Hooks
+- `useOutfitAnalysis()` - Hook principal pour la gestion des analyses
+
+### API
+- `outfitAnalysisAPI.analyzeImage(imageUri, userId)` - Analyser une photo
+- `outfitAnalysisAPI.getUserAnalyses(userId)` - Récupérer les analyses
+- `outfitAnalysisAPI.getAnalysis(analysisId)` - Détail d'une analyse
+- `outfitAnalysisAPI.deleteAnalysis(analysisId)` - Supprimer une analyse
+- `outfitAnalysisAPI.addToWardrobe(analysisId, itemData)` - Ajouter à la garde-robe
+- `outfitAnalysisAPI.getRecommendations(userId)` - Obtenir des recommandations
 
 ## Utilisation
 
 ```javascript
-import { CameraScreen, useOutfitAnalysis } from '@/features/outfit-analysis';
+import { useOutfitAnalysis, CameraScreen } from '@/features/outfit-analysis';
 
-// Dans un composant
-const { analyzeOutfit, loading } = useOutfitAnalysis();
-
-// Analyser une photo
-const result = await analyzeOutfit(imageUri, userId);
+function MyComponent() {
+  const { analyzeOutfit, analyses, loading } = useOutfitAnalysis();
+  
+  const handleCapture = async (imageUri) => {
+    const result = await analyzeOutfit(imageUri, userId);
+    // ...
+  };
+}
 ```
 
-## API Backend
-
-### Endpoints
-- `POST /api/outfit-analysis/analyze` - Analyser une image
-- `GET /api/outfit-analysis/{id}/status` - Statut d'analyse
-- `GET /api/outfit-analysis/{id}` - Détails complets
-
-## Base de données
-
-### Table `outfit_analyses`
-Stocke toutes les analyses avec :
-- Métadonnées de l'image
-- Résultats de l'analyse IA
-- Caractéristiques détectées
-- Recommandations
-
-### Bucket Storage `outfit-analyses`
-Stockage des photos de tenues uploadées.
-
-## Workflow
-
-1. L'utilisateur prend une photo ou sélectionne depuis la galerie
-2. L'image est uploadée vers Supabase Storage
-3. Une entrée est créée dans la base avec statut "pending"
-4. L'API backend analyse l'image avec l'IA
-5. Les résultats sont sauvegardés et affichés
-6. L'utilisateur peut sauvegarder dans sa garde-robe
-
-## Permissions
-
-- Caméra : Pour prendre des photos
-- Galerie : Pour sélectionner des images existantes
+## État actuel
+- ✅ Capture photo
+- ✅ Analyse IA (mockée)
+- ✅ Recommandations (mockées)
+- ✅ Ajout à la garde-robe
+- ❌ Analyse IA réelle (en attente backend)

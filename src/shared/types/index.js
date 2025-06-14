@@ -1,40 +1,23 @@
-// Shared types for the application
-// When migrating to TypeScript, these will become proper interfaces
+// Types partagés entre modules
+// Uniquement les types nécessaires à la communication inter-modules
 
-// User type
-export const UserType = {
-  id: '',
-  email: '',
-  fullName: '',
-  createdAt: '',
+export const UserTypes = {
+  id: 'string',
+  email: 'string',
+  name: 'string',
 };
 
-// Product type
-export const ProductType = {
-  id: '',
-  name: '',
-  price: 0,
-  description: '',
-  imageUrl: '',
-  category: '',
-  sizes: [],
-  colors: [],
+export const ClothingTypes = {
+  id: 'string',
+  name: 'string',
+  imageUrl: 'string',
+  userId: 'string',
 };
 
-// Cart item type
-export const CartItemType = {
-  productId: '',
-  quantity: 0,
-  size: '',
-  color: '',
-};
-
-// Order type
-export const OrderType = {
-  id: '',
-  userId: '',
-  items: [],
-  total: 0,
-  status: '',
-  createdAt: '',
+export const AnalysisTypes = {
+  id: 'string',
+  userId: 'string',
+  imageUrl: 'string',
+  status: 'pending' | 'processing' | 'completed' | 'failed',
+  result: 'object',
 };

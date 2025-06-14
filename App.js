@@ -3,6 +3,7 @@ import { NavigationContainer } from '@react-navigation/native';
 import { createStackNavigator } from '@react-navigation/stack';
 import { AuthProvider, useAuth, LoginScreen, SignUpScreen } from './src/features/auth';
 import HomeScreen from './src/screens/HomeScreen';
+import RecommendationDetailScreen from './src/screens/RecommendationDetailScreen';
 import { 
   CameraScreen, 
   AnalysisResultScreen, 
@@ -44,6 +45,13 @@ function MainStack() {
         }}
       />
       <Stack.Screen name="AnalysisResult" component={AnalysisResultScreen} />
+      <Stack.Screen 
+        name="RecommendationDetail" 
+        component={RecommendationDetailScreen}
+        options={{
+          animation: 'slide_from_right',
+        }}
+      />
       <Stack.Screen 
         name="ClothingItemForm" 
         component={ClothingItemForm}

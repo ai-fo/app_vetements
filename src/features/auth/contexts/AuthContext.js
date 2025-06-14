@@ -1,8 +1,9 @@
-import React, { createContext, useState, useEffect, useContext } from 'react';
+import React, { createContext, useState, useEffect } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { authAPI } from '../api';
+import { apiClient } from '../../../shared/api/client';
 import { supabase } from '../../../shared/api/supabase';
 import * as WebBrowser from 'expo-web-browser';
-import * as AuthSession from 'expo-auth-session';
 import { Platform } from 'react-native';
 
 WebBrowser.maybeCompleteAuthSession();
@@ -15,13 +16,16 @@ export const AuthProvider = ({ children }) => {
 
   useEffect(() => {
     checkUser();
+    
+    // Écouter les changements d'auth Supabase
     const { data: authListener } = supabase.auth.onAuthStateChange(async (event, session) => {
       if (session?.user) {
         setUser(session.user);
         await AsyncStorage.setItem('user', JSON.stringify(session.user));
-      } else {
+      } else if (!session && event === 'SIGNED_OUT') {
         setUser(null);
         await AsyncStorage.removeItem('user');
+        await AsyncStorage.removeItem('authToken');
       }
     });
 
@@ -32,8 +36,32 @@ export const AuthProvider = ({ children }) => {
 
   const checkUser = async () => {
     try {
+      // D'abord vérifier Supabase
       const { data: { session } } = await supabase.auth.getSession();
-      setUser(session?.user || null);
+      if (session?.user) {
+        setUser(session.user);
+        await AsyncStorage.setItem('user', JSON.stringify(session.user));
+        setLoading(false);
+        return;
+      }
+
+      // Sinon vérifier notre système d'auth custom
+      const storedUser = await AsyncStorage.getItem('user');
+      const storedToken = await AsyncStorage.getItem('authToken');
+      
+      if (storedUser && storedToken) {
+        setUser(JSON.parse(storedUser));
+        apiClient.setAuthToken(storedToken);
+        
+        // Vérifier si le token est toujours valide
+        const { data, error } = await authAPI.getProfile();
+        if (error) {
+          // Token invalide, déconnecter l'utilisateur
+          await signOut();
+        } else {
+          setUser(data);
+        }
+      }
     } catch (error) {
       console.error('Error checking user:', error);
     } finally {
@@ -41,36 +69,54 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  const signUp = async (email, password) => {
+  const signUp = async (email, password, name = '') => {
     try {
-      const { data, error } = await supabase.auth.signUp({
-        email,
-        password,
-      });
-      if (error) throw error;
-      return { data, error: null };
+      const { data, error } = await authAPI.register(email, password, name);
+      if (error) throw new Error(error);
+      
+      if (data) {
+        setUser(data.user);
+        await AsyncStorage.setItem('user', JSON.stringify(data.user));
+        await apiClient.setAuthToken(data.token);
+      }
+      
+      return { data: data?.user, error: null };
     } catch (error) {
-      return { data: null, error };
+      return { data: null, error: error.message };
     }
   };
 
   const signIn = async (email, password) => {
     try {
-      const { data, error } = await supabase.auth.signInWithPassword({
-        email,
-        password,
-      });
-      if (error) throw error;
-      return { data, error: null };
+      const { data, error } = await authAPI.login(email, password);
+      if (error) throw new Error(error);
+      
+      if (data) {
+        setUser(data.user);
+        await AsyncStorage.setItem('user', JSON.stringify(data.user));
+        await apiClient.setAuthToken(data.token);
+      }
+      
+      return { data: data?.user, error: null };
     } catch (error) {
-      return { data: null, error };
+      return { data: null, error: error.message };
     }
   };
 
   const signOut = async () => {
     try {
-      const { error } = await supabase.auth.signOut();
-      if (error) throw error;
+      // Déconnexion Supabase
+      const { error: supabaseError } = await supabase.auth.signOut();
+      if (supabaseError) console.error('Supabase signout error:', supabaseError);
+      
+      // Déconnexion API custom
+      await authAPI.logout();
+      
+      // Nettoyer l'état local
+      setUser(null);
+      await AsyncStorage.removeItem('user');
+      await AsyncStorage.removeItem('authToken');
+      await apiClient.setAuthToken(null);
     } catch (error) {
       console.error('Error signing out:', error);
     }
