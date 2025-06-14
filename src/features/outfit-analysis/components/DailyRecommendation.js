@@ -16,14 +16,23 @@ import { useAuth } from '../../auth';
 import { ItemType } from '../../virtual-wardrobe/types';
 import { useMood } from '../hooks/useMood';
 import { useWeather } from '../hooks/useWeather';
+import { useRecommendations } from '../hooks/useRecommendations';
+import NeedsInput from './NeedsInput';
 
 export default function DailyRecommendation({ analyses, navigation }) {
   const { user } = useAuth();
-  const { items, loading: wardrobeLoading } = useWardrobe(user?.id);
   const { mood } = useMood();
+  const { 
+    recommendations, 
+    generateNeedsBasedRecommendation,
+    refreshRecommendations: refreshRecs,
+    loading: recsLoading
+  } = useRecommendations(user?.id);
   const [recommendedOutfit, setRecommendedOutfit] = useState(null);
   const [isMultiplePieces, setIsMultiplePieces] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [showNeedsInput, setShowNeedsInput] = useState(false);
+  const [userNeeds, setUserNeeds] = useState(null);
   const { weather, loading: weatherLoading, error: weatherError, refreshWeather } = useWeather();
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const slideAnim = useRef(new Animated.Value(50)).current;
@@ -39,101 +48,33 @@ export default function DailyRecommendation({ analyses, navigation }) {
     return labels[season] || season;
   };
 
-  // La fonction getWeatherIcon n'est plus nécessaire car le service retourne déjà l'icône
-
-  // getWeatherData n'est plus nécessaire, on utilise le hook useWeather
-
-  const generateRecommendation = () => {
-    if (!items || items.length === 0) return;
-    
-    const outfits = items.filter(item => item.itemType === ItemType.OUTFIT);
-    const tops = items.filter(item => item.category?.toLowerCase().includes('haut') || 
-                                     item.category?.toLowerCase().includes('shirt') ||
-                                     item.category?.toLowerCase().includes('pull'));
-    const bottoms = items.filter(item => item.category?.toLowerCase().includes('pantalon') || 
-                                        item.category?.toLowerCase().includes('jean') ||
-                                        item.category?.toLowerCase().includes('jupe'));
-    const shoes = items.filter(item => item.category?.toLowerCase().includes('chaussure') ||
-                                      item.category?.toLowerCase().includes('basket'));
-    
-    // Décider aléatoirement si on prend une tenue complète ou des pièces séparées
-    const useCompleteOutfit = outfits.length > 0 && Math.random() > 0.5;
-    
-    if (useCompleteOutfit) {
-      // Tenue complète
-      const randomIndex = Math.floor(Math.random() * outfits.length);
-      setRecommendedOutfit(outfits[randomIndex]);
-      setIsMultiplePieces(false);
-    } else if (tops.length > 0 && bottoms.length > 0) {
-      // Combinaison de pièces
-      const combination = {
-        id: 'combination-' + Date.now(),
-        name: 'Ensemble recommandé',
-        pieces: []
-      };
-      
-      // Sélectionner un haut
-      const topIndex = Math.floor(Math.random() * tops.length);
-      combination.pieces.push(tops[topIndex]);
-      
-      // Sélectionner un bas
-      const bottomIndex = Math.floor(Math.random() * bottoms.length);
-      combination.pieces.push(bottoms[bottomIndex]);
-      
-      // Ajouter des chaussures si disponibles
-      if (shoes.length > 0) {
-        const shoeIndex = Math.floor(Math.random() * shoes.length);
-        combination.pieces.push(shoes[shoeIndex]);
-      }
-      
-      setRecommendedOutfit(combination);
-      setIsMultiplePieces(true);
-    } else {
-      // Fallback: n'importe quel item
-      const randomIndex = Math.floor(Math.random() * items.length);
-      setRecommendedOutfit(items[randomIndex]);
-      setIsMultiplePieces(false);
-    }
-  };
 
   useEffect(() => {
-    if (!wardrobeLoading && !weatherLoading) {
-      setTimeout(() => {
-        if (items && items.length > 0) {
-          // Simple sélection aléatoire pour l'instant
-          const outfits = items.filter(item => item.itemType === ItemType.OUTFIT);
-          
-          if (outfits.length > 0) {
-            const randomIndex = Math.floor(Math.random() * outfits.length);
-            setRecommendedOutfit(outfits[randomIndex]);
-            setIsMultiplePieces(false);
-          } else {
-            // Si pas de tenues complètes, prendre n'importe quel item
-            const randomIndex = Math.floor(Math.random() * items.length);
-            setRecommendedOutfit(items[randomIndex]);
-            setIsMultiplePieces(false);
-          }
-        }
-        
-        setLoading(false);
-        
-        // Animations d'entrée
-        Animated.parallel([
-          Animated.timing(fadeAnim, {
-            toValue: 1,
-            duration: 600,
-            useNativeDriver: true,
-          }),
-          Animated.spring(slideAnim, {
-            toValue: 0,
-            friction: 8,
-            tension: 40,
-            useNativeDriver: true,
-          }),
-        ]).start();
-      }, 1000);
+    if (!recsLoading && !weatherLoading && recommendations && recommendations.length > 0) {
+      // Utiliser la première recommandation
+      const firstRec = recommendations[0];
+      setRecommendedOutfit(firstRec);
+      setIsMultiplePieces(!!firstRec.pieces);
+      setLoading(false);
+      
+      // Animations d'entrée
+      Animated.parallel([
+        Animated.timing(fadeAnim, {
+          toValue: 1,
+          duration: 600,
+          useNativeDriver: true,
+        }),
+        Animated.spring(slideAnim, {
+          toValue: 0,
+          friction: 8,
+          tension: 40,
+          useNativeDriver: true,
+        }),
+      ]).start();
+    } else if (!recsLoading && !weatherLoading) {
+      setLoading(false);
     }
-  }, [items, wardrobeLoading, weatherLoading]);
+  }, [recommendations, recsLoading, weatherLoading]);
 
   const handlePress = (outfit) => {
     // Passer les informations nécessaires à la page de détail
@@ -148,7 +89,7 @@ export default function DailyRecommendation({ analyses, navigation }) {
   };
 
 
-  const handleRefresh = () => {
+  const handleRefresh = async () => {
     Animated.sequence([
       Animated.timing(fadeAnim, {
         toValue: 0.5,
@@ -162,23 +103,65 @@ export default function DailyRecommendation({ analyses, navigation }) {
       }),
     ]).start();
 
-    // Générer une nouvelle recommandation
-    if (items && items.length > 0) {
-      // Simple sélection aléatoire pour l'instant
-      const outfits = items.filter(item => item.itemType === ItemType.OUTFIT);
+    // Rafraîchir les recommandations et la météo
+    await refreshRecs();
+    refreshWeather();
+    
+    // Réinitialiser les besoins utilisateur
+    setUserNeeds(null);
+  };
+
+  const handleNeedsSubmit = async (needs) => {
+    setUserNeeds(needs);
+    setShowNeedsInput(false);
+    
+    // Afficher un état de chargement
+    setLoading(true);
+    
+    // Animation de transition
+    Animated.timing(fadeAnim, {
+      toValue: 0.5,
+      duration: 200,
+      useNativeDriver: true,
+    }).start();
+    
+    try {
+      // Générer une recommandation basée sur les besoins
+      const recommendation = await generateNeedsBasedRecommendation(needs);
       
-      if (outfits.length > 0) {
-        const randomIndex = Math.floor(Math.random() * outfits.length);
-        setRecommendedOutfit(outfits[randomIndex]);
-        setIsMultiplePieces(false);
-      } else {
-        const randomIndex = Math.floor(Math.random() * items.length);
-        setRecommendedOutfit(items[randomIndex]);
-        setIsMultiplePieces(false);
+      if (recommendation) {
+        // Vérifier si c'est une combinaison de pièces
+        setIsMultiplePieces(!!recommendation.isMultiplePieces);
+        setRecommendedOutfit(recommendation);
+        
+        // Animation d'apparition
+        Animated.sequence([
+          Animated.timing(fadeAnim, {
+            toValue: 0,
+            duration: 100,
+            useNativeDriver: true,
+          }),
+          Animated.parallel([
+            Animated.timing(fadeAnim, {
+              toValue: 1,
+              duration: 600,
+              useNativeDriver: true,
+            }),
+            Animated.spring(slideAnim, {
+              toValue: 0,
+              friction: 8,
+              tension: 40,
+              useNativeDriver: true,
+            }),
+          ]),
+        ]).start();
       }
-      
-      // Rafraîchir la météo
-      refreshWeather();
+    } catch (error) {
+      console.error('Error generating needs-based recommendation:', error);
+      // Fallback sur une recommandation normale
+      handleRefresh();
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -240,13 +223,30 @@ export default function DailyRecommendation({ analyses, navigation }) {
       {/* En-tête avec météo simplifiée */}
       <View style={styles.header}>
         <View style={styles.titleRow}>
-          <Text style={styles.title}>Tenue du jour</Text>
-          {weather && (
-            <View style={styles.weatherSimple}>
-              <Ionicons name={weather.icon} size={20} color="#fff" />
-              <Text style={styles.weatherTemp}>{weather.temp}°</Text>
-            </View>
-          )}
+          <View style={styles.titleSection}>
+            <Text style={styles.title}>Tenue du jour</Text>
+            {userNeeds && (
+              <View style={styles.needsBadge}>
+                <Ionicons name="chatbubble" size={12} color="#667eea" />
+                <Text style={styles.needsText} numberOfLines={1}>{userNeeds}</Text>
+              </View>
+            )}
+          </View>
+          <View style={styles.headerActions}>
+            <TouchableOpacity 
+              style={styles.needsButton}
+              onPress={() => setShowNeedsInput(true)}
+              activeOpacity={0.7}
+            >
+              <Ionicons name="chatbubble-ellipses" size={20} color="#fff" />
+            </TouchableOpacity>
+            {weather && (
+              <View style={styles.weatherSimple}>
+                <Ionicons name={weather.icon} size={20} color="#fff" />
+                <Text style={styles.weatherTemp}>{weather.temp}°</Text>
+              </View>
+            )}
+          </View>
         </View>
       </View>
 
@@ -327,6 +327,13 @@ export default function DailyRecommendation({ analyses, navigation }) {
           </LinearGradient>
         </View>
       </View>
+      
+      {/* Composant de saisie des besoins */}
+      <NeedsInput 
+        isVisible={showNeedsInput}
+        onSubmit={handleNeedsSubmit}
+        onClose={() => setShowNeedsInput(false)}
+      />
     </Animated.View>
   );
 }
@@ -342,12 +349,51 @@ const styles = StyleSheet.create({
   titleRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    alignItems: 'center',
+    alignItems: 'flex-start',
+  },
+  titleSection: {
+    flex: 1,
   },
   title: {
     fontSize: 24,
     fontWeight: 'bold',
     color: '#fff',
+  },
+  needsBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(255,255,255,0.95)',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 14,
+    marginTop: 8,
+    gap: 6,
+    maxWidth: '85%',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 3,
+    elevation: 3,
+  },
+  needsText: {
+    fontSize: 13,
+    color: '#667eea',
+    fontWeight: '600',
+  },
+  headerActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  },
+  needsButton: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: 'rgba(255,255,255,0.2)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.3)',
   },
   weatherSimple: {
     flexDirection: 'row',

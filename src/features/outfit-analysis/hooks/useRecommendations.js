@@ -139,11 +139,139 @@ export const useRecommendations = (userId) => {
     generateRecommendations();
   };
 
+  // Générer des recommandations basées sur les besoins utilisateur
+  const generateNeedsBasedRecommendation = async (userNeeds) => {
+    setLoading(true);
+    
+    try {
+      const weatherData = await fetchWeatherData();
+      setWeather(weatherData);
+      
+      if (!items || items.length === 0) {
+        setRecommendations([]);
+        return null;
+      }
+      
+      const currentSeason = getCurrentSeason();
+      
+      // Analyser les besoins de l'utilisateur
+      const needsLower = userNeeds.toLowerCase();
+      
+      // Mots-clés pour différents contextes
+      const contextKeywords = {
+        professional: ['entretien', 'professionnel', 'bureau', 'travail', 'réunion', 'présentation', 'client', 'business'],
+        casual: ['décontracté', 'relax', 'casual', 'amis', 'sortie', 'balade', 'week-end'],
+        sport: ['sport', 'gym', 'course', 'fitness', 'entraînement', 'yoga', 'marche'],
+        romantic: ['rendez-vous', 'romantique', 'dîner', 'soirée', 'date', 'restaurant'],
+        party: ['fête', 'soirée', 'anniversaire', 'célébration', 'club', 'danse'],
+        comfort: ['confort', 'maison', 'cosy', 'détente', 'repos', 'chill'],
+      };
+      
+      // Déterminer le contexte principal
+      let mainContext = 'casual';
+      let contextScore = {};
+      
+      Object.entries(contextKeywords).forEach(([context, keywords]) => {
+        contextScore[context] = keywords.filter(keyword => needsLower.includes(keyword)).length;
+      });
+      
+      mainContext = Object.entries(contextScore)
+        .sort(([,a], [,b]) => b - a)[0][0];
+      
+      // Calculer les scores avec prise en compte du contexte
+      const scoredItems = items.map(item => {
+        let score = calculateRelevanceScore(item, weatherData, currentSeason);
+        
+        // Bonus pour le contexte approprié
+        const itemCategory = (item.category || '').toLowerCase();
+        const itemStyle = (item.style || '').toLowerCase();
+        const itemDescription = (item.description || '').toLowerCase();
+        
+        switch (mainContext) {
+          case 'professional':
+            if (itemCategory.includes('formel') || itemStyle.includes('élégant') || 
+                itemDescription.includes('bureau') || itemDescription.includes('professionnel')) {
+              score += 50;
+            }
+            break;
+          case 'sport':
+            if (itemCategory.includes('sport') || itemStyle.includes('sportif') || 
+                itemDescription.includes('sport') || itemDescription.includes('fitness')) {
+              score += 50;
+            }
+            break;
+          case 'romantic':
+            if (itemStyle.includes('élégant') || itemStyle.includes('chic') || 
+                itemDescription.includes('soirée')) {
+              score += 40;
+            }
+            break;
+          case 'party':
+            if (itemStyle.includes('festif') || itemDescription.includes('soirée') || 
+                itemDescription.includes('fête')) {
+              score += 40;
+            }
+            break;
+          case 'comfort':
+            if (itemStyle.includes('confortable') || itemDescription.includes('confort') || 
+                itemCategory.includes('casual')) {
+              score += 40;
+            }
+            break;
+        }
+        
+        return { ...item, score };
+      });
+      
+      // Trier et sélectionner le meilleur
+      scoredItems.sort((a, b) => b.score - a.score);
+      
+      // Privilégier les tenues complètes pour les besoins spécifiques
+      const outfits = scoredItems.filter(item => item.itemType === ItemType.OUTFIT);
+      let bestRecommendation = outfits[0] || scoredItems[0];
+      
+      // Si pas de tenue complète appropriée, créer une combinaison
+      if (!outfits.length || outfits[0].score < 50) {
+        const tops = scoredItems.filter(item => 
+          item.category?.toLowerCase().includes('haut') || 
+          item.category?.toLowerCase().includes('shirt') ||
+          item.category?.toLowerCase().includes('chemise')
+        );
+        const bottoms = scoredItems.filter(item => 
+          item.category?.toLowerCase().includes('pantalon') || 
+          item.category?.toLowerCase().includes('jean') ||
+          item.category?.toLowerCase().includes('jupe')
+        );
+        
+        if (tops.length > 0 && bottoms.length > 0) {
+          bestRecommendation = {
+            id: 'needs-combination-' + Date.now(),
+            name: `Tenue ${mainContext === 'professional' ? 'professionnelle' : 
+                         mainContext === 'sport' ? 'sportive' : 
+                         mainContext === 'romantic' ? 'romantique' : 'adaptée'}`,
+            pieces: [tops[0], bottoms[0]],
+            isMultiplePieces: true,
+            context: mainContext,
+            userNeeds: userNeeds
+          };
+        }
+      }
+      
+      setRecommendations([bestRecommendation]);
+      return bestRecommendation;
+    } catch (error) {
+      console.error('Error generating needs-based recommendation:', error);
+      return null;
+    } finally {
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
-    if (!wardrobeLoading) {
+    if (!wardrobeLoading && items && items.length > 0) {
       generateRecommendations();
     }
-  }, [items, wardrobeLoading]);
+  }, [wardrobeLoading]);
 
   return {
     recommendations,
@@ -151,5 +279,6 @@ export const useRecommendations = (userId) => {
     loading: loading || wardrobeLoading,
     markAsWorn,
     refreshRecommendations,
+    generateNeedsBasedRecommendation,
   };
 };

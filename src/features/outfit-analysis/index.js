@@ -4,6 +4,7 @@ export { default as AnalysisResultScreen } from './components/AnalysisResultScre
 export { default as DailyRecommendation } from './components/DailyRecommendation';
 export { default as AddItemTypeSelector } from './components/AddItemTypeSelector';
 export { default as ClothingItemForm } from './components/ClothingItemForm';
+export { default as NeedsInput } from './components/NeedsInput';
 export { useOutfitAnalysis } from './hooks/useOutfitAnalysis';
 export { useRecommendations } from './hooks/useRecommendations';
 export { useMood } from './hooks/useMood';
