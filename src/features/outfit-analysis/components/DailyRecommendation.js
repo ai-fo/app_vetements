@@ -16,7 +16,6 @@ import { useAuth } from '../../auth';
 import { ItemType } from '../../virtual-wardrobe/types';
 import { useMood } from '../hooks/useMood';
 import { useWeather } from '../hooks/useWeather';
-import WeatherWidget from './WeatherWidget';
 
 export default function DailyRecommendation({ analyses, navigation }) {
   const { user } = useAuth();
@@ -238,16 +237,17 @@ export default function DailyRecommendation({ analyses, navigation }) {
         }
       ]}
     >
-      {/* En-tête avec météo */}
+      {/* En-tête avec météo simplifiée */}
       <View style={styles.header}>
-        <Text style={styles.title}>Tenue du jour</Text>
-        
-        <WeatherWidget 
-          weather={weather}
-          loading={weatherLoading}
-          error={weatherError}
-          onRefresh={refreshWeather}
-        />
+        <View style={styles.titleRow}>
+          <Text style={styles.title}>Tenue du jour</Text>
+          {weather && (
+            <View style={styles.weatherSimple}>
+              <Ionicons name={weather.icon} size={20} color="#fff" />
+              <Text style={styles.weatherTemp}>{weather.temp}°</Text>
+            </View>
+          )}
+        </View>
       </View>
 
       {/* Carte de recommandation unique */}
@@ -339,11 +339,29 @@ const styles = StyleSheet.create({
   header: {
     marginBottom: 15,
   },
+  titleRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
   title: {
     fontSize: 24,
     fontWeight: 'bold',
     color: '#fff',
-    marginBottom: 10,
+  },
+  weatherSimple: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(255,255,255,0.15)',
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 20,
+    gap: 6,
+  },
+  weatherTemp: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#fff',
   },
   recommendationCard: {
     width: '100%',

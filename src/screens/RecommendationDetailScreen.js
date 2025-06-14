@@ -186,6 +186,48 @@ export default function RecommendationDetailScreen() {
           )}
         </View>
 
+        {/* Détails météo */}
+        {weather && (
+          <View style={styles.weatherSection}>
+            <Text style={styles.sectionTitle}>Météo du jour</Text>
+            <View style={styles.weatherCard}>
+              <View style={styles.weatherMain}>
+                <Ionicons name={weather.icon} size={48} color="#667eea" />
+                <View style={styles.weatherMainInfo}>
+                  <Text style={styles.weatherTemp}>{weather.temp}°C</Text>
+                  <Text style={styles.weatherFeelsLike}>Ressenti {weather.feels_like}°</Text>
+                  <Text style={styles.weatherDesc}>{weather.description}</Text>
+                </View>
+              </View>
+              
+              <View style={styles.weatherDetailsGrid}>
+                <View style={styles.weatherDetail}>
+                  <Ionicons name="water" size={20} color="#6b7280" />
+                  <Text style={styles.weatherDetailLabel}>Humidité</Text>
+                  <Text style={styles.weatherDetailValue}>{weather.humidity}%</Text>
+                </View>
+                <View style={styles.weatherDetail}>
+                  <Ionicons name="speedometer" size={20} color="#6b7280" />
+                  <Text style={styles.weatherDetailLabel}>Vent</Text>
+                  <Text style={styles.weatherDetailValue}>{weather.wind}km/h</Text>
+                </View>
+                <View style={styles.weatherDetail}>
+                  <Ionicons name="sunny-outline" size={20} color="#6b7280" />
+                  <Text style={styles.weatherDetailLabel}>UV</Text>
+                  <Text style={styles.weatherDetailValue}>{weather.uv || 'Modéré'}</Text>
+                </View>
+              </View>
+              
+              {(weather.city || weather.location) && (
+                <View style={styles.weatherLocation}>
+                  <Ionicons name="location" size={16} color="#9ca3af" />
+                  <Text style={styles.weatherLocationText}>{weather.city || weather.location}</Text>
+                </View>
+              )}
+            </View>
+          </View>
+        )}
+
         {/* Raisons de la recommandation */}
         <View style={styles.reasonsSection}>
           <Text style={styles.sectionTitle}>Pourquoi cette tenue ?</Text>
@@ -435,5 +477,76 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '500',
     color: '#fff',
+  },
+  weatherSection: {
+    paddingHorizontal: 20,
+    paddingTop: 20,
+    paddingBottom: 10,
+  },
+  weatherCard: {
+    backgroundColor: '#fff',
+    borderRadius: 16,
+    padding: 20,
+  },
+  weatherMain: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 20,
+    gap: 16,
+  },
+  weatherMainInfo: {
+    flex: 1,
+  },
+  weatherTemp: {
+    fontSize: 32,
+    fontWeight: '700',
+    color: '#1f2937',
+  },
+  weatherFeelsLike: {
+    fontSize: 14,
+    color: '#6b7280',
+    marginTop: 2,
+  },
+  weatherDesc: {
+    fontSize: 16,
+    color: '#4b5563',
+    marginTop: 4,
+    textTransform: 'capitalize',
+  },
+  weatherDetailsGrid: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    paddingTop: 20,
+    borderTopWidth: 1,
+    borderTopColor: '#e5e7eb',
+  },
+  weatherDetail: {
+    alignItems: 'center',
+    flex: 1,
+  },
+  weatherDetailLabel: {
+    fontSize: 12,
+    color: '#6b7280',
+    marginTop: 4,
+  },
+  weatherDetailValue: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#1f2937',
+    marginTop: 2,
+  },
+  weatherLocation: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 6,
+    marginTop: 16,
+    paddingTop: 16,
+    borderTopWidth: 1,
+    borderTopColor: '#e5e7eb',
+  },
+  weatherLocationText: {
+    fontSize: 14,
+    color: '#9ca3af',
   },
 });
