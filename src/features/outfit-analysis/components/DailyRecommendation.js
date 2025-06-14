@@ -334,7 +334,7 @@ export default function DailyRecommendation({ analyses, navigation }) {
 const styles = StyleSheet.create({
   container: {
     marginBottom: 10,
-    marginTop: 50,
+    marginTop: 20,
   },
   header: {
     marginBottom: 15,

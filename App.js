@@ -4,6 +4,7 @@ import { createStackNavigator } from '@react-navigation/stack';
 import { AuthProvider, useAuth, LoginScreen, SignUpScreen } from './src/features/auth';
 import HomeScreen from './src/screens/HomeScreen';
 import RecommendationDetailScreen from './src/screens/RecommendationDetailScreen';
+import ProfileScreen from './src/screens/ProfileScreen';
 import { 
   CameraScreen, 
   AnalysisResultScreen, 
@@ -71,6 +72,13 @@ function MainStack() {
         component={ItemEditor}
         options={{
           presentation: 'modal',
+        }}
+      />
+      <Stack.Screen 
+        name="Profile" 
+        component={ProfileScreen}
+        options={{
+          animation: 'slide_from_right',
         }}
       />
     </Stack.Navigator>
