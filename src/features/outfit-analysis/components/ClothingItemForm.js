@@ -13,7 +13,7 @@ import {
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
-import { supabase } from '../../../shared/api/supabase';
+import { wardrobeAPI } from '../../virtual-wardrobe/api';
 import { ItemType } from '../../virtual-wardrobe/types';
 
 const clothingTypes = [
@@ -46,32 +46,6 @@ export default function ClothingItemForm({ navigation, route }) {
   const [name, setName] = useState('');
   const [saving, setSaving] = useState(false);
 
-  const uploadImage = async () => {
-    try {
-      const fileName = `${userId}/clothing/${Date.now()}.jpg`;
-      const response = await fetch(imageUri);
-      const blob = await response.blob();
-      
-      const { data, error } = await supabase.storage
-        .from('outfit-analyses')
-        .upload(fileName, blob, {
-          contentType: 'image/jpeg',
-          upsert: false
-        });
-
-      if (error) throw error;
-
-      const { data: urlData } = supabase.storage
-        .from('outfit-analyses')
-        .getPublicUrl(fileName);
-
-      return urlData.publicUrl;
-    } catch (error) {
-      console.error('Upload error:', error);
-      throw error;
-    }
-  };
-
   const handleSave = async () => {
     if (!selectedType) {
       Alert.alert('Erreur', 'Veuillez sélectionner un type de vêtement');
@@ -80,23 +54,23 @@ export default function ClothingItemForm({ navigation, route }) {
 
     setSaving(true);
     try {
-      const imageUrl = await uploadImage();
+      // Créer l'item dans la garde-robe
+      const itemData = {
+        userId,
+        imageUrl: imageUri, // L'image sera uploadée par le backend
+        itemType: ItemType.SINGLE_PIECE,
+        category: selectedType,
+        colors: selectedColor ? [selectedColor] : [],
+        brand: brand.trim() || '',
+        name: name.trim() || '',
+        tags: [],
+        materials: [],
+        seasons: []
+      };
 
-      const { data, error } = await supabase
-        .from('clothing_items')
-        .insert({
-          user_id: userId,
-          image_url: imageUrl,
-          type: selectedType,
-          color: selectedColor,
-          brand: brand.trim() || null,
-          name: name.trim() || null,
-          tags: []
-        })
-        .select()
-        .single();
+      const { data, error } = await wardrobeAPI.createItem(itemData);
 
-      if (error) throw error;
+      if (error) throw new Error(error);
 
       navigation.reset({
         index: 0,

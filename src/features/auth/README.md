@@ -1,43 +1,45 @@
-# Auth Module
+# Module Auth
 
-Module d'authentification pour l'application Vêtements.
+## Description
+Module d'authentification gérant la connexion, l'inscription et la gestion des sessions utilisateur.
 
-## Structure
-```
-auth/
-├── components/       # Composants UI (LoginScreen, SignUpScreen)
-├── contexts/        # Context d'authentification
-├── hooks/           # Hook useAuth
-├── api.js          # API calls vers le backend
-├── types/          # Types TypeScript (à implémenter)
-├── __tests__/      # Tests unitaires
-└── index.js        # Exports du module
-```
+## Interface publique
+
+### Composants
+- `LoginScreen` - Écran de connexion
+- `SignUpScreen` - Écran d'inscription
+
+### Hooks
+- `useAuth()` - Hook principal pour accéder au contexte d'authentification
+
+### Context
+- `AuthProvider` - Provider à placer à la racine de l'app
+
+### API
+- `authAPI.login(email, password)` - Connexion utilisateur
+- `authAPI.register(email, password, name)` - Inscription
+- `authAPI.getProfile()` - Récupérer le profil
+- `authAPI.logout()` - Déconnexion
+- `authAPI.refreshToken(refreshToken)` - Rafraîchir le token
 
 ## Utilisation
 
 ```javascript
-import { useAuth, LoginScreen, authAPI } from '@/features/auth';
+import { useAuth, LoginScreen } from '@/features/auth';
 
-// Dans un composant
-const { user, signIn, signOut } = useAuth();
-
-// Appel API direct
-const result = await authAPI.login(email, password);
+function MyComponent() {
+  const { user, signIn, signOut } = useAuth();
+  
+  if (!user) {
+    return <LoginScreen />;
+  }
+  
+  // ...
+}
 ```
 
-## Interfaces
-
-### Context
-- `user`: Utilisateur actuel
-- `loading`: État de chargement
-- `signIn`: Fonction de connexion
-- `signUp`: Fonction d'inscription
-- `signOut`: Fonction de déconnexion
-- `signInWithGoogle`: Connexion Google OAuth
-
-### API
-- `authAPI.login(email, password)`
-- `authAPI.register(email, password, fullName)`
-- `authAPI.logout()`
-- `authAPI.getCurrentUser()`
+## État actuel
+- ✅ Authentification email/password (mockée)
+- ❌ OAuth Google (en attente backend)
+- ✅ Gestion des tokens
+- ✅ Persistance de session

@@ -9,42 +9,68 @@ import {
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
+import { useWardrobe } from '../../virtual-wardrobe/hooks/useWardrobe';
+import { useAuth } from '../../auth';
+import { ItemType } from '../../virtual-wardrobe/types';
 
 export default function DailyRecommendation({ analyses, navigation }) {
+  const { user } = useAuth();
+  const { items, loading: wardrobeLoading } = useWardrobe(user?.id);
   const [recommendedOutfit, setRecommendedOutfit] = useState(null);
   const [loading, setLoading] = useState(true);
   const [weather, setWeather] = useState(null);
 
+  const getSeasonLabel = (season) => {
+    const labels = {
+      'spring': 'Printemps',
+      'summer': 'Été',
+      'fall': 'Automne',
+      'winter': 'Hiver',
+      'all_season': 'Toutes saisons'
+    };
+    return labels[season] || season;
+  };
+
   useEffect(() => {
     // Simuler la récupération de la météo et la recommandation
-    setTimeout(() => {
-      // TODO: Activer quand le backend est prêt
-      // const recommendation = await getAIRecommendation(analyses, weather);
-      
-      // Mock de la météo du jour
-      const mockWeather = {
-        temp: 22,
-        condition: 'ensoleillé',
-        icon: 'sunny-outline'
-      };
-      setWeather(mockWeather);
+    if (!wardrobeLoading) {
+      setTimeout(() => {
+        // TODO: Activer quand le backend est prêt
+        // const recommendation = await getAIRecommendation(items, weather);
+        
+        // Mock de la météo du jour
+        const mockWeather = {
+          temp: 22,
+          condition: 'ensoleillé',
+          icon: 'sunny-outline'
+        };
+        setWeather(mockWeather);
 
-      // Sélection aléatoire d'une tenue pour la simulation
-      if (analyses && analyses.length > 0) {
-        const completedOutfits = analyses.filter(a => a.processing_status === 'completed');
-        if (completedOutfits.length > 0) {
-          const randomIndex = Math.floor(Math.random() * completedOutfits.length);
-          setRecommendedOutfit(completedOutfits[randomIndex]);
+        // Sélectionner une tenue depuis la garde-robe
+        if (items && items.length > 0) {
+          // Filtrer les tenues complètes
+          const outfits = items.filter(item => item.itemType === ItemType.OUTFIT);
+          
+          if (outfits.length > 0) {
+            // Sélection aléatoire d'une tenue
+            const randomIndex = Math.floor(Math.random() * outfits.length);
+            setRecommendedOutfit(outfits[randomIndex]);
+          } else {
+            // Si pas de tenues complètes, prendre n'importe quel item
+            const randomIndex = Math.floor(Math.random() * items.length);
+            setRecommendedOutfit(items[randomIndex]);
+          }
         }
-      }
-      
-      setLoading(false);
-    }, 1000);
-  }, [analyses]);
+        
+        setLoading(false);
+      }, 1000);
+    }
+  }, [items, wardrobeLoading]);
 
   const handlePress = () => {
     if (recommendedOutfit) {
-      navigation.navigate('AnalysisResult', { analysisId: recommendedOutfit.id });
+      // Naviguer vers l'écran de la garde-robe avec l'item sélectionné
+      navigation.navigate('WardrobeScreen', { selectedItemId: recommendedOutfit.id });
     }
   };
 
@@ -101,18 +127,18 @@ export default function DailyRecommendation({ analyses, navigation }) {
 
           <View style={styles.outfitContainer}>
             <Image 
-              source={{ uri: recommendedOutfit.image_url }} 
+              source={{ uri: recommendedOutfit.imageUrl }} 
               style={styles.outfitImage}
             />
             <View style={styles.outfitDetails}>
-              <Text style={styles.outfitStyle}>{recommendedOutfit.style || 'Style moderne'}</Text>
-              <Text style={styles.outfitCategory}>{recommendedOutfit.category || 'Casual'}</Text>
+              <Text style={styles.outfitStyle}>{recommendedOutfit.name || 'Tenue recommandée'}</Text>
+              <Text style={styles.outfitCategory}>{recommendedOutfit.brand || 'Style du jour'}</Text>
               
-              {recommendedOutfit.occasions && recommendedOutfit.occasions.length > 0 && (
+              {recommendedOutfit.seasons && recommendedOutfit.seasons.length > 0 && (
                 <View style={styles.occasionTags}>
-                  {recommendedOutfit.occasions.slice(0, 2).map((occasion, index) => (
+                  {recommendedOutfit.seasons.slice(0, 2).map((season, index) => (
                     <View key={index} style={styles.occasionTag}>
-                      <Text style={styles.occasionText}>{occasion}</Text>
+                      <Text style={styles.occasionText}>{getSeasonLabel(season)}</Text>
                     </View>
                   ))}
                 </View>
@@ -120,7 +146,9 @@ export default function DailyRecommendation({ analyses, navigation }) {
 
               <View style={styles.matchScore}>
                 <Ionicons name="star" size={16} color="#fbbf24" />
-                <Text style={styles.scoreText}>Parfait pour aujourd'hui</Text>
+                <Text style={styles.scoreText}>
+                  {recommendedOutfit.isFavorite ? 'Votre favori' : 'Parfait pour aujourd\'hui'}
+                </Text>
               </View>
             </View>
           </View>
