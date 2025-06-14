@@ -64,8 +64,10 @@ export default function HomeScreen() {
       <StatusBar style="light" />
       
       <ScrollView 
-        style={styles.scrollView} 
+        style={styles.scrollView}
+        contentContainerStyle={styles.scrollContent}
         showsVerticalScrollIndicator={false}
+        bounces={true}
       >
         <Animated.View style={[styles.content, { opacity: fadeAnim }]}>
           <DailyRecommendation analyses={analyses} navigation={navigation} />
@@ -148,10 +150,12 @@ const styles = StyleSheet.create({
   scrollView: {
     flex: 1,
   },
+  scrollContent: {
+    paddingBottom: 120, // Espace supplémentaire pour les boutons flottants et un peu de scroll
+  },
   content: {
     paddingTop: 60,
     paddingHorizontal: 20,
-    paddingBottom: 20,
   },
   floatingButtonsContainer: {
     position: 'absolute',
