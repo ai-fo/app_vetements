@@ -10,6 +10,7 @@ import {
   Platform,
   Keyboard,
   Dimensions,
+  SafeAreaView,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
@@ -107,12 +108,14 @@ export default function NeedsInput({ onSubmit, isVisible, onClose }) {
           colors={['#667eea', '#764ba2']}
           style={styles.gradient}
         >
-          <View style={styles.header}>
-            <Text style={styles.title}>Qu'avez-vous prévu aujourd'hui ?</Text>
-            <TouchableOpacity onPress={onClose} style={styles.closeButton}>
-              <Ionicons name="close" size={24} color="#fff" />
-            </TouchableOpacity>
-          </View>
+          <SafeAreaView style={styles.safeArea}>
+            <View style={styles.dragIndicator} />
+            <View style={styles.header}>
+              <Text style={styles.title}>Qu'avez-vous prévu aujourd'hui ?</Text>
+              <TouchableOpacity onPress={onClose} style={styles.closeButton}>
+                <Ionicons name="close" size={26} color="#fff" />
+              </TouchableOpacity>
+            </View>
 
           <Text style={styles.subtitle}>
             Dites-moi vos besoins et je vous suggère la tenue parfaite
@@ -163,6 +166,7 @@ export default function NeedsInput({ onSubmit, isVisible, onClose }) {
               </LinearGradient>
             </TouchableOpacity>
           </View>
+          </SafeAreaView>
         </LinearGradient>
       </Animated.View>
     </KeyboardAvoidingView>
@@ -179,15 +183,18 @@ const styles = StyleSheet.create({
     bottom: 0,
     left: 0,
     right: 0,
-    height: '75%',
+    top: '20%',
   },
   gradient: {
     flex: 1,
     borderTopLeftRadius: 30,
     borderTopRightRadius: 30,
-    paddingTop: 32,
+  },
+  safeArea: {
+    flex: 1,
+    paddingTop: 24,
     paddingBottom: 40,
-    paddingHorizontal: 24,
+    paddingHorizontal: 20,
   },
   header: {
     flexDirection: 'row',
@@ -201,12 +208,14 @@ const styles = StyleSheet.create({
     color: '#fff',
   },
   closeButton: {
-    width: 32,
-    height: 32,
-    borderRadius: 16,
+    width: 36,
+    height: 36,
+    borderRadius: 18,
     backgroundColor: 'rgba(255,255,255,0.2)',
     alignItems: 'center',
     justifyContent: 'center',
+    marginRight: -4,
+    marginTop: -4,
   },
   subtitle: {
     fontSize: 16,
@@ -264,5 +273,13 @@ const styles = StyleSheet.create({
     borderRadius: 22,
     alignItems: 'center',
     justifyContent: 'center',
+  },
+  dragIndicator: {
+    width: 40,
+    height: 4,
+    borderRadius: 2,
+    backgroundColor: 'rgba(255,255,255,0.3)',
+    alignSelf: 'center',
+    marginBottom: 16,
   },
 });
