@@ -24,7 +24,9 @@
               "com.googleusercontent.apps.612466735730-3a257kmveufsc6f476ais9djm5t36irg"
             ]
           }
-        ]
+        ],
+        "NSLocationWhenInUseUsageDescription": "Cette application utilise votre localisation pour vous fournir des informations météo personnalisées et des recommandations vestimentaires adaptées à votre région.",
+        "NSLocationAlwaysAndWhenInUseUsageDescription": "Cette application utilise votre localisation pour vous fournir des informations météo personnalisées et des recommandations vestimentaires adaptées à votre région."
       }
     },
     "android": {
@@ -33,7 +35,11 @@
         "backgroundColor": "#ffffff"
       },
       "edgeToEdgeEnabled": true,
-      "package": "com.anonymous.liquidapp"
+      "package": "com.anonymous.liquidapp",
+      "permissions": [
+        "ACCESS_COARSE_LOCATION",
+        "ACCESS_FINE_LOCATION"
+      ]
     },
     "web": {
       "favicon": "./assets/favicon.png"

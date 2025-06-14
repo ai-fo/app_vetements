@@ -15,6 +15,8 @@ import { useWardrobe } from '../../virtual-wardrobe/hooks/useWardrobe';
 import { useAuth } from '../../auth';
 import { ItemType } from '../../virtual-wardrobe/types';
 import { useMood } from '../hooks/useMood';
+import { useWeather } from '../hooks/useWeather';
+import WeatherWidget from './WeatherWidget';
 
 export default function DailyRecommendation({ analyses, navigation }) {
   const { user } = useAuth();
@@ -23,7 +25,7 @@ export default function DailyRecommendation({ analyses, navigation }) {
   const [recommendedOutfit, setRecommendedOutfit] = useState(null);
   const [isMultiplePieces, setIsMultiplePieces] = useState(false);
   const [loading, setLoading] = useState(true);
-  const [weather, setWeather] = useState(null);
+  const { weather, loading: weatherLoading, error: weatherError, refreshWeather } = useWeather();
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const slideAnim = useRef(new Animated.Value(50)).current;
 
@@ -38,37 +40,9 @@ export default function DailyRecommendation({ analyses, navigation }) {
     return labels[season] || season;
   };
 
-  const getWeatherIcon = (condition) => {
-    const icons = {
-      'ensoleillé': 'sunny',
-      'nuageux': 'cloud',
-      'pluvieux': 'rainy',
-      'neigeux': 'snow',
-      'orageux': 'thunderstorm'
-    };
-    return icons[condition] || 'partly-sunny';
-  };
+  // La fonction getWeatherIcon n'est plus nécessaire car le service retourne déjà l'icône
 
-  const getWeatherData = () => {
-    // TODO: Activer quand le backend est prêt
-    // const weatherData = await weatherAPI.getCurrentWeather();
-    
-    // Simulation de différentes conditions météo
-    const conditions = [
-      { temp: 22, condition: 'ensoleillé', description: 'Ciel dégagé' },
-      { temp: 18, condition: 'nuageux', description: 'Partiellement nuageux' },
-      { temp: 15, condition: 'pluvieux', description: 'Pluie légère' },
-      { temp: 8, condition: 'neigeux', description: 'Neige' },
-    ];
-    
-    const randomWeather = conditions[Math.floor(Math.random() * conditions.length)];
-    return {
-      ...randomWeather,
-      icon: getWeatherIcon(randomWeather.condition),
-      humidity: Math.floor(Math.random() * 40) + 40,
-      wind: Math.floor(Math.random() * 20) + 5,
-    };
-  };
+  // getWeatherData n'est plus nécessaire, on utilise le hook useWeather
 
   const generateRecommendation = () => {
     if (!items || items.length === 0) return;
@@ -124,11 +98,8 @@ export default function DailyRecommendation({ analyses, navigation }) {
   };
 
   useEffect(() => {
-    if (!wardrobeLoading) {
+    if (!wardrobeLoading && !weatherLoading) {
       setTimeout(() => {
-        const weatherData = getWeatherData();
-        setWeather(weatherData);
-
         if (items && items.length > 0) {
           // Simple sélection aléatoire pour l'instant
           const outfits = items.filter(item => item.itemType === ItemType.OUTFIT);
@@ -163,7 +134,7 @@ export default function DailyRecommendation({ analyses, navigation }) {
         ]).start();
       }, 1000);
     }
-  }, [items, wardrobeLoading]);
+  }, [items, wardrobeLoading, weatherLoading]);
 
   const handlePress = (outfit) => {
     // Passer les informations nécessaires à la page de détail
@@ -207,9 +178,8 @@ export default function DailyRecommendation({ analyses, navigation }) {
         setIsMultiplePieces(false);
       }
       
-      // Générer une nouvelle météo pour la variété
-      const newWeather = getWeatherData();
-      setWeather(newWeather);
+      // Rafraîchir la météo
+      refreshWeather();
     }
   };
 
@@ -272,30 +242,12 @@ export default function DailyRecommendation({ analyses, navigation }) {
       <View style={styles.header}>
         <Text style={styles.title}>Tenue du jour</Text>
         
-        {weather && (
-          <View style={styles.weatherCard}>
-            <LinearGradient
-              colors={['rgba(255,255,255,0.9)', 'rgba(255,255,255,0.7)']}
-              style={styles.weatherGradient}
-            >
-              <Ionicons name={weather.icon} size={24} color="#667eea" />
-              <View style={styles.weatherInfo}>
-                <Text style={styles.weatherTemp}>{weather.temp}°C</Text>
-                <Text style={styles.weatherDesc}>{weather.description}</Text>
-              </View>
-              <View style={styles.weatherDetails}>
-                <View style={styles.weatherDetail}>
-                  <Ionicons name="water" size={14} color="#9ca3af" />
-                  <Text style={styles.weatherDetailText}>{weather.humidity}%</Text>
-                </View>
-                <View style={styles.weatherDetail}>
-                  <Ionicons name="speedometer" size={14} color="#9ca3af" />
-                  <Text style={styles.weatherDetailText}>{weather.wind}km/h</Text>
-                </View>
-              </View>
-            </LinearGradient>
-          </View>
-        )}
+        <WeatherWidget 
+          weather={weather}
+          loading={weatherLoading}
+          error={weatherError}
+          onRefresh={refreshWeather}
+        />
       </View>
 
       {/* Carte de recommandation unique */}
@@ -392,41 +344,6 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     color: '#fff',
     marginBottom: 10,
-  },
-  weatherCard: {
-    marginTop: 5,
-  },
-  weatherGradient: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    padding: 15,
-    borderRadius: 16,
-    gap: 12,
-  },
-  weatherInfo: {
-    flex: 1,
-  },
-  weatherTemp: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#1f2937',
-  },
-  weatherDesc: {
-    fontSize: 14,
-    color: '#6b7280',
-    marginTop: 2,
-  },
-  weatherDetails: {
-    gap: 8,
-  },
-  weatherDetail: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 4,
-  },
-  weatherDetailText: {
-    fontSize: 12,
-    color: '#9ca3af',
   },
   recommendationCard: {
     width: '100%',

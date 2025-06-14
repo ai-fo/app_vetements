@@ -27,7 +27,8 @@
       <dict>
         <key>CFBundleURLSchemes</key>
         <array>
-          <string>com.anonymous.liquid-app</string>
+          <string>liquidapp</string>
+          <string>com.googleusercontent.apps.612466735730-3a257kmveufsc6f476ais9djm5t36irg</string>
         </array>
       </dict>
     </array>
@@ -44,6 +45,20 @@
       <key>NSAllowsLocalNetworking</key>
       <true/>
     </dict>
+    <key>NSCameraUsageDescription</key>
+    <string>Allow $(PRODUCT_NAME) to access your camera</string>
+    <key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
+    <string>Cette application utilise votre localisation pour vous fournir des informations météo personnalisées et des recommandations vestimentaires adaptées à votre région.</string>
+    <key>NSLocationAlwaysUsageDescription</key>
+    <string>Allow $(PRODUCT_NAME) to access your location</string>
+    <key>NSLocationWhenInUseUsageDescription</key>
+    <string>Cette application utilise votre localisation pour vous fournir des informations météo personnalisées et des recommandations vestimentaires adaptées à votre région.</string>
+    <key>NSMicrophoneUsageDescription</key>
+    <string>Allow $(PRODUCT_NAME) to access your microphone</string>
+    <key>NSPhotoLibraryAddUsageDescription</key>
+    <string>Allow $(PRODUCT_NAME) to save photos</string>
+    <key>NSPhotoLibraryUsageDescription</key>
+    <string>Allow $(PRODUCT_NAME) to access your photos</string>
     <key>UILaunchStoryboardName</key>
     <string>SplashScreen</string>
     <key>UIRequiredDeviceCapabilities</key>
@@ -70,11 +85,5 @@
     <string>Light</string>
     <key>UIViewControllerBasedStatusBarAppearance</key>
     <false/>
-    <key>NSCameraUsageDescription</key>
-    <string>Cette application a besoin d'accéder à votre caméra pour prendre des photos de vos tenues</string>
-    <key>NSPhotoLibraryUsageDescription</key>
-    <string>Cette application a besoin d'accéder à votre galerie pour sélectionner des photos de vos tenues</string>
-    <key>NSPhotoLibraryAddUsageDescription</key>
-    <string>Cette application a besoin de sauvegarder des photos dans votre galerie</string>
   </dict>
 </plist>

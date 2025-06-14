@@ -7,5 +7,7 @@ export { default as ClothingItemForm } from './components/ClothingItemForm';
 export { useOutfitAnalysis } from './hooks/useOutfitAnalysis';
 export { useRecommendations } from './hooks/useRecommendations';
 export { useMood } from './hooks/useMood';
+export { useWeather } from './hooks/useWeather';
 export { outfitAnalysisAPI } from './api';
+export { default as weatherService } from './services/weatherService';
 export * from './types';
