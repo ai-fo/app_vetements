@@ -284,7 +284,7 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   wardrobeButton: {
-    marginVertical: 30,
+    marginVertical: 10,
     marginHorizontal: -5,
   },
   wardrobeButtonShadow: {
