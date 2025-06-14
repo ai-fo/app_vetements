@@ -6,7 +6,6 @@ import {
   TouchableOpacity,
   Image,
   ActivityIndicator,
-  Dimensions,
   Animated,
   ScrollView,
 } from 'react-native';
@@ -15,18 +14,16 @@ import { Ionicons } from '@expo/vector-icons';
 import { useWardrobe } from '../../virtual-wardrobe/hooks/useWardrobe';
 import { useAuth } from '../../auth';
 import { ItemType } from '../../virtual-wardrobe/types';
-
-const { width: screenWidth } = Dimensions.get('window');
-const CARD_WIDTH = screenWidth - 40;
+import { useMood } from '../hooks/useMood';
 
 export default function DailyRecommendation({ analyses, navigation }) {
   const { user } = useAuth();
   const { items, loading: wardrobeLoading } = useWardrobe(user?.id);
-  const [recommendedOutfits, setRecommendedOutfits] = useState([]);
-  const [currentIndex, setCurrentIndex] = useState(0);
+  const { mood } = useMood();
+  const [recommendedOutfit, setRecommendedOutfit] = useState(null);
+  const [isMultiplePieces, setIsMultiplePieces] = useState(false);
   const [loading, setLoading] = useState(true);
   const [weather, setWeather] = useState(null);
-  const scrollX = useRef(new Animated.Value(0)).current;
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const slideAnim = useRef(new Animated.Value(50)).current;
 
@@ -73,6 +70,59 @@ export default function DailyRecommendation({ analyses, navigation }) {
     };
   };
 
+  const generateRecommendation = () => {
+    if (!items || items.length === 0) return;
+    
+    const outfits = items.filter(item => item.itemType === ItemType.OUTFIT);
+    const tops = items.filter(item => item.category?.toLowerCase().includes('haut') || 
+                                     item.category?.toLowerCase().includes('shirt') ||
+                                     item.category?.toLowerCase().includes('pull'));
+    const bottoms = items.filter(item => item.category?.toLowerCase().includes('pantalon') || 
+                                        item.category?.toLowerCase().includes('jean') ||
+                                        item.category?.toLowerCase().includes('jupe'));
+    const shoes = items.filter(item => item.category?.toLowerCase().includes('chaussure') ||
+                                      item.category?.toLowerCase().includes('basket'));
+    
+    // Décider aléatoirement si on prend une tenue complète ou des pièces séparées
+    const useCompleteOutfit = outfits.length > 0 && Math.random() > 0.5;
+    
+    if (useCompleteOutfit) {
+      // Tenue complète
+      const randomIndex = Math.floor(Math.random() * outfits.length);
+      setRecommendedOutfit(outfits[randomIndex]);
+      setIsMultiplePieces(false);
+    } else if (tops.length > 0 && bottoms.length > 0) {
+      // Combinaison de pièces
+      const combination = {
+        id: 'combination-' + Date.now(),
+        name: 'Ensemble recommandé',
+        pieces: []
+      };
+      
+      // Sélectionner un haut
+      const topIndex = Math.floor(Math.random() * tops.length);
+      combination.pieces.push(tops[topIndex]);
+      
+      // Sélectionner un bas
+      const bottomIndex = Math.floor(Math.random() * bottoms.length);
+      combination.pieces.push(bottoms[bottomIndex]);
+      
+      // Ajouter des chaussures si disponibles
+      if (shoes.length > 0) {
+        const shoeIndex = Math.floor(Math.random() * shoes.length);
+        combination.pieces.push(shoes[shoeIndex]);
+      }
+      
+      setRecommendedOutfit(combination);
+      setIsMultiplePieces(true);
+    } else {
+      // Fallback: n'importe quel item
+      const randomIndex = Math.floor(Math.random() * items.length);
+      setRecommendedOutfit(items[randomIndex]);
+      setIsMultiplePieces(false);
+    }
+  };
+
   useEffect(() => {
     if (!wardrobeLoading) {
       setTimeout(() => {
@@ -80,24 +130,19 @@ export default function DailyRecommendation({ analyses, navigation }) {
         setWeather(weatherData);
 
         if (items && items.length > 0) {
-          // Filtrer les tenues selon la météo simulée
-          let filteredItems = items;
+          // Simple sélection aléatoire pour l'instant
+          const outfits = items.filter(item => item.itemType === ItemType.OUTFIT);
           
-          // Pour la démo, on prend max 3 recommandations
-          const maxRecommendations = 3;
-          const recommendations = [];
-          
-          // D'abord les tenues complètes
-          const outfits = filteredItems.filter(item => item.itemType === ItemType.OUTFIT);
-          recommendations.push(...outfits.slice(0, maxRecommendations));
-          
-          // Si pas assez de tenues, ajouter des items individuels
-          if (recommendations.length < maxRecommendations) {
-            const otherItems = filteredItems.filter(item => item.itemType !== ItemType.OUTFIT);
-            recommendations.push(...otherItems.slice(0, maxRecommendations - recommendations.length));
+          if (outfits.length > 0) {
+            const randomIndex = Math.floor(Math.random() * outfits.length);
+            setRecommendedOutfit(outfits[randomIndex]);
+            setIsMultiplePieces(false);
+          } else {
+            // Si pas de tenues complètes, prendre n'importe quel item
+            const randomIndex = Math.floor(Math.random() * items.length);
+            setRecommendedOutfit(items[randomIndex]);
+            setIsMultiplePieces(false);
           }
-          
-          setRecommendedOutfits(recommendations);
         }
         
         setLoading(false);
@@ -121,8 +166,17 @@ export default function DailyRecommendation({ analyses, navigation }) {
   }, [items, wardrobeLoading]);
 
   const handlePress = (outfit) => {
-    navigation.navigate('WardrobeScreen', { selectedItemId: outfit.id });
+    // Passer les informations nécessaires à la page de détail
+    navigation.navigate('RecommendationDetail', { 
+      outfitId: outfit.id,
+      outfit: outfit, // Passer l'objet complet pour les combinaisons
+      isMultiplePieces: isMultiplePieces,
+      weather: weather,
+      mood: mood,
+      events: [] // TODO: Intégrer avec le calendrier
+    });
   };
+
 
   const handleRefresh = () => {
     Animated.sequence([
@@ -138,8 +192,25 @@ export default function DailyRecommendation({ analyses, navigation }) {
       }),
     ]).start();
 
-    // Changer l'ordre des recommandations
-    setRecommendedOutfits(prev => [...prev.slice(1), prev[0]]);
+    // Générer une nouvelle recommandation
+    if (items && items.length > 0) {
+      // Simple sélection aléatoire pour l'instant
+      const outfits = items.filter(item => item.itemType === ItemType.OUTFIT);
+      
+      if (outfits.length > 0) {
+        const randomIndex = Math.floor(Math.random() * outfits.length);
+        setRecommendedOutfit(outfits[randomIndex]);
+        setIsMultiplePieces(false);
+      } else {
+        const randomIndex = Math.floor(Math.random() * items.length);
+        setRecommendedOutfit(items[randomIndex]);
+        setIsMultiplePieces(false);
+      }
+      
+      // Générer une nouvelle météo pour la variété
+      const newWeather = getWeatherData();
+      setWeather(newWeather);
+    }
   };
 
   if (loading) {
@@ -153,7 +224,7 @@ export default function DailyRecommendation({ analyses, navigation }) {
     );
   }
 
-  if (!recommendedOutfits.length) {
+  if (!recommendedOutfit) {
     return (
       <TouchableOpacity 
         style={styles.container} 
@@ -199,12 +270,7 @@ export default function DailyRecommendation({ analyses, navigation }) {
     >
       {/* En-tête avec météo */}
       <View style={styles.header}>
-        <View style={styles.titleSection}>
-          <Text style={styles.title}>Tenue du jour</Text>
-          <TouchableOpacity onPress={handleRefresh} style={styles.refreshButton}>
-            <Ionicons name="refresh" size={20} color="#667eea" />
-          </TouchableOpacity>
-        </View>
+        <Text style={styles.title}>Tenue du jour</Text>
         
         {weather && (
           <View style={styles.weatherCard}>
@@ -232,131 +298,83 @@ export default function DailyRecommendation({ analyses, navigation }) {
         )}
       </View>
 
-      {/* Carrousel de recommandations */}
-      <ScrollView
-        horizontal
-        pagingEnabled
-        showsHorizontalScrollIndicator={false}
-        scrollEventThrottle={16}
-        onScroll={Animated.event(
-          [{ nativeEvent: { contentOffset: { x: scrollX } } }],
-          { useNativeDriver: false }
-        )}
-        onMomentumScrollEnd={(event) => {
-          const newIndex = Math.round(event.nativeEvent.contentOffset.x / CARD_WIDTH);
-          setCurrentIndex(newIndex);
-        }}
-      >
-        {recommendedOutfits.map((outfit, index) => (
-          <TouchableOpacity 
-            key={outfit.id}
-            onPress={() => handlePress(outfit)}
-            activeOpacity={0.95}
+      {/* Carte de recommandation unique */}
+      <View>
+        <View style={styles.recommendationCard}>
+          <LinearGradient
+            colors={['#667eea', '#764ba2']}
+            style={styles.cardGradient}
           >
-            <Animated.View
-              style={[
-                styles.recommendationCard,
-                {
-                  transform: [{
-                    scale: scrollX.interpolate({
-                      inputRange: [
-                        (index - 1) * CARD_WIDTH,
-                        index * CARD_WIDTH,
-                        (index + 1) * CARD_WIDTH
-                      ],
-                      outputRange: [0.9, 1, 0.9],
-                      extrapolate: 'clamp'
-                    })
-                  }]
-                }
-              ]}
-            >
-              <LinearGradient
-                colors={['#667eea', '#764ba2']}
-                style={styles.cardGradient}
-              >
-                {/* Badge de recommandation */}
-                <View style={styles.recommendationBadge}>
-                  <View style={styles.badgeBlur}>
-                    <Ionicons name="sparkles" size={16} color="#fff" />
-                    <Text style={styles.badgeText}>
-                      {index === 0 ? 'Meilleur choix' : 'Alternative'}
-                    </Text>
-                  </View>
-                </View>
+            {/* Badge de recommandation */}
+            <View style={styles.recommendationBadge}>
+              <View style={styles.badgeBlur}>
+                <Ionicons name="sparkles" size={16} color="#fff" />
+                <Text style={styles.badgeText}>Recommandé pour vous</Text>
+              </View>
+            </View>
 
-                {/* Image de la tenue */}
-                <View style={styles.imageContainer}>
-                  <Image 
-                    source={{ uri: outfit.imageUrl }} 
-                    style={styles.outfitImage}
-                  />
-                  <LinearGradient
-                    colors={['transparent', 'rgba(0,0,0,0.8)']}
-                    style={styles.imageOverlay}
-                  />
-                </View>
-
-                {/* Détails de la tenue */}
-                <View style={styles.outfitDetails}>
-                  <Text style={styles.outfitName} numberOfLines={1}>
-                    {outfit.name || 'Tenue recommandée'}
-                  </Text>
-                  <Text style={styles.outfitBrand} numberOfLines={1}>
-                    {outfit.brand || outfit.category || 'Style du jour'}
-                  </Text>
-
-                  {/* Tags */}
-                  <View style={styles.tagContainer}>
-                    {outfit.seasons && outfit.seasons.length > 0 && (
-                      outfit.seasons.slice(0, 2).map((season, idx) => (
-                        <View key={idx} style={styles.tag}>
-                          <Text style={styles.tagText}>{getSeasonLabel(season)}</Text>
+            {/* Image de la tenue */}
+            <View style={styles.imageContainer}>
+              {isMultiplePieces ? (
+                <View style={styles.piecesGrid}>
+                  {recommendedOutfit.pieces.map((piece, index) => (
+                    <View key={piece.id} style={styles.pieceContainer}>
+                      <Image 
+                        source={{ uri: piece.imageUrl }} 
+                        style={styles.pieceImage}
+                      />
+                      {index < recommendedOutfit.pieces.length - 1 && (
+                        <View style={styles.plusIcon}>
+                          <Text style={styles.plusText}>+</Text>
                         </View>
-                      ))
-                    )}
-                    {outfit.isFavorite && (
-                      <View style={[styles.tag, styles.favoriteTag]}>
-                        <Ionicons name="star" size={12} color="#fbbf24" />
-                        <Text style={styles.tagText}>Favori</Text>
-                      </View>
-                    )}
-                  </View>
-
-                  {/* Actions */}
-                  <View style={styles.actions}>
-                    <TouchableOpacity style={styles.actionButton}>
-                      <Ionicons name="heart-outline" size={20} color="#fff" />
-                    </TouchableOpacity>
-                    <TouchableOpacity style={styles.actionButton}>
-                      <Ionicons name="share-outline" size={20} color="#fff" />
-                    </TouchableOpacity>
-                    <TouchableOpacity style={[styles.actionButton, styles.primaryAction]}>
-                      <Text style={styles.primaryActionText}>Porter</Text>
-                      <Ionicons name="arrow-forward" size={16} color="#667eea" />
-                    </TouchableOpacity>
-                  </View>
+                      )}
+                    </View>
+                  ))}
                 </View>
-              </LinearGradient>
-            </Animated.View>
-          </TouchableOpacity>
-        ))}
-      </ScrollView>
+              ) : (
+                <Image 
+                  source={{ uri: recommendedOutfit.imageUrl }} 
+                  style={styles.outfitImage}
+                />
+              )}
+              <LinearGradient
+                colors={['transparent', 'rgba(0,0,0,0.8)']}
+                style={styles.imageOverlay}
+              />
+            </View>
 
-      {/* Indicateurs de pagination */}
-      {recommendedOutfits.length > 1 && (
-        <View style={styles.pagination}>
-          {recommendedOutfits.map((_, index) => (
-            <View
-              key={index}
-              style={[
-                styles.paginationDot,
-                index === currentIndex && styles.paginationDotActive
-              ]}
-            />
-          ))}
+            {/* Détails de la tenue */}
+            <View style={styles.outfitDetails}>
+              <Text style={styles.outfitName} numberOfLines={2}>
+                {isMultiplePieces ? 'Ensemble recommandé' : (recommendedOutfit.name || 'Tenue recommandée')}
+              </Text>
+              {isMultiplePieces && (
+                <Text style={styles.piecesDescription}>
+                  {recommendedOutfit.pieces.map(p => p.name).join(' • ')}
+                </Text>
+              )}
+
+              {/* Actions */}
+              <View style={styles.actions}>
+                <TouchableOpacity 
+                  style={styles.secondaryActionButton}
+                  onPress={handleRefresh}
+                >
+                  <Ionicons name="sparkles" size={18} color="#fff" />
+                  <Text style={styles.secondaryActionText}>Nouvelle suggestion</Text>
+                </TouchableOpacity>
+                <TouchableOpacity 
+                  style={[styles.actionButton, styles.primaryAction]}
+                  onPress={() => handlePress(recommendedOutfit)}
+                >
+                  <Text style={styles.primaryActionText}>Voir détails</Text>
+                  <Ionicons name="arrow-forward" size={16} color="#667eea" />
+                </TouchableOpacity>
+              </View>
+            </View>
+          </LinearGradient>
         </View>
-      )}
+      </View>
     </Animated.View>
   );
 }
@@ -369,21 +387,11 @@ const styles = StyleSheet.create({
   header: {
     marginBottom: 15,
   },
-  titleSection: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 10,
-  },
   title: {
     fontSize: 24,
     fontWeight: 'bold',
     color: '#fff',
-  },
-  refreshButton: {
-    padding: 8,
-    backgroundColor: 'rgba(255,255,255,0.15)',
-    borderRadius: 20,
+    marginBottom: 10,
   },
   weatherCard: {
     marginTop: 5,
@@ -421,8 +429,7 @@ const styles = StyleSheet.create({
     color: '#9ca3af',
   },
   recommendationCard: {
-    width: CARD_WIDTH,
-    marginRight: 15,
+    width: '100%',
   },
   cardGradient: {
     borderRadius: 24,
@@ -462,6 +469,40 @@ const styles = StyleSheet.create({
     width: '100%',
     height: '100%',
   },
+  piecesGrid: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingHorizontal: 20,
+    height: '100%',
+  },
+  pieceContainer: {
+    position: 'relative',
+    marginHorizontal: 5,
+  },
+  pieceImage: {
+    width: 90,
+    height: 120,
+    borderRadius: 12,
+    backgroundColor: 'rgba(255,255,255,0.1)',
+  },
+  plusIcon: {
+    position: 'absolute',
+    right: -15,
+    top: '45%',
+    backgroundColor: 'rgba(255,255,255,0.9)',
+    borderRadius: 15,
+    width: 30,
+    height: 30,
+    alignItems: 'center',
+    justifyContent: 'center',
+    zIndex: 1,
+  },
+  plusText: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: '#667eea',
+  },
   imageOverlay: {
     position: 'absolute',
     bottom: 0,
@@ -474,38 +515,16 @@ const styles = StyleSheet.create({
     paddingTop: 15,
   },
   outfitName: {
-    fontSize: 22,
-    fontWeight: '700',
+    fontSize: 20,
+    fontWeight: '600',
     color: '#fff',
-    marginBottom: 4,
+    marginBottom: 8,
+    lineHeight: 26,
   },
-  outfitBrand: {
-    fontSize: 16,
+  piecesDescription: {
+    fontSize: 14,
     color: 'rgba(255,255,255,0.8)',
-    marginBottom: 12,
-  },
-  tagContainer: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 8,
     marginBottom: 20,
-  },
-  tag: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: 'rgba(255,255,255,0.15)',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 16,
-    gap: 4,
-  },
-  favoriteTag: {
-    backgroundColor: 'rgba(251,191,36,0.2)',
-  },
-  tagText: {
-    fontSize: 12,
-    color: '#fff',
-    fontWeight: '500',
   },
   actions: {
     flexDirection: 'row',
@@ -513,16 +532,29 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   actionButton: {
-    width: 40,
     height: 40,
     borderRadius: 20,
-    backgroundColor: 'rgba(255,255,255,0.15)',
     alignItems: 'center',
     justifyContent: 'center',
   },
+  secondaryActionButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: 'rgba(255,255,255,0.2)',
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: 20,
+    gap: 6,
+    borderWidth: 1,
+    borderColor: 'rgba(255,255,255,0.3)',
+  },
+  secondaryActionText: {
+    fontSize: 14,
+    fontWeight: '500',
+    color: '#fff',
+  },
   primaryAction: {
     flexDirection: 'row',
-    width: 'auto',
     flex: 1,
     paddingHorizontal: 20,
     backgroundColor: 'rgba(255,255,255,0.9)',
@@ -532,22 +564,6 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '600',
     color: '#667eea',
-  },
-  pagination: {
-    flexDirection: 'row',
-    justifyContent: 'center',
-    gap: 8,
-    marginTop: 20,
-  },
-  paginationDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    backgroundColor: 'rgba(255,255,255,0.3)',
-  },
-  paginationDotActive: {
-    width: 24,
-    backgroundColor: '#fff',
   },
   loadingCard: {
     padding: 60,

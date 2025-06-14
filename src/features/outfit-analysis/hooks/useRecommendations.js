@@ -3,7 +3,7 @@ import { useWardrobe } from '../../virtual-wardrobe/hooks/useWardrobe';
 import { ItemType } from '../../virtual-wardrobe/types';
 
 export const useRecommendations = (userId) => {
-  const { items, loading: wardrobeLoading } = useWardrobe(userId);
+  const { items = [], loading: wardrobeLoading } = useWardrobe(userId);
   const [recommendations, setRecommendations] = useState([]);
   const [loading, setLoading] = useState(true);
   const [weather, setWeather] = useState(null);
