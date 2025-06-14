@@ -17,7 +17,7 @@ import { ItemType } from '../../virtual-wardrobe/types';
 import { useMood } from '../hooks/useMood';
 import { useWeather } from '../hooks/useWeather';
 import { useRecommendations } from '../hooks/useRecommendations';
-import NeedsInput from './NeedsInput';
+import NeedsInputPortal from './NeedsInputPortal';
 
 export default function DailyRecommendation({ analyses, navigation }) {
   const { user } = useAuth();
@@ -329,7 +329,7 @@ export default function DailyRecommendation({ analyses, navigation }) {
       </View>
       
       {/* Composant de saisie des besoins */}
-      <NeedsInput 
+      <NeedsInputPortal 
         isVisible={showNeedsInput}
         onSubmit={handleNeedsSubmit}
         onClose={() => setShowNeedsInput(false)}

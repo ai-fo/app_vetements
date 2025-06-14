@@ -9,9 +9,13 @@ import {
   KeyboardAvoidingView,
   Platform,
   Keyboard,
+  Dimensions,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
+import { BlurView } from 'expo-blur';
+
+const { height: screenHeight } = Dimensions.get('window');
 
 export default function NeedsInput({ onSubmit, isVisible, onClose }) {
   const [inputText, setInputText] = useState('');
@@ -21,7 +25,7 @@ export default function NeedsInput({ onSubmit, isVisible, onClose }) {
     'Sport et confort',
     'Rendez-vous romantique',
   ]);
-  const slideAnim = useRef(new Animated.Value(300)).current;
+  const slideAnim = useRef(new Animated.Value(screenHeight)).current;
   const fadeAnim = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
@@ -42,7 +46,7 @@ export default function NeedsInput({ onSubmit, isVisible, onClose }) {
     } else {
       Animated.parallel([
         Animated.timing(slideAnim, {
-          toValue: 300,
+          toValue: screenHeight,
           duration: 200,
           useNativeDriver: true,
         }),
@@ -76,15 +80,21 @@ export default function NeedsInput({ onSubmit, isVisible, onClose }) {
     >
       <Animated.View 
         style={[
-          styles.backdrop, 
+          StyleSheet.absoluteFillObject, 
           { opacity: fadeAnim }
         ]}
       >
-        <TouchableOpacity 
-          style={StyleSheet.absoluteFillObject} 
-          onPress={onClose}
-          activeOpacity={1}
-        />
+        <BlurView
+          intensity={80}
+          tint="dark"
+          style={StyleSheet.absoluteFillObject}
+        >
+          <TouchableOpacity 
+            style={StyleSheet.absoluteFillObject} 
+            onPress={onClose}
+            activeOpacity={1}
+          />
+        </BlurView>
       </Animated.View>
 
       <Animated.View 
@@ -164,32 +174,30 @@ const styles = StyleSheet.create({
     ...StyleSheet.absoluteFillObject,
     zIndex: 1000,
   },
-  backdrop: {
-    ...StyleSheet.absoluteFillObject,
-    backgroundColor: 'rgba(0,0,0,0.5)',
-  },
   inputContainer: {
     position: 'absolute',
     bottom: 0,
     left: 0,
     right: 0,
+    height: '75%',
   },
   gradient: {
-    borderTopLeftRadius: 24,
-    borderTopRightRadius: 24,
-    paddingTop: 24,
+    flex: 1,
+    borderTopLeftRadius: 30,
+    borderTopRightRadius: 30,
+    paddingTop: 32,
     paddingBottom: 40,
-    paddingHorizontal: 20,
+    paddingHorizontal: 24,
   },
   header: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    marginBottom: 8,
+    marginBottom: 16,
   },
   title: {
-    fontSize: 20,
-    fontWeight: '600',
+    fontSize: 24,
+    fontWeight: '700',
     color: '#fff',
   },
   closeButton: {
@@ -201,28 +209,29 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
   },
   subtitle: {
-    fontSize: 14,
-    color: 'rgba(255,255,255,0.8)',
-    marginBottom: 20,
+    fontSize: 16,
+    color: 'rgba(255,255,255,0.9)',
+    marginBottom: 28,
+    lineHeight: 22,
   },
   suggestionsContainer: {
     flexDirection: 'row',
     flexWrap: 'wrap',
-    gap: 8,
-    marginBottom: 20,
+    gap: 10,
+    marginBottom: 32,
   },
   suggestionChip: {
-    backgroundColor: 'rgba(255,255,255,0.2)',
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    borderRadius: 20,
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.3)',
+    backgroundColor: 'rgba(255,255,255,0.15)',
+    paddingHorizontal: 18,
+    paddingVertical: 10,
+    borderRadius: 24,
+    borderWidth: 1.5,
+    borderColor: 'rgba(255,255,255,0.25)',
   },
   suggestionText: {
-    fontSize: 14,
+    fontSize: 15,
     color: '#fff',
-    fontWeight: '500',
+    fontWeight: '600',
   },
   inputWrapper: {
     flexDirection: 'row',
@@ -231,15 +240,15 @@ const styles = StyleSheet.create({
   },
   textInput: {
     flex: 1,
-    backgroundColor: 'rgba(255,255,255,0.15)',
-    borderRadius: 20,
-    paddingHorizontal: 20,
-    paddingVertical: 12,
-    paddingTop: 12,
-    fontSize: 16,
+    backgroundColor: 'rgba(255,255,255,0.1)',
+    borderRadius: 24,
+    paddingHorizontal: 24,
+    paddingVertical: 16,
+    paddingTop: 16,
+    fontSize: 17,
     color: '#fff',
-    maxHeight: 100,
-    borderWidth: 1,
+    maxHeight: 120,
+    borderWidth: 1.5,
     borderColor: 'rgba(255,255,255,0.2)',
   },
   sendButton: {
