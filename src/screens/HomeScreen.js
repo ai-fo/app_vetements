@@ -84,65 +84,41 @@ export default function HomeScreen() {
           <TouchableOpacity 
             style={styles.wardrobeButton}
             onPress={() => navigation.navigate('WardrobeScreen')}
+            activeOpacity={0.9}
           >
-            <LinearGradient
-              colors={['rgba(102,126,234,0.1)', 'rgba(118,75,162,0.1)']}
-              style={styles.wardrobeButtonGradient}
-            >
-              <View style={styles.wardrobeButtonContent}>
-                <Ionicons name="shirt-outline" size={32} color="#667eea" />
-                <View style={styles.wardrobeButtonText}>
-                  <Text style={styles.wardrobeButtonTitle}>Ma Garde-robe</Text>
-                  <Text style={styles.wardrobeButtonSubtitle}>Gérez votre collection</Text>
+            <View style={styles.wardrobeButtonShadow}>
+              <LinearGradient
+                colors={['#fff', '#f8fafc']}
+                style={styles.wardrobeButtonGradient}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
+              >
+                <View style={styles.wardrobeButtonInner}>
+                  <LinearGradient
+                    colors={['#667eea', '#764ba2']}
+                    style={styles.iconGradient}
+                    start={{ x: 0, y: 0 }}
+                    end={{ x: 1, y: 1 }}
+                  >
+                    <Ionicons name="shirt" size={28} color="#fff" />
+                  </LinearGradient>
+                  
+                  <View style={styles.wardrobeButtonText}>
+                    <Text style={styles.wardrobeButtonTitle}>Ma Garde-robe</Text>
+                    <Text style={styles.wardrobeButtonSubtitle}>Découvrez votre collection complète</Text>
+                  </View>
+                  
+                  <View style={styles.arrowContainer}>
+                    <Ionicons name="arrow-forward" size={24} color="#667eea" />
+                  </View>
                 </View>
-              </View>
-              <Ionicons name="chevron-forward" size={24} color="#667eea" />
-            </LinearGradient>
+                
+                <View style={styles.liquidAccent} />
+                <View style={styles.liquidAccent2} />
+              </LinearGradient>
+            </View>
           </TouchableOpacity>
 
-          <View style={styles.section}>
-            <View style={styles.sectionHeader}>
-              <Text style={styles.sectionTitle}>Mes tenues</Text>
-              {analyses.length > 0 && (
-                <TouchableOpacity onPress={loadAnalyses}>
-                  <Ionicons name="refresh" size={20} color="#667eea" />
-                </TouchableOpacity>
-              )}
-            </View>
-
-            {analyses.length === 0 ? (
-              <View style={styles.emptyState}>
-                <LinearGradient
-                  colors={['rgba(102,126,234,0.1)', 'rgba(118,75,162,0.1)']}
-                  style={styles.emptyStateGradient}
-                >
-                  <Ionicons name="images-outline" size={48} color="#667eea" />
-                  <Text style={styles.emptyStateText}>Votre garde-robe est vide</Text>
-                  <Text style={styles.emptyStateSubtext}>Utilisez le bouton caméra pour ajouter vos tenues</Text>
-                </LinearGradient>
-              </View>
-            ) : (
-              <View style={styles.outfitGrid}>
-                {analyses.map((analysis) => (
-                  <TouchableOpacity
-                    key={analysis.id}
-                    style={styles.outfitCard}
-                    onPress={() => handleOutfitPress(analysis.id)}
-                  >
-                    <Image
-                      source={{ uri: analysis.image_url }}
-                      style={styles.outfitImage}
-                    />
-                    {analysis.processing_status === 'completed' && (
-                      <View style={styles.outfitBadge}>
-                        <Ionicons name="checkmark-circle" size={20} color="#10b981" />
-                      </View>
-                    )}
-                  </TouchableOpacity>
-                ))}
-              </View>
-            )}
-          </View>
         </Animated.View>
       </ScrollView>
       
@@ -216,89 +192,81 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  section: {
-    marginTop: 10,
-  },
-  sectionHeader: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 20,
-  },
-  sectionTitle: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: '#fff',
-  },
-  emptyState: {
-    marginTop: 20,
-  },
-  emptyStateGradient: {
-    paddingVertical: 60,
-    paddingHorizontal: 40,
-    borderRadius: 20,
-    alignItems: 'center',
-  },
-  emptyStateText: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#667eea',
-    marginTop: 20,
-  },
-  emptyStateSubtext: {
-    fontSize: 14,
-    color: '#9ca3af',
-    marginTop: 8,
-  },
-  outfitGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    marginHorizontal: -7.5,
-  },
-  outfitCard: {
-    width: '50%',
-    paddingHorizontal: 7.5,
-    marginBottom: 15,
-  },
-  outfitImage: {
-    width: '100%',
-    aspectRatio: 3/4,
-    borderRadius: 15,
-    backgroundColor: 'rgba(255,255,255,0.1)',
-  },
-  outfitBadge: {
-    position: 'absolute',
-    top: 10,
-    right: 17.5,
-    backgroundColor: 'rgba(255,255,255,0.9)',
-    borderRadius: 12,
-    padding: 2,
-  },
   wardrobeButton: {
-    marginVertical: 20,
+    marginVertical: 30,
+    marginHorizontal: -5,
+  },
+  wardrobeButtonShadow: {
+    shadowColor: '#667eea',
+    shadowOffset: { width: 0, height: 12 },
+    shadowOpacity: 0.3,
+    shadowRadius: 16,
+    elevation: 12,
   },
   wardrobeButtonGradient: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    padding: 20,
-    borderRadius: 16,
+    borderRadius: 24,
+    overflow: 'hidden',
+    position: 'relative',
   },
-  wardrobeButtonContent: {
+  wardrobeButtonInner: {
     flexDirection: 'row',
     alignItems: 'center',
+    padding: 24,
+    paddingVertical: 28,
+  },
+  iconGradient: {
+    width: 56,
+    height: 56,
+    borderRadius: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: '#667eea',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 8,
+    elevation: 6,
   },
   wardrobeButtonText: {
-    marginLeft: 16,
+    flex: 1,
+    marginLeft: 20,
   },
   wardrobeButtonTitle: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#667eea',
+    fontSize: 22,
+    fontWeight: '700',
+    color: '#1f2937',
+    letterSpacing: -0.5,
   },
   wardrobeButtonSubtitle: {
-    fontSize: 14,
-    color: '#9ca3af',
-    marginTop: 2,
+    fontSize: 15,
+    color: '#6b7280',
+    marginTop: 4,
+  },
+  arrowContainer: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: 'rgba(102, 126, 234, 0.1)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  liquidAccent: {
+    position: 'absolute',
+    top: -20,
+    right: -20,
+    width: 120,
+    height: 120,
+    borderRadius: 60,
+    backgroundColor: 'rgba(102, 126, 234, 0.08)',
+    transform: [{ scale: 1.5 }],
+  },
+  liquidAccent2: {
+    position: 'absolute',
+    bottom: -30,
+    left: -30,
+    width: 100,
+    height: 100,
+    borderRadius: 50,
+    backgroundColor: 'rgba(118, 75, 162, 0.06)',
+    transform: [{ scale: 1.3 }],
   },
 });

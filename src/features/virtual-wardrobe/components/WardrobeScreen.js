@@ -8,7 +8,8 @@ import {
   Image,
   ActivityIndicator,
   Dimensions,
-  RefreshControl
+  RefreshControl,
+  Alert
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -24,15 +25,37 @@ const ITEM_WIDTH = (width - 60) / 2;
 
 export default function WardrobeScreen({ navigation }) {
   const { user } = useAuth();
-  const { items, loading, filters, applyFilters, refreshWardrobe, toggleFavorite } = useWardrobe(user?.id);
+  const { items, loading, filters, applyFilters, refreshWardrobe, toggleFavorite, deleteItem } = useWardrobe(user?.id);
   const [selectedItem, setSelectedItem] = useState(null);
   const [refreshing, setRefreshing] = useState(false);
-  const [viewMode, setViewMode] = useState('grid'); // 'grid' or 'list'
+  const [deleteMode, setDeleteMode] = useState(false);
 
   const handleRefresh = async () => {
     setRefreshing(true);
     await refreshWardrobe();
     setRefreshing(false);
+  };
+
+  const handleDeleteItem = async (itemId, itemName) => {
+    Alert.alert(
+      'Supprimer cet article',
+      `Êtes-vous sûr de vouloir supprimer "${itemName}" de votre garde-robe ?`,
+      [
+        { text: 'Annuler', style: 'cancel' },
+        { 
+          text: 'Supprimer', 
+          style: 'destructive',
+          onPress: async () => {
+            const success = await deleteItem(itemId);
+            if (success) {
+              Alert.alert('Succès', 'L\'article a été supprimé');
+            } else {
+              Alert.alert('Erreur', 'Impossible de supprimer l\'article');
+            }
+          }
+        },
+      ]
+    );
   };
 
   const renderEmptyState = () => (
@@ -57,49 +80,6 @@ export default function WardrobeScreen({ navigation }) {
     </View>
   );
 
-  const renderItemCard = (item) => (
-    <TouchableOpacity
-      key={item.id}
-      style={styles.itemCard}
-      onPress={() => setSelectedItem(item)}
-    >
-      <Image source={{ uri: item.imageUrl }} style={styles.itemImage} />
-      
-      <View style={styles.itemTypeIndicator}>
-        <Ionicons 
-          name={item.itemType === ItemType.OUTFIT ? 'body' : 'shirt'} 
-          size={16} 
-          color="#fff" 
-        />
-      </View>
-
-      <View style={styles.favoriteButton}>
-        <FavoriteButton
-          isFavorite={item.isFavorite}
-          onToggle={() => toggleFavorite(item.id)}
-          size={16}
-        />
-      </View>
-
-      <View style={styles.itemInfo}>
-        <Text style={styles.itemName} numberOfLines={1}>{item.name}</Text>
-        <View style={styles.itemDetails}>
-          <Text style={styles.itemBrand}>{item.brand}</Text>
-          <View style={styles.itemColors}>
-            {item.colors.slice(0, 3).map((color, index) => (
-              <View
-                key={index}
-                style={[
-                  styles.colorDot,
-                  { backgroundColor: getColorHex(color) }
-                ]}
-              />
-            ))}
-          </View>
-        </View>
-      </View>
-    </TouchableOpacity>
-  );
 
   const renderListItem = (item) => (
     <TouchableOpacity
@@ -112,11 +92,21 @@ export default function WardrobeScreen({ navigation }) {
       <View style={styles.listItemContent}>
         <View style={styles.listItemHeader}>
           <Text style={styles.listItemName}>{item.name}</Text>
-          <FavoriteButton
-            isFavorite={item.isFavorite}
-            onToggle={() => toggleFavorite(item.id)}
-            size={16}
-          />
+          <View style={styles.listItemActions}>
+            <FavoriteButton
+              isFavorite={item.isFavorite}
+              onToggle={() => toggleFavorite(item.id)}
+              size={16}
+            />
+            {deleteMode && (
+              <TouchableOpacity 
+                style={styles.listDeleteButton}
+                onPress={() => handleDeleteItem(item.id, item.name)}
+              >
+                <Ionicons name="trash" size={18} color="#ef4444" />
+              </TouchableOpacity>
+            )}
+          </View>
         </View>
         
         <Text style={styles.listItemBrand}>{item.brand}</Text>
@@ -180,13 +170,18 @@ export default function WardrobeScreen({ navigation }) {
           
           <Text style={styles.headerTitle}>Ma Garde-robe</Text>
           
-          <TouchableOpacity onPress={() => setViewMode(viewMode === 'grid' ? 'list' : 'grid')}>
-            <Ionicons 
-              name={viewMode === 'grid' ? 'list' : 'grid'} 
-              size={24} 
-              color="#fff" 
-            />
-          </TouchableOpacity>
+          <View style={styles.headerButtons}>
+            <TouchableOpacity 
+              onPress={() => setDeleteMode(!deleteMode)}
+              style={[styles.headerButton, deleteMode && styles.headerButtonActive]}
+            >
+              <Ionicons 
+                name={deleteMode ? 'close' : 'trash-outline'} 
+                size={24} 
+                color="#fff" 
+              />
+            </TouchableOpacity>
+          </View>
         </View>
       </LinearGradient>
 
@@ -201,10 +196,6 @@ export default function WardrobeScreen({ navigation }) {
       >
         {items.length === 0 ? (
           renderEmptyState()
-        ) : viewMode === 'grid' ? (
-          <View style={styles.grid}>
-            {items.map(renderItemCard)}
-          </View>
         ) : (
           <View style={styles.list}>
             {items.map(renderListItem)}
@@ -273,6 +264,20 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     color: '#fff',
   },
+  headerButtons: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  headerButton: {
+    marginLeft: 16,
+    padding: 4,
+  },
+  headerButtonActive: {
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    borderRadius: 20,
+    paddingHorizontal: 12,
+    paddingVertical: 4,
+  },
   content: {
     flex: 1,
   },
@@ -312,75 +317,6 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     marginLeft: 8,
   },
-  grid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    paddingHorizontal: 20,
-    paddingTop: 20,
-  },
-  itemCard: {
-    width: ITEM_WIDTH,
-    marginBottom: 20,
-    marginHorizontal: 10,
-    backgroundColor: '#fff',
-    borderRadius: 15,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
-  },
-  itemImage: {
-    width: '100%',
-    height: ITEM_WIDTH * 1.3,
-    borderTopLeftRadius: 15,
-    borderTopRightRadius: 15,
-  },
-  itemTypeIndicator: {
-    position: 'absolute',
-    top: 10,
-    right: 10,
-    backgroundColor: 'rgba(102, 126, 234, 0.9)',
-    borderRadius: 20,
-    width: 32,
-    height: 32,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  favoriteButton: {
-    position: 'absolute',
-    top: 10,
-    left: 10,
-  },
-  itemInfo: {
-    padding: 12,
-  },
-  itemName: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#1f2937',
-    marginBottom: 4,
-  },
-  itemDetails: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-  },
-  itemBrand: {
-    fontSize: 14,
-    color: '#6b7280',
-  },
-  itemColors: {
-    flexDirection: 'row',
-  },
-  colorDot: {
-    width: 16,
-    height: 16,
-    borderRadius: 8,
-    marginLeft: 4,
-    borderWidth: 1,
-    borderColor: '#e5e7eb',
-  },
   list: {
     paddingHorizontal: 20,
     paddingTop: 20,
@@ -412,6 +348,14 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'space-between',
     marginBottom: 4,
+  },
+  listItemActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  listDeleteButton: {
+    marginLeft: 12,
+    padding: 4,
   },
   listItemName: {
     fontSize: 16,
