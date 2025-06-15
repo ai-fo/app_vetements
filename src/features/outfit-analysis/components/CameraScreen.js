@@ -70,7 +70,56 @@ export default function CameraScreen({ navigation, route }) {
     });
 
     if (!result.canceled) {
-      setCapturedImage(result.assets[0]);
+      // Pour la galerie, enregistrer directement sans passer par l'écran de preview
+      if (itemType === 'clothing') {
+        setIsAnalyzing(true);
+        try {
+          const fileName = `${user.id}/clothing/${Date.now()}_${Math.random().toString(36).substring(7)}.jpg`;
+          const { publicUrl: imageUrl, path: imagePath } = await storageService.uploadPhoto(
+            result.assets[0].uri,
+            fileName
+          );
+
+          const itemData = {
+            userId: user.id,
+            imageUrl,
+            imagePath,
+            itemType: ItemType.SINGLE_PIECE,
+            category: 'top',
+            colors: [],
+            brand: '',
+            name: 'Nouveau vêtement',
+            tags: [],
+            materials: [],
+            seasons: []
+          };
+
+          const { error } = await wardrobeAPI.createItem(itemData);
+
+          if (error) {
+            await storageService.deletePhoto(imagePath);
+            throw new Error(error);
+          }
+
+          // Réinitialiser la navigation pour éviter de retourner sur l'image
+          navigation.reset({
+            index: 1,
+            routes: [
+              { name: 'Home' },
+              { name: 'WardrobeScreen' }
+            ],
+          });
+        } catch (error) {
+          Alert.alert(
+            'Erreur',
+            "L'enregistrement a échoué. Veuillez réessayer."
+          );
+          setIsAnalyzing(false);
+        }
+      } else {
+        // Pour les tenues complètes, on garde le preview pour l'analyse
+        setCapturedImage(result.assets[0]);
+      }
     }
   };
 
@@ -235,6 +284,18 @@ export default function CameraScreen({ navigation, route }) {
         >
           <Ionicons name="close" size={28} color="#667eea" />
         </TouchableOpacity>
+        
+        {/* Overlay de chargement pour l'upload depuis la galerie */}
+        {isAnalyzing && (
+          <View style={styles.uploadingOverlay}>
+            <View style={styles.uploadingContainer}>
+              <ActivityIndicator size="large" color="#667eea" />
+              <Text style={styles.uploadingText}>
+                Ajout à votre garde-robe...
+              </Text>
+            </View>
+          </View>
+        )}
 
         <View style={styles.mainContent}>
           <Text style={styles.mainTitle}>
@@ -477,5 +538,33 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontSize: 16,
     fontWeight: '600',
+  },
+  uploadingOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(0, 0, 0, 0.7)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 1000,
+  },
+  uploadingContainer: {
+    backgroundColor: '#fff',
+    borderRadius: 20,
+    padding: 30,
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 10,
+  },
+  uploadingText: {
+    marginTop: 15,
+    fontSize: 16,
+    color: '#1f2937',
+    fontWeight: '500',
   },
 });
