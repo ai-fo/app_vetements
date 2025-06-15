@@ -11,6 +11,7 @@ import {
   Keyboard,
   Dimensions,
   SafeAreaView,
+  ScrollView,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
@@ -21,10 +22,10 @@ const { height: screenHeight } = Dimensions.get('window');
 export default function NeedsInput({ onSubmit, isVisible, onClose }) {
   const [inputText, setInputText] = useState('');
   const [suggestions] = useState([
-    'Entretien professionnel',
-    'Soirée décontractée',
-    'Sport et confort',
-    'Rendez-vous romantique',
+    'Entretien pro',
+    'Soirée casual',
+    'Sport',
+    'Rendez-vous',
   ]);
   const slideAnim = useRef(new Animated.Value(screenHeight)).current;
   const fadeAnim = useRef(new Animated.Value(0)).current;
@@ -122,18 +123,23 @@ export default function NeedsInput({ onSubmit, isVisible, onClose }) {
             </Text>
 
             {/* Suggestions rapides */}
-            <View style={styles.suggestionsContainer}>
-            {suggestions.map((suggestion, index) => (
-              <TouchableOpacity
-                key={index}
-                style={styles.suggestionChip}
-                onPress={() => handleSuggestion(suggestion)}
-                activeOpacity={0.7}
-              >
-                <Text style={styles.suggestionText}>{suggestion}</Text>
-              </TouchableOpacity>
-            ))}
-            </View>
+            <ScrollView 
+              horizontal 
+              showsHorizontalScrollIndicator={false}
+              style={styles.suggestionsScroll}
+              contentContainerStyle={styles.suggestionsContainer}
+            >
+              {suggestions.map((suggestion, index) => (
+                <TouchableOpacity
+                  key={index}
+                  style={styles.suggestionChip}
+                  onPress={() => handleSuggestion(suggestion)}
+                  activeOpacity={0.7}
+                >
+                  <Text style={styles.suggestionText}>{suggestion}</Text>
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
 
             {/* Zone de saisie */}
             <View style={styles.inputWrapper}>
@@ -194,7 +200,7 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingTop: 16,
     paddingBottom: 40,
-    paddingHorizontal: 32,
+    paddingHorizontal: 20,
   },
   header: {
     flexDirection: 'row',
@@ -223,21 +229,22 @@ const styles = StyleSheet.create({
     marginBottom: 24,
     lineHeight: 20,
   },
+  suggestionsScroll: {
+    marginBottom: 24,
+    marginHorizontal: -20,
+  },
   suggestionsContainer: {
     flexDirection: 'row',
-    flexWrap: 'wrap',
-    marginBottom: 24,
-    marginHorizontal: -4,
+    paddingHorizontal: 20,
+    gap: 10,
   },
   suggestionChip: {
     backgroundColor: 'rgba(255,255,255,0.15)',
-    paddingHorizontal: 14,
+    paddingHorizontal: 16,
     paddingVertical: 8,
     borderRadius: 20,
     borderWidth: 1,
     borderColor: 'rgba(255,255,255,0.25)',
-    marginBottom: 8,
-    marginRight: 8,
   },
   suggestionText: {
     fontSize: 14,
