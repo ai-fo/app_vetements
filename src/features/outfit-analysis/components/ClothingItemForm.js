@@ -15,6 +15,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { wardrobeAPI } from '../../virtual-wardrobe/api';
 import { ItemType } from '../../virtual-wardrobe/types';
+import { storageService } from '../../../shared/api/storage';
 
 const clothingTypes = [
   { id: 'top', label: 'Haut', icon: 'shirt-outline' },
@@ -54,10 +55,18 @@ export default function ClothingItemForm({ navigation, route }) {
 
     setSaving(true);
     try {
-      // Créer l'item dans la garde-robe
+      // Upload de l'image vers Supabase Storage
+      const { url: imageUrl, path: imagePath } = await storageService.uploadPhoto(
+        imageUri,
+        userId,
+        selectedType
+      );
+
+      // Créer l'item dans la garde-robe avec l'URL Supabase
       const itemData = {
         userId,
-        imageUrl: imageUri, // L'image sera uploadée par le backend
+        imageUrl, // URL publique depuis Supabase
+        imagePath, // Chemin pour suppression ultérieure
         itemType: ItemType.SINGLE_PIECE,
         category: selectedType,
         colors: selectedColor ? [selectedColor] : [],
@@ -70,7 +79,11 @@ export default function ClothingItemForm({ navigation, route }) {
 
       const { data, error } = await wardrobeAPI.createItem(itemData);
 
-      if (error) throw new Error(error);
+      if (error) {
+        // Si erreur, supprimer l'image uploadée
+        await storageService.deletePhoto(imagePath);
+        throw new Error(error);
+      }
 
       navigation.reset({
         index: 0,

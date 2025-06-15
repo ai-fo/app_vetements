@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { ItemType } from '../types';
+import { storageService } from '../../../shared/api/storage';
 
 export function useWardrobe(userId) {
   const [items, setItems] = useState([]);
@@ -92,11 +93,24 @@ export function useWardrobe(userId) {
 
   const deleteItem = async (itemId) => {
     try {
+      // Trouver l'item pour récupérer l'imagePath
+      const item = items.find(i => i.id === itemId);
+      
       // TODO: Activer quand le backend est prêt
       // await wardrobeAPI.deleteItem(itemId);
       
       // Simulation temporaire
       await new Promise(resolve => setTimeout(resolve, 500));
+      
+      // Supprimer l'image de Supabase Storage si elle existe
+      if (item?.imagePath) {
+        try {
+          await storageService.deletePhoto(item.imagePath);
+        } catch (error) {
+          console.error('Error deleting photo from storage:', error);
+          // Continue même si la suppression de l'image échoue
+        }
+      }
       
       setItems(prevItems => prevItems.filter(item => item.id !== itemId));
       return true;
