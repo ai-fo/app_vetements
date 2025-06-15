@@ -7,14 +7,15 @@ export const storageService = {
   /**
    * Upload une photo vers le bucket Supabase
    * @param {string} uri - URI de l'image (depuis expo-image-picker)
-   * @param {string} userId - ID de l'utilisateur
-   * @param {string} category - Catégorie du vêtement
-   * @returns {Promise<{url: string, path: string}>}
+   * @param {string} fileName - Nom du fichier (optionnel)
+   * @returns {Promise<{publicUrl: string, path: string}>}
    */
-  async uploadPhoto(uri, userId, category) {
+  async uploadPhoto(uri, fileName = null) {
     try {
-      // Générer un nom de fichier unique
-      const fileName = `${userId}/${category}/${Date.now()}_${Math.random().toString(36).substring(7)}.jpg`;
+      // Générer un nom de fichier unique si non fourni
+      if (!fileName) {
+        fileName = `${Date.now()}_${Math.random().toString(36).substring(7)}.jpg`;
+      }
       
       // Récupérer le blob de l'image
       const response = await fetch(uri);
@@ -49,7 +50,7 @@ export const storageService = {
         .getPublicUrl(data.path);
       
       return {
-        url: publicUrl,
+        publicUrl: publicUrl,
         path: data.path
       };
     } catch (error) {

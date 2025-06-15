@@ -1,6 +1,11 @@
 import { apiClient } from '../../shared/api/client';
+import { wardrobeSupabaseAPI } from './api/supabaseWardrobe';
 
-export const wardrobeAPI = {
+// Utiliser l'API Supabase directement
+export const wardrobeAPI = wardrobeSupabaseAPI;
+
+// Version avec mocks (conservée pour référence)
+export const wardrobeAPIMock = {
   // Récupérer tous les items de la garde-robe
   getItems: async (userId, filters = {}) => {
     // TODO: Activer quand le backend est prêt

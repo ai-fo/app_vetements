@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { ItemType } from '../types';
 import { storageService } from '../../../shared/api/storage';
+import { wardrobeSupabaseAPI } from '../api/supabaseWardrobe';
 
 export function useWardrobe(userId) {
   const [items, setItems] = useState([]);
@@ -23,48 +24,35 @@ export function useWardrobe(userId) {
   const loadWardrobeItems = async () => {
     setLoading(true);
     try {
-      // TODO: Activer quand le backend est prêt
-      // const response = await wardrobeAPI.getItems(userId, filters);
+      // Récupérer les vêtements depuis Supabase
+      const { data, error } = await wardrobeSupabaseAPI.getItems(userId, filters);
       
-      // Simulation temporaire avec données mockées
-      await new Promise(resolve => setTimeout(resolve, 1000));
+      if (error) {
+        throw new Error(error);
+      }
       
-      const mockItems = [
-        {
-          id: '1',
-          userId,
-          itemType: ItemType.OUTFIT,
-          category: 'full_outfit',
-          imageUrl: 'https://via.placeholder.com/400x600',
-          colors: ['noir', 'blanc'],
-          materials: ['cotton', 'denim'],
-          seasons: ['fall', 'winter'],
-          brand: 'Zara',
-          name: 'Tenue décontractée',
-          createdAt: new Date().toISOString(),
-          tags: ['casual', 'work'],
-          isFavorite: true
-        },
-        {
-          id: '2',
-          userId,
-          itemType: ItemType.SINGLE_PIECE,
-          category: 'top',
-          imageUrl: 'https://via.placeholder.com/400x600',
-          colors: ['bleu'],
-          materials: ['cotton'],
-          seasons: ['spring', 'summer'],
-          brand: 'H&M',
-          name: 'T-shirt basique',
-          createdAt: new Date().toISOString(),
-          tags: ['basic', 'casual'],
-          isFavorite: false
-        }
-      ];
-
-      setItems(mockItems);
+      // Adapter les données pour le format attendu par le composant
+      const formattedItems = data.map(item => ({
+        id: item.id,
+        userId: item.user_id,
+        itemType: item.item_type || ItemType.SINGLE_PIECE,
+        category: item.category,
+        imageUrl: item.image_url,
+        imagePath: item.image_path,
+        colors: item.colors || [],
+        materials: item.materials || [],
+        seasons: item.seasons || [],
+        brand: item.brand || '',
+        name: item.name || '',
+        createdAt: item.created_at,
+        tags: item.tags || [],
+        isFavorite: item.is_favorite || false
+      }));
+      
+      setItems(formattedItems);
     } catch (error) {
       console.error('Error loading wardrobe items:', error);
+      setItems([]);
     } finally {
       setLoading(false);
     }
@@ -72,11 +60,7 @@ export function useWardrobe(userId) {
 
   const updateItem = async (itemId, updates) => {
     try {
-      // TODO: Activer quand le backend est prêt
-      // const response = await wardrobeAPI.updateItem(itemId, updates);
-      
-      // Simulation temporaire
-      await new Promise(resolve => setTimeout(resolve, 500));
+      await wardrobeSupabaseAPI.updateItem(itemId, updates);
       
       setItems(prevItems => 
         prevItems.map(item => 
@@ -96,11 +80,7 @@ export function useWardrobe(userId) {
       // Trouver l'item pour récupérer l'imagePath
       const item = items.find(i => i.id === itemId);
       
-      // TODO: Activer quand le backend est prêt
-      // await wardrobeAPI.deleteItem(itemId);
-      
-      // Simulation temporaire
-      await new Promise(resolve => setTimeout(resolve, 500));
+      await wardrobeSupabaseAPI.deleteItem(itemId);
       
       // Supprimer l'image de Supabase Storage si elle existe
       if (item?.imagePath) {
@@ -131,11 +111,11 @@ export function useWardrobe(userId) {
       
       const newFavoriteStatus = !item.isFavorite;
       
-      // TODO: Activer quand le backend est prêt
-      // await wardrobeAPI.updateItem(itemId, { isFavorite: newFavoriteStatus });
+      const { error } = await wardrobeSupabaseAPI.toggleFavorite(itemId, newFavoriteStatus);
       
-      // Simulation temporaire
-      await new Promise(resolve => setTimeout(resolve, 300));
+      if (error) {
+        throw new Error(error);
+      }
       
       setItems(prevItems => 
         prevItems.map(item => 

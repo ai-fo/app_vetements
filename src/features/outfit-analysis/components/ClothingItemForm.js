@@ -27,16 +27,16 @@ const clothingTypes = [
 ];
 
 const commonColors = [
-  { name: 'Noir', value: '#000000' },
-  { name: 'Blanc', value: '#FFFFFF' },
-  { name: 'Gris', value: '#808080' },
-  { name: 'Bleu', value: '#0000FF' },
-  { name: 'Rouge', value: '#FF0000' },
-  { name: 'Vert', value: '#00FF00' },
-  { name: 'Jaune', value: '#FFFF00' },
-  { name: 'Rose', value: '#FFC0CB' },
-  { name: 'Beige', value: '#F5DEB3' },
-  { name: 'Marron', value: '#8B4513' },
+  { name: 'Noir', hex: '#000000' },
+  { name: 'Blanc', hex: '#FFFFFF' },
+  { name: 'Gris', hex: '#808080' },
+  { name: 'Bleu', hex: '#0000FF' },
+  { name: 'Rouge', hex: '#FF0000' },
+  { name: 'Vert', hex: '#00FF00' },
+  { name: 'Jaune', hex: '#FFFF00' },
+  { name: 'Rose', hex: '#FFC0CB' },
+  { name: 'Beige', hex: '#F5DEB3' },
+  { name: 'Marron', hex: '#8B4513' },
 ];
 
 export default function ClothingItemForm({ navigation, route }) {
@@ -56,10 +56,10 @@ export default function ClothingItemForm({ navigation, route }) {
     setSaving(true);
     try {
       // Upload de l'image vers Supabase Storage
-      const { url: imageUrl, path: imagePath } = await storageService.uploadPhoto(
+      const fileName = `${userId}/${selectedType}/${Date.now()}_${Math.random().toString(36).substring(7)}.jpg`;
+      const { publicUrl: imageUrl, path: imagePath } = await storageService.uploadPhoto(
         imageUri,
-        userId,
-        selectedType
+        fileName
       );
 
       // Créer l'item dans la garde-robe avec l'URL Supabase
@@ -158,8 +158,8 @@ export default function ClothingItemForm({ navigation, route }) {
                     <View 
                       style={[
                         styles.colorCircle, 
-                        { backgroundColor: color.value },
-                        color.value === '#FFFFFF' && styles.whiteColor
+                        { backgroundColor: color.hex },
+                        color.hex === '#FFFFFF' && styles.whiteColor
                       ]} 
                     />
                     <Text style={styles.colorName}>{color.name}</Text>
