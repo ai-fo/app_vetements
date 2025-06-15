@@ -1,8 +1,10 @@
+// Types d'items
 export const ItemType = {
-  OUTFIT: 'outfit',
-  SINGLE_PIECE: 'single_piece'
+  OUTFIT: 'OUTFIT',
+  SINGLE_PIECE: 'SINGLE_PIECE'
 };
 
+// Catégories de vêtements
 export const ClothingCategory = {
   TOP: 'top',
   BOTTOM: 'bottom',
@@ -13,6 +15,7 @@ export const ClothingCategory = {
   FULL_OUTFIT: 'full_outfit'
 };
 
+// Saisons
 export const Season = {
   SPRING: 'spring',
   SUMMER: 'summer',
@@ -21,6 +24,7 @@ export const Season = {
   ALL_SEASON: 'all_season'
 };
 
+// Matériaux
 export const Material = {
   COTTON: 'cotton',
   WOOL: 'wool',

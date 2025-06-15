@@ -1,8 +1,62 @@
 import { supabase } from '../../../shared/api/supabase';
 
+/**
+ * Transforme un item de la DB vers le format frontend
+ */
+const transformClothingItemToFrontend = (dbItem) => ({
+  id: dbItem.id,
+  userId: dbItem.user_id,
+  itemType: 'SINGLE_PIECE',
+  category: dbItem.type,
+  imageUrl: dbItem.image_url,
+  imagePath: dbItem.image_path,
+  colors: dbItem.color ? [dbItem.color] : [],
+  materials: dbItem.materials || [],
+  seasons: dbItem.seasons || ['all_season'],
+  brand: dbItem.brand || '',
+  name: dbItem.name || '',
+  createdAt: dbItem.created_at,
+  updatedAt: dbItem.updated_at,
+  tags: dbItem.tags || [],
+  isFavorite: dbItem.is_favorite || false
+});
+
+/**
+ * Transforme une analyse d'outfit vers le format frontend
+ */
+const transformOutfitAnalysisToFrontend = (analysis) => ({
+  id: analysis.id,
+  userId: analysis.user_id,
+  itemType: 'OUTFIT',
+  category: 'full_outfit',
+  imageUrl: analysis.image_url,
+  thumbnailUrl: analysis.thumbnail_url,
+  colors: analysis.colors?.primary || [],
+  materials: analysis.materials || [],
+  seasons: analysis.seasons || ['all_season'],
+  brand: analysis.style || 'Tenue complète',
+  name: `${analysis.style || 'Tenue'} - ${analysis.category || 'analysée'}`,
+  createdAt: analysis.created_at,
+  tags: analysis.occasions || [],
+  isFavorite: false,
+  analysisData: {
+    formality: analysis.formality,
+    versatility: analysis.versatility,
+    comfort: analysis.comfort,
+    weather: analysis.weather,
+    matchingSuggestions: analysis.matching_suggestions,
+    improvements: analysis.improvements
+  }
+});
+
+/**
+ * API Supabase pour la garde-robe virtuelle
+ */
 export const wardrobeSupabaseAPI = {
-  // Récupérer tous les items de la garde-robe
-  getItems: async (userId, filters = {}) => {
+  /**
+   * Récupère tous les items de la garde-robe d'un utilisateur
+   */
+  async getItems(userId, filters = {}) {
     try {
       let query = supabase
         .from('clothing_items')
@@ -11,20 +65,14 @@ export const wardrobeSupabaseAPI = {
         .order('created_at', { ascending: false });
 
       // Appliquer les filtres
-      if (filters.category) {
-        query = query.eq('category', filters.category);
-      }
-      if (filters.itemType) {
-        query = query.eq('item_type', filters.itemType);
-      }
-      if (filters.brand) {
-        query = query.eq('brand', filters.brand);
-      }
-      if (filters.season) {
-        query = query.contains('seasons', [filters.season]);
+      if (filters.type) {
+        query = query.eq('type', filters.type);
       }
       if (filters.color) {
-        query = query.contains('colors', [filters.color]);
+        query = query.eq('color', filters.color);
+      }
+      if (filters.brand) {
+        query = query.ilike('brand', `%${filters.brand}%`);
       }
 
       const { data, error } = await query;
@@ -32,61 +80,75 @@ export const wardrobeSupabaseAPI = {
       if (error) throw error;
 
       return {
-        data: data || [],
+        data: (data || []).map(transformClothingItemToFrontend),
         error: null
       };
     } catch (error) {
       console.error('Error fetching wardrobe items:', error);
       return {
         data: [],
-        error: error.message
+        error: error.message || 'Erreur lors de la récupération des articles'
       };
     }
   },
 
-  // Créer un nouvel item
-  createItem: async (itemData) => {
+  /**
+   * Crée un nouvel item dans la garde-robe
+   */
+  async createItem(itemData) {
     try {
+      const insertData = {
+        user_id: itemData.userId,
+        image_url: itemData.imageUrl,
+        type: itemData.category || 'top',
+        color: itemData.colors?.[0] || null,
+        brand: itemData.brand || null,
+        name: itemData.name || null,
+        tags: itemData.tags || null,
+        image_path: itemData.imagePath || null
+      };
+      
       const { data, error } = await supabase
         .from('clothing_items')
-        .insert({
-          user_id: itemData.userId,
-          image_url: itemData.imageUrl,
-          image_path: itemData.imagePath,
-          item_type: itemData.itemType,
-          category: itemData.category,
-          colors: itemData.colors || [],
-          brand: itemData.brand || '',
-          name: itemData.name || '',
-          tags: itemData.tags || [],
-          materials: itemData.materials || [],
-          seasons: itemData.seasons || [],
-          is_favorite: false
-        })
+        .insert(insertData)
         .select()
         .single();
 
       if (error) throw error;
 
       return {
-        data,
+        data: transformClothingItemToFrontend(data),
         error: null
       };
     } catch (error) {
       console.error('Error creating wardrobe item:', error);
       return {
         data: null,
-        error: error.message
+        error: error.message || 'Erreur lors de la création de l\'article'
       };
     }
   },
 
-  // Mettre à jour un item
-  updateItem: async (itemId, updates) => {
+  /**
+   * Met à jour un item existant
+   */
+  async updateItem(itemId, updates) {
     try {
+      const updateData = {
+        updated_at: new Date().toISOString()
+      };
+      
+      // Mapper les updates vers les colonnes DB
+      if (updates.category !== undefined) updateData.type = updates.category;
+      if (updates.colors?.length > 0) updateData.color = updates.colors[0];
+      if (updates.brand !== undefined) updateData.brand = updates.brand;
+      if (updates.name !== undefined) updateData.name = updates.name;
+      if (updates.tags !== undefined) updateData.tags = updates.tags;
+      if (updates.isFavorite !== undefined) updateData.is_favorite = updates.isFavorite;
+      
       const { data, error } = await supabase
         .from('clothing_items')
-        .update(updates)
+        .update(updateData)
         .eq('id', itemId)
         .select()
         .single();
@@ -94,29 +156,23 @@ export const wardrobeSupabaseAPI = {
       if (error) throw error;
 
       return {
-        data,
+        data: transformClothingItemToFrontend(data),
         error: null
       };
     } catch (error) {
       console.error('Error updating wardrobe item:', error);
       return {
         data: null,
-        error: error.message
+        error: error.message || 'Erreur lors de la mise à jour'
       };
     }
   },
 
-  // Supprimer un item
-  deleteItem: async (itemId) => {
+  /**
+   * Supprime un item de la garde-robe
+   */
+  async deleteItem(itemId) {
     try {
-      // Récupérer l'item pour obtenir le path de l'image
-      const { data: item } = await supabase
-        .from('clothing_items')
-        .select('image_path')
-        .eq('id', itemId)
-        .single();
-
-      // Supprimer l'item de la base
       const { error } = await supabase
         .from('clothing_items')
         .delete()
@@ -124,35 +180,51 @@ export const wardrobeSupabaseAPI = {
 
       if (error) throw error;
 
-      // Supprimer l'image du storage si elle existe
-      if (item?.image_path) {
-        try {
-          const { storageService } = await import('../../../shared/api/storage');
-          await storageService.deletePhoto(item.image_path);
-        } catch (error) {
-          console.error('Error deleting image from storage:', error);
-        }
-      }
-
       return {
-        data: { message: 'Item supprimé avec succès' },
+        success: true,
         error: null
       };
     } catch (error) {
       console.error('Error deleting wardrobe item:', error);
       return {
-        data: null,
-        error: error.message
+        success: false,
+        error: error.message || 'Erreur lors de la suppression'
       };
     }
   },
 
-  // Basculer le statut favori
-  toggleFavorite: async (itemId, isFavorite) => {
+  /**
+   * Récupère les analyses d'outfit pour un utilisateur
+   */
+  async getOutfitAnalyses(userId) {
+    try {
+      const { data, error } = await supabase
+        .from('outfit_analyses')
+        .select('*')
+        .eq('user_id', userId)
+        .eq('processing_status', 'completed')
+        .order('created_at', { ascending: false });
+
+      if (error) throw error;
+
+      return (data || []).map(transformOutfitAnalysisToFrontend);
+    } catch (error) {
+      console.error('Error fetching outfit analyses:', error);
+      throw error;
+    }
+  },
+
+  /**
+   * Bascule le statut favori d'un item
+   */
+  async toggleFavorite(itemId, isFavorite) {
     try {
       const { data, error } = await supabase
         .from('clothing_items')
-        .update({ is_favorite: isFavorite })
+        .update({ 
+          is_favorite: isFavorite,
+          updated_at: new Date().toISOString()
+        })
         .eq('id', itemId)
         .select()
         .single();
@@ -160,216 +232,14 @@ export const wardrobeSupabaseAPI = {
       if (error) throw error;
 
       return {
-        data,
+        data: transformClothingItemToFrontend(data),
         error: null
       };
     } catch (error) {
       console.error('Error toggling favorite:', error);
       return {
         data: null,
-        error: error.message
-      };
-    }
-  },
-
-  // Obtenir les statistiques de garde-robe
-  getWardrobeStats: async (userId) => {
-    try {
-      // Récupérer tous les items pour calculer les stats
-      const { data: items, error } = await supabase
-        .from('clothing_items')
-        .select('category, colors, brand, seasons')
-        .eq('user_id', userId);
-
-      if (error) throw error;
-
-      // Calculer les statistiques
-      const stats = {
-        totalItems: items.length,
-        byCategory: {},
-        favoriteColors: [],
-        favoriteBrands: [],
-        seasonalDistribution: {}
-      };
-
-      // Compter par catégorie
-      const categoryCount = {};
-      const colorCount = {};
-      const brandCount = {};
-      const seasonCount = {};
-
-      items.forEach(item => {
-        // Catégories
-        if (item.category) {
-          categoryCount[item.category] = (categoryCount[item.category] || 0) + 1;
-        }
-
-        // Couleurs
-        if (item.colors && Array.isArray(item.colors)) {
-          item.colors.forEach(color => {
-            colorCount[color] = (colorCount[color] || 0) + 1;
-          });
-        }
-
-        // Marques
-        if (item.brand) {
-          brandCount[item.brand] = (brandCount[item.brand] || 0) + 1;
-        }
-
-        // Saisons
-        if (item.seasons && Array.isArray(item.seasons)) {
-          item.seasons.forEach(season => {
-            seasonCount[season] = (seasonCount[season] || 0) + 1;
-          });
-        }
-      });
-
-      stats.byCategory = categoryCount;
-      
-      // Top 5 couleurs
-      stats.favoriteColors = Object.entries(colorCount)
-        .sort(([,a], [,b]) => b - a)
-        .slice(0, 5)
-        .map(([color]) => color);
-
-      // Top 5 marques
-      stats.favoriteBrands = Object.entries(brandCount)
-        .sort(([,a], [,b]) => b - a)
-        .slice(0, 5)
-        .map(([brand]) => brand);
-
-      stats.seasonalDistribution = seasonCount;
-
-      return {
-        data: stats,
-        error: null
-      };
-    } catch (error) {
-      console.error('Error fetching wardrobe stats:', error);
-      return {
-        data: null,
-        error: error.message
-      };
-    }
-  },
-
-  // Obtenir les suggestions de tenues (version simplifiée)
-  getOutfitSuggestions: async (userId, occasion = null, weather = null) => {
-    try {
-      // Pour l'instant, on retourne des suggestions basiques basées sur les items existants
-      const { data: items } = await supabase
-        .from('clothing_items')
-        .select('*')
-        .eq('user_id', userId)
-        .limit(20);
-
-      // Logique simple pour créer des suggestions
-      const suggestions = [];
-      
-      // Suggestion 1: Tenue casual
-      const casualItems = items.filter(item => 
-        item.tags?.includes('casual') || item.category === 'top' || item.category === 'bottom'
-      );
-      
-      if (casualItems.length >= 2) {
-        suggestions.push({
-          id: '1',
-          name: 'Look casual',
-          items: casualItems.slice(0, 3).map(item => item.name || item.category),
-          occasion: 'quotidien',
-          confidence: 0.8
-        });
-      }
-
-      // Suggestion 2: Tenue formelle
-      const formalItems = items.filter(item => 
-        item.tags?.includes('formal') || item.category === 'dress' || item.category === 'outerwear'
-      );
-      
-      if (formalItems.length >= 1) {
-        suggestions.push({
-          id: '2',
-          name: 'Look élégant',
-          items: formalItems.slice(0, 3).map(item => item.name || item.category),
-          occasion: 'soirée',
-          confidence: 0.75
-        });
-      }
-
-      return {
-        data: { suggestions },
-        error: null
-      };
-    } catch (error) {
-      console.error('Error getting outfit suggestions:', error);
-      return {
-        data: { suggestions: [] },
-        error: error.message
-      };
-    }
-  },
-
-  // Rechercher des items similaires (version simplifiée)
-  findSimilarItems: async (itemId) => {
-    try {
-      // Récupérer l'item de référence
-      const { data: referenceItem } = await supabase
-        .from('clothing_items')
-        .select('*')
-        .eq('id', itemId)
-        .single();
-
-      if (!referenceItem) {
-        throw new Error('Item not found');
-      }
-
-      // Rechercher des items similaires basés sur la catégorie et les couleurs
-      const { data: similarItems } = await supabase
-        .from('clothing_items')
-        .select('*')
-        .eq('user_id', referenceItem.user_id)
-        .eq('category', referenceItem.category)
-        .neq('id', itemId)
-        .limit(5);
-
-      // Calculer un score de similarité simple
-      const itemsWithSimilarity = similarItems.map(item => {
-        let similarity = 0.5; // Base score pour même catégorie
-        
-        // Bonus pour couleurs similaires
-        if (item.colors && referenceItem.colors) {
-          const commonColors = item.colors.filter(color => 
-            referenceItem.colors.includes(color)
-          );
-          similarity += commonColors.length * 0.1;
-        }
-        
-        // Bonus pour même marque
-        if (item.brand === referenceItem.brand) {
-          similarity += 0.2;
-        }
-
-        return {
-          id: item.id,
-          name: item.name || item.category,
-          imageUrl: item.image_url,
-          similarity: Math.min(similarity, 1),
-          brand: item.brand
-        };
-      });
-
-      // Trier par similarité décroissante
-      itemsWithSimilarity.sort((a, b) => b.similarity - a.similarity);
-
-      return {
-        data: itemsWithSimilarity,
-        error: null
-      };
-    } catch (error) {
-      console.error('Error finding similar items:', error);
-      return {
-        data: [],
-        error: error.message
+        error: error.message || 'Erreur lors de la mise à jour du favori'
       };
     }
   }

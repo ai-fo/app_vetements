@@ -1,11 +1,16 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { ItemType } from '../types';
 import { storageService } from '../../../shared/api/storage';
 import { wardrobeSupabaseAPI } from '../api/supabaseWardrobe';
 
+/**
+ * Hook personnalisé pour gérer la garde-robe
+ * @param {string} userId - ID de l'utilisateur
+ */
 export function useWardrobe(userId) {
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState(null);
   const [filters, setFilters] = useState({
     itemType: null,
     category: null,
@@ -15,74 +20,86 @@ export function useWardrobe(userId) {
     isFavorite: false
   });
 
+  // Charger les items au montage
   useEffect(() => {
     if (userId) {
       loadWardrobeItems();
     }
-  }, [userId, filters]);
+  }, [userId]);
 
-  const loadWardrobeItems = async () => {
+  /**
+   * Charge tous les items de la garde-robe
+   */
+  const loadWardrobeItems = useCallback(async () => {
+    if (!userId) return;
+    
     setLoading(true);
+    setError(null);
+    
     try {
-      // Récupérer les vêtements depuis Supabase
-      const { data, error } = await wardrobeSupabaseAPI.getItems(userId, filters);
+      // Charger en parallèle pour de meilleures performances
+      const [clothingResponse, outfitAnalyses] = await Promise.all([
+        wardrobeSupabaseAPI.getItems(userId, filters),
+        wardrobeSupabaseAPI.getOutfitAnalyses(userId)
+      ]);
       
-      if (error) {
-        throw new Error(error);
-      }
+      // Combiner les résultats
+      const allItems = [
+        ...(clothingResponse.data || []),
+        ...(outfitAnalyses || [])
+      ];
       
-      // Adapter les données pour le format attendu par le composant
-      const formattedItems = data.map(item => ({
-        id: item.id,
-        userId: item.user_id,
-        itemType: item.item_type || ItemType.SINGLE_PIECE,
-        category: item.category,
-        imageUrl: item.image_url,
-        imagePath: item.image_path,
-        colors: item.colors || [],
-        materials: item.materials || [],
-        seasons: item.seasons || [],
-        brand: item.brand || '',
-        name: item.name || '',
-        createdAt: item.created_at,
-        tags: item.tags || [],
-        isFavorite: item.is_favorite || false
-      }));
-      
-      setItems(formattedItems);
+      setItems(allItems);
     } catch (error) {
       console.error('Error loading wardrobe items:', error);
+      setError('Impossible de charger votre garde-robe');
       setItems([]);
     } finally {
       setLoading(false);
     }
-  };
+  }, [userId, filters]);
 
+  /**
+   * Met à jour un item existant
+   */
   const updateItem = async (itemId, updates) => {
     try {
-      await wardrobeSupabaseAPI.updateItem(itemId, updates);
+      const response = await wardrobeSupabaseAPI.updateItem(itemId, updates);
       
+      if (response.error) {
+        throw new Error(response.error);
+      }
+      
+      // Mettre à jour l'état local
       setItems(prevItems => 
         prevItems.map(item => 
-          item.id === itemId ? { ...item, ...updates } : item
+          item.id === itemId ? { ...item, ...response.data } : item
         )
       );
       
       return true;
     } catch (error) {
       console.error('Error updating item:', error);
+      setError('Impossible de mettre à jour l\'article');
       return false;
     }
   };
 
+  /**
+   * Supprime un item de la garde-robe
+   */
   const deleteItem = async (itemId) => {
     try {
       // Trouver l'item pour récupérer l'imagePath
       const item = items.find(i => i.id === itemId);
       
-      await wardrobeSupabaseAPI.deleteItem(itemId);
+      const response = await wardrobeSupabaseAPI.deleteItem(itemId);
       
-      // Supprimer l'image de Supabase Storage si elle existe
+      if (response.error) {
+        throw new Error(response.error);
+      }
+      
+      // Supprimer l'image du storage si elle existe
       if (item?.imagePath) {
         try {
           await storageService.deletePhoto(item.imagePath);
@@ -92,31 +109,40 @@ export function useWardrobe(userId) {
         }
       }
       
+      // Mettre à jour l'état local
       setItems(prevItems => prevItems.filter(item => item.id !== itemId));
       return true;
     } catch (error) {
       console.error('Error deleting item:', error);
+      setError('Impossible de supprimer l\'article');
       return false;
     }
   };
 
-  const applyFilters = (newFilters) => {
+  /**
+   * Applique les nouveaux filtres
+   */
+  const applyFilters = useCallback((newFilters) => {
     setFilters(newFilters);
-  };
+  }, []);
 
+  /**
+   * Bascule le statut favori d'un item
+   */
   const toggleFavorite = async (itemId) => {
     try {
       const item = items.find(i => i.id === itemId);
-      if (!item) return;
+      if (!item) return false;
       
       const newFavoriteStatus = !item.isFavorite;
       
-      const { error } = await wardrobeSupabaseAPI.toggleFavorite(itemId, newFavoriteStatus);
+      const response = await wardrobeSupabaseAPI.toggleFavorite(itemId, newFavoriteStatus);
       
-      if (error) {
-        throw new Error(error);
+      if (response.error) {
+        throw new Error(response.error);
       }
       
+      // Mettre à jour l'état local
       setItems(prevItems => 
         prevItems.map(item => 
           item.id === itemId ? { ...item, isFavorite: newFavoriteStatus } : item
@@ -126,11 +152,15 @@ export function useWardrobe(userId) {
       return true;
     } catch (error) {
       console.error('Error toggling favorite:', error);
+      setError('Impossible de mettre à jour le favori');
       return false;
     }
   };
 
-  const getFilteredItems = () => {
+  /**
+   * Filtre les items selon les critères
+   */
+  const getFilteredItems = useCallback(() => {
     return items.filter(item => {
       if (filters.itemType && item.itemType !== filters.itemType) return false;
       if (filters.category && item.category !== filters.category) return false;
@@ -140,11 +170,12 @@ export function useWardrobe(userId) {
       if (filters.isFavorite && !item.isFavorite) return false;
       return true;
     });
-  };
+  }, [items, filters]);
 
   return {
     items: getFilteredItems(),
     loading,
+    error,
     filters,
     applyFilters,
     updateItem,

@@ -3,6 +3,9 @@ import { decode } from 'base64-arraybuffer';
 
 const WARDROBE_BUCKET = 'wardrobe';
 
+/**
+ * Service de gestion du stockage des images
+ */
 export const storageService = {
   /**
    * Upload une photo vers le bucket Supabase
@@ -22,15 +25,7 @@ export const storageService = {
       const blob = await response.blob();
       
       // Convertir le blob en base64
-      const reader = new FileReader();
-      const base64 = await new Promise((resolve, reject) => {
-        reader.onloadend = () => {
-          const base64String = reader.result.split(',')[1];
-          resolve(base64String);
-        };
-        reader.onerror = reject;
-        reader.readAsDataURL(blob);
-      });
+      const base64 = await blobToBase64(blob);
       
       // Upload vers Supabase Storage
       const { data, error } = await supabase.storage
@@ -50,12 +45,12 @@ export const storageService = {
         .getPublicUrl(data.path);
       
       return {
-        publicUrl: publicUrl,
+        publicUrl,
         path: data.path
       };
     } catch (error) {
       console.error('Erreur lors de l\'upload:', error);
-      throw error;
+      throw new Error(`Impossible d'uploader l'image: ${error.message}`);
     }
   },
   
@@ -65,6 +60,8 @@ export const storageService = {
    */
   async deletePhoto(path) {
     try {
+      if (!path) return;
+      
       const { error } = await supabase.storage
         .from(WARDROBE_BUCKET)
         .remove([path]);
@@ -74,24 +71,25 @@ export const storageService = {
       }
     } catch (error) {
       console.error('Erreur lors de la suppression:', error);
-      throw error;
+      throw new Error(`Impossible de supprimer l'image: ${error.message}`);
     }
   },
   
   /**
    * Lister les photos d'un utilisateur
    * @param {string} userId - ID de l'utilisateur
-   * @param {string} category - Catégorie (optionnel)
+   * @param {object} options - Options de pagination et filtrage
    */
-  async listUserPhotos(userId, category = null) {
+  async listUserPhotos(userId, options = {}) {
     try {
-      const path = category ? `${userId}/${category}` : userId;
+      const { limit = 100, offset = 0 } = options;
       
       const { data, error } = await supabase.storage
         .from(WARDROBE_BUCKET)
-        .list(path, {
-          limit: 100,
-          offset: 0
+        .list(userId, {
+          limit,
+          offset,
+          sortBy: { column: 'created_at', order: 'desc' }
         });
       
       if (error) {
@@ -99,16 +97,16 @@ export const storageService = {
       }
       
       // Retourner les URLs publiques
-      return data.map(file => ({
+      return (data || []).map(file => ({
         name: file.name,
-        path: `${path}/${file.name}`,
-        url: supabase.storage.from(WARDROBE_BUCKET).getPublicUrl(`${path}/${file.name}`).data.publicUrl,
+        path: `${userId}/${file.name}`,
+        url: this.getPublicUrl(`${userId}/${file.name}`),
         createdAt: file.created_at,
         size: file.metadata?.size
       }));
     } catch (error) {
       console.error('Erreur lors de la récupération des photos:', error);
-      throw error;
+      throw new Error(`Impossible de récupérer les photos: ${error.message}`);
     }
   },
   
@@ -122,5 +120,36 @@ export const storageService = {
       .getPublicUrl(path);
     
     return data.publicUrl;
+  },
+  
+  /**
+   * Vérifier si une image existe
+   * @param {string} path - Chemin du fichier
+   */
+  async exists(path) {
+    try {
+      const { data, error } = await supabase.storage
+        .from(WARDROBE_BUCKET)
+        .download(path);
+      
+      return !error && data !== null;
+    } catch {
+      return false;
+    }
   }
 };
+
+/**
+ * Convertir un blob en base64
+ */
+function blobToBase64(blob) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onloadend = () => {
+      const base64String = reader.result.split(',')[1];
+      resolve(base64String);
+    };
+    reader.onerror = reject;
+    reader.readAsDataURL(blob);
+  });
+}
