@@ -117,12 +117,12 @@ export default function NeedsInput({ onSubmit, isVisible, onClose }) {
               </TouchableOpacity>
             </View>
 
-          <Text style={styles.subtitle}>
-            Dites-moi vos besoins et je vous suggère la tenue parfaite
-          </Text>
+            <Text style={styles.subtitle}>
+              Dites-moi vos besoins et je vous suggère la tenue parfaite
+            </Text>
 
-          {/* Suggestions rapides */}
-          <View style={styles.suggestionsContainer}>
+            {/* Suggestions rapides */}
+            <View style={styles.suggestionsContainer}>
             {suggestions.map((suggestion, index) => (
               <TouchableOpacity
                 key={index}
@@ -133,10 +133,10 @@ export default function NeedsInput({ onSubmit, isVisible, onClose }) {
                 <Text style={styles.suggestionText}>{suggestion}</Text>
               </TouchableOpacity>
             ))}
-          </View>
+            </View>
 
-          {/* Zone de saisie */}
-          <View style={styles.inputWrapper}>
+            {/* Zone de saisie */}
+            <View style={styles.inputWrapper}>
             <TextInput
               style={styles.textInput}
               placeholder="Ex: J'ai un déjeuner d'affaires puis du sport..."
@@ -165,7 +165,7 @@ export default function NeedsInput({ onSubmit, isVisible, onClose }) {
                 />
               </LinearGradient>
             </TouchableOpacity>
-          </View>
+            </View>
           </SafeAreaView>
         </LinearGradient>
       </Animated.View>
@@ -194,7 +194,7 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingTop: 16,
     paddingBottom: 40,
-    paddingHorizontal: 24,
+    paddingHorizontal: 32,
   },
   header: {
     flexDirection: 'row',
@@ -228,14 +228,16 @@ const styles = StyleSheet.create({
     flexWrap: 'wrap',
     gap: 10,
     marginBottom: 32,
+    paddingHorizontal: 4,
   },
   suggestionChip: {
     backgroundColor: 'rgba(255,255,255,0.15)',
-    paddingHorizontal: 18,
+    paddingHorizontal: 16,
     paddingVertical: 10,
     borderRadius: 24,
     borderWidth: 1.5,
     borderColor: 'rgba(255,255,255,0.25)',
+    marginBottom: 8,
   },
   suggestionText: {
     fontSize: 15,
