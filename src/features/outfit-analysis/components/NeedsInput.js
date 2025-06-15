@@ -114,7 +114,7 @@ export default function NeedsInput({ onSubmit, isVisible, onClose }) {
             <View style={styles.header}>
               <Text style={styles.title}>Qu'avez-vous prévu aujourd'hui ?</Text>
               <TouchableOpacity onPress={onClose} style={styles.closeButton}>
-                <Ionicons name="close" size={26} color="#fff" />
+                <Ionicons name="close" size={22} color="#fff" />
               </TouchableOpacity>
             </View>
 
@@ -193,9 +193,9 @@ const styles = StyleSheet.create({
   },
   safeArea: {
     flex: 1,
-    paddingTop: 16,
-    paddingBottom: 40,
-    paddingHorizontal: 20,
+    paddingTop: 12,
+    paddingBottom: 30,
+    paddingHorizontal: 16,
   },
   header: {
     flexDirection: 'row',
@@ -204,16 +204,16 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
   title: {
-    fontSize: 22,
+    fontSize: 20,
     fontWeight: '700',
     color: '#fff',
     flex: 1,
-    paddingRight: 12,
+    paddingRight: 8,
   },
   closeButton: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
+    width: 32,
+    height: 32,
+    borderRadius: 16,
     backgroundColor: 'rgba(255,255,255,0.2)',
     alignItems: 'center',
     justifyContent: 'center',
@@ -250,7 +250,7 @@ const styles = StyleSheet.create({
   inputWrapper: {
     flexDirection: 'row',
     alignItems: 'flex-end',
-    gap: 12,
+    gap: 8,
   },
   textInput: {
     flex: 1,
@@ -266,16 +266,16 @@ const styles = StyleSheet.create({
     borderColor: 'rgba(255,255,255,0.2)',
   },
   sendButton: {
-    width: 44,
-    height: 44,
+    width: 40,
+    height: 40,
   },
   sendButtonDisabled: {
     opacity: 0.5,
   },
   sendButtonGradient: {
-    width: 44,
-    height: 44,
-    borderRadius: 22,
+    width: 40,
+    height: 40,
+    borderRadius: 20,
     alignItems: 'center',
     justifyContent: 'center',
   },
