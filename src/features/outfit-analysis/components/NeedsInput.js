@@ -22,10 +22,10 @@ const { height: screenHeight } = Dimensions.get('window');
 export default function NeedsInput({ onSubmit, isVisible, onClose }) {
   const [inputText, setInputText] = useState('');
   const [suggestions] = useState([
-    'Entretien pro',
-    'Soirée casual',
-    'Sport',
-    'Rendez-vous',
+    'Entretien professionnel',
+    'Soirée décontractée',
+    'Sport et confort',
+    'Rendez-vous romantique',
   ]);
   const slideAnim = useRef(new Animated.Value(screenHeight)).current;
   const fadeAnim = useRef(new Animated.Value(0)).current;
@@ -123,12 +123,7 @@ export default function NeedsInput({ onSubmit, isVisible, onClose }) {
             </Text>
 
             {/* Suggestions rapides */}
-            <ScrollView 
-              horizontal 
-              showsHorizontalScrollIndicator={false}
-              style={styles.suggestionsScroll}
-              contentContainerStyle={styles.suggestionsContainer}
-            >
+            <View style={styles.suggestionsGrid}>
               {suggestions.map((suggestion, index) => (
                 <TouchableOpacity
                   key={index}
@@ -139,7 +134,7 @@ export default function NeedsInput({ onSubmit, isVisible, onClose }) {
                   <Text style={styles.suggestionText}>{suggestion}</Text>
                 </TouchableOpacity>
               ))}
-            </ScrollView>
+            </View>
 
             {/* Zone de saisie */}
             <View style={styles.inputWrapper}>
@@ -229,27 +224,27 @@ const styles = StyleSheet.create({
     marginBottom: 24,
     lineHeight: 20,
   },
-  suggestionsScroll: {
-    marginBottom: 24,
-    marginHorizontal: -20,
-  },
-  suggestionsContainer: {
+  suggestionsGrid: {
     flexDirection: 'row',
-    paddingHorizontal: 20,
-    gap: 10,
+    flexWrap: 'wrap',
+    marginBottom: 20,
+    gap: 8,
   },
   suggestionChip: {
     backgroundColor: 'rgba(255,255,255,0.15)',
-    paddingHorizontal: 16,
+    paddingHorizontal: 12,
     paddingVertical: 8,
-    borderRadius: 20,
+    borderRadius: 18,
     borderWidth: 1,
     borderColor: 'rgba(255,255,255,0.25)',
+    width: '48%',
+    alignItems: 'center',
   },
   suggestionText: {
-    fontSize: 14,
+    fontSize: 13,
     color: '#fff',
     fontWeight: '600',
+    textAlign: 'center',
   },
   inputWrapper: {
     flexDirection: 'row',
