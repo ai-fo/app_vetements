@@ -11,6 +11,7 @@ import { Ionicons } from '@expo/vector-icons';
 
 export default function AddItemTypeSelector({ navigation }) {
   const handleSelectType = (type) => {
+    // Pour les vêtements, aller directement à la sélection de photo
     navigation.navigate('CameraScreen', { itemType: type });
   };
 
@@ -53,9 +54,9 @@ export default function AddItemTypeSelector({ navigation }) {
               <View style={styles.iconContainer}>
                 <Ionicons name="shirt-outline" size={48} color="#667eea" />
               </View>
-              <Text style={styles.optionTitle}>Vêtement séparé</Text>
+              <Text style={styles.optionTitle}>Vêtement individuel</Text>
               <Text style={styles.optionDescription}>
-                Ajoutez des pièces individuelles à votre garde-robe virtuelle
+                Ajoutez rapidement des pièces à votre garde-robe
               </Text>
             </TouchableOpacity>
           </View>

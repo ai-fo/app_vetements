@@ -7,7 +7,6 @@ import {
   SafeAreaView,
   ScrollView,
   Image,
-  TextInput,
   ActivityIndicator,
   Alert,
 } from 'react-native';
@@ -17,61 +16,31 @@ import { wardrobeAPI } from '../../virtual-wardrobe/api';
 import { ItemType } from '../../virtual-wardrobe/types';
 import { storageService } from '../../../shared/api/storage';
 
-const clothingTypes = [
-  { id: 'top', label: 'Haut', icon: 'shirt-outline' },
-  { id: 'bottom', label: 'Bas', icon: 'woman-outline' },
-  { id: 'shoes', label: 'Chaussures', icon: 'footsteps-outline' },
-  { id: 'dress', label: 'Robe', icon: 'body-outline' },
-  { id: 'outerwear', label: 'Veste', icon: 'snow-outline' },
-  { id: 'accessory', label: 'Accessoire', icon: 'glasses-outline' },
-];
-
-const commonColors = [
-  { name: 'Noir', hex: '#000000' },
-  { name: 'Blanc', hex: '#FFFFFF' },
-  { name: 'Gris', hex: '#808080' },
-  { name: 'Bleu', hex: '#0000FF' },
-  { name: 'Rouge', hex: '#FF0000' },
-  { name: 'Vert', hex: '#00FF00' },
-  { name: 'Jaune', hex: '#FFFF00' },
-  { name: 'Rose', hex: '#FFC0CB' },
-  { name: 'Beige', hex: '#F5DEB3' },
-  { name: 'Marron', hex: '#8B4513' },
-];
-
 export default function ClothingItemForm({ navigation, route }) {
   const { imageUri, userId } = route.params;
-  const [selectedType, setSelectedType] = useState(null);
-  const [selectedColor, setSelectedColor] = useState(null);
-  const [brand, setBrand] = useState('');
-  const [name, setName] = useState('');
   const [saving, setSaving] = useState(false);
 
   const handleSave = async () => {
-    if (!selectedType) {
-      Alert.alert('Erreur', 'Veuillez sélectionner un type de vêtement');
-      return;
-    }
-
     setSaving(true);
     try {
       // Upload de l'image vers Supabase Storage
-      const fileName = `${userId}/${selectedType}/${Date.now()}_${Math.random().toString(36).substring(7)}.jpg`;
+      const fileName = `${userId}/clothing/${Date.now()}_${Math.random().toString(36).substring(7)}.jpg`;
       const { publicUrl: imageUrl, path: imagePath } = await storageService.uploadPhoto(
         imageUri,
         fileName
       );
 
       // Créer l'item dans la garde-robe avec l'URL Supabase
+      // Les détails seront ajoutés par l'IA plus tard
       const itemData = {
         userId,
         imageUrl, // URL publique depuis Supabase
         imagePath, // Chemin pour suppression ultérieure
         itemType: ItemType.SINGLE_PIECE,
-        category: selectedType,
-        colors: selectedColor ? [selectedColor] : [],
-        brand: brand.trim() || '',
-        name: name.trim() || '',
+        category: 'top', // Catégorie par défaut, sera mise à jour par l'IA
+        colors: [],
+        brand: '',
+        name: 'Nouveau vêtement', // Nom temporaire
         tags: [],
         materials: [],
         seasons: []
@@ -85,10 +54,8 @@ export default function ClothingItemForm({ navigation, route }) {
         throw new Error(error);
       }
 
-      navigation.reset({
-        index: 0,
-        routes: [{ name: 'Home' }],
-      });
+      // Naviguer directement vers la garde-robe
+      navigation.navigate('WardrobeScreen');
     } catch (error) {
       console.error('Save error:', error);
       Alert.alert('Erreur', 'Impossible d\'enregistrer le vêtement');
@@ -107,88 +74,19 @@ export default function ClothingItemForm({ navigation, route }) {
           <TouchableOpacity onPress={() => navigation.goBack()}>
             <Ionicons name="arrow-back" size={24} color="#667eea" />
           </TouchableOpacity>
-          <Text style={styles.headerTitle}>Détails du vêtement</Text>
+          <Text style={styles.headerTitle}>Ajouter à ma garde-robe</Text>
           <View style={{ width: 24 }} />
         </View>
 
         <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
           <Image source={{ uri: imageUri }} style={styles.preview} />
 
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Type de vêtement *</Text>
-            <View style={styles.typeGrid}>
-              {clothingTypes.map((type) => (
-                <TouchableOpacity
-                  key={type.id}
-                  style={[
-                    styles.typeCard,
-                    selectedType === type.id && styles.typeCardSelected
-                  ]}
-                  onPress={() => setSelectedType(type.id)}
-                >
-                  <Ionicons 
-                    name={type.icon} 
-                    size={32} 
-                    color={selectedType === type.id ? '#fff' : '#667eea'} 
-                  />
-                  <Text style={[
-                    styles.typeLabel,
-                    selectedType === type.id && styles.typeLabelSelected
-                  ]}>
-                    {type.label}
-                  </Text>
-                </TouchableOpacity>
-              ))}
-            </View>
-          </View>
-
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Couleur principale</Text>
-            <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-              <View style={styles.colorList}>
-                {commonColors.map((color) => (
-                  <TouchableOpacity
-                    key={color.name}
-                    style={[
-                      styles.colorOption,
-                      selectedColor === color.name && styles.colorOptionSelected
-                    ]}
-                    onPress={() => setSelectedColor(color.name)}
-                  >
-                    <View 
-                      style={[
-                        styles.colorCircle, 
-                        { backgroundColor: color.hex },
-                        color.hex === '#FFFFFF' && styles.whiteColor
-                      ]} 
-                    />
-                    <Text style={styles.colorName}>{color.name}</Text>
-                  </TouchableOpacity>
-                ))}
-              </View>
-            </ScrollView>
-          </View>
-
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Marque (optionnel)</Text>
-            <TextInput
-              style={styles.input}
-              placeholder="Ex: Zara, H&M, Nike..."
-              placeholderTextColor="#9ca3af"
-              value={brand}
-              onChangeText={setBrand}
-            />
-          </View>
-
-          <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Nom du vêtement (optionnel)</Text>
-            <TextInput
-              style={styles.input}
-              placeholder="Ex: Chemise bleue, Jean noir..."
-              placeholderTextColor="#9ca3af"
-              value={name}
-              onChangeText={setName}
-            />
+          <View style={styles.infoContainer}>
+            <Ionicons name="information-circle" size={24} color="#667eea" />
+            <Text style={styles.infoText}>
+              La photo sera ajoutée à votre garde-robe. L'IA analysera automatiquement 
+              les détails du vêtement (type, couleur, style) ultérieurement.
+            </Text>
           </View>
 
           <TouchableOpacity
@@ -205,7 +103,7 @@ export default function ClothingItemForm({ navigation, route }) {
               ) : (
                 <>
                   <Ionicons name="save-outline" size={20} color="#fff" />
-                  <Text style={styles.saveButtonText}>Enregistrer</Text>
+                  <Text style={styles.saveButtonText}>Enregistrer dans ma garde-robe</Text>
                 </>
               )}
             </LinearGradient>
@@ -252,66 +150,20 @@ const styles = StyleSheet.create({
     color: '#1f2937',
     marginBottom: 15,
   },
-  typeGrid: {
+  infoContainer: {
     flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 10,
-  },
-  typeCard: {
-    width: '31%',
-    aspectRatio: 1,
-    backgroundColor: '#f3f4f6',
-    borderRadius: 15,
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 2,
-    borderColor: 'transparent',
-  },
-  typeCardSelected: {
-    backgroundColor: '#667eea',
-    borderColor: '#667eea',
-  },
-  typeLabel: {
-    fontSize: 12,
-    color: '#6b7280',
-    marginTop: 5,
-    fontWeight: '500',
-  },
-  typeLabelSelected: {
-    color: '#fff',
-  },
-  colorList: {
-    flexDirection: 'row',
-    gap: 15,
-  },
-  colorOption: {
-    alignItems: 'center',
-    paddingVertical: 5,
-  },
-  colorOptionSelected: {
-    transform: [{ scale: 1.1 }],
-  },
-  colorCircle: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    marginBottom: 5,
-  },
-  whiteColor: {
-    borderWidth: 1,
-    borderColor: '#e5e7eb',
-  },
-  colorName: {
-    fontSize: 12,
-    color: '#6b7280',
-  },
-  input: {
-    backgroundColor: '#f3f4f6',
+    alignItems: 'flex-start',
+    backgroundColor: '#f0f4ff',
+    padding: 20,
+    margin: 20,
     borderRadius: 12,
-    paddingHorizontal: 15,
-    paddingVertical: 12,
-    fontSize: 16,
-    color: '#1f2937',
+    gap: 12,
+  },
+  infoText: {
+    flex: 1,
+    fontSize: 14,
+    color: '#4b5563',
+    lineHeight: 20,
   },
   saveButton: {
     margin: 20,
