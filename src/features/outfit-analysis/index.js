@@ -3,7 +3,6 @@ export { default as CameraScreen } from './components/CameraScreen';
 export { default as AnalysisResultScreen } from './components/AnalysisResultScreen';
 export { default as DailyRecommendation } from './components/DailyRecommendation';
 export { default as AddItemTypeSelector } from './components/AddItemTypeSelector';
-export { default as ClothingItemForm } from './components/ClothingItemForm';
 export { default as NeedsInput } from './components/NeedsInput';
 export { default as NeedsInputPortal } from './components/NeedsInputPortal';
 export { useOutfitAnalysis } from './hooks/useOutfitAnalysis';

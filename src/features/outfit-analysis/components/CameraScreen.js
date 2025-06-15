@@ -15,6 +15,9 @@ import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useAuth } from '../../auth';
 import { useOutfitAnalysis } from '../hooks/useOutfitAnalysis';
+import { storageService } from '../../../shared/api/storage';
+import { wardrobeAPI } from '../../virtual-wardrobe/api';
+import { ItemType } from '../../virtual-wardrobe/types';
 
 // Import Camera conditionnellement
 let Camera = null;
@@ -80,10 +83,41 @@ export default function CameraScreen({ navigation, route }) {
         const result = await analyzeOutfit(capturedImage.uri, user.id);
         navigation.navigate('AnalysisResult', { analysisId: result.id });
       } else {
-        // Pour les vêtements séparés, on navigue vers un écran de catégorisation
-        navigation.navigate('ClothingItemForm', { 
-          imageUri: capturedImage.uri,
-          userId: user.id 
+        // Pour les vêtements séparés, enregistrer directement
+        const fileName = `${user.id}/clothing/${Date.now()}_${Math.random().toString(36).substring(7)}.jpg`;
+        const { publicUrl: imageUrl, path: imagePath } = await storageService.uploadPhoto(
+          capturedImage.uri,
+          fileName
+        );
+
+        const itemData = {
+          userId: user.id,
+          imageUrl,
+          imagePath,
+          itemType: ItemType.SINGLE_PIECE,
+          category: 'top',
+          colors: [],
+          brand: '',
+          name: 'Nouveau vêtement',
+          tags: [],
+          materials: [],
+          seasons: []
+        };
+
+        const { error } = await wardrobeAPI.createItem(itemData);
+
+        if (error) {
+          await storageService.deletePhoto(imagePath);
+          throw new Error(error);
+        }
+
+        // Réinitialiser la navigation pour éviter de retourner sur l'image
+        navigation.reset({
+          index: 1,
+          routes: [
+            { name: 'Home' },
+            { name: 'WardrobeScreen' }
+          ],
         });
       }
     } catch (error) {

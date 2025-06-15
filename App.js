@@ -8,8 +8,7 @@ import ProfileScreen from './src/screens/ProfileScreen';
 import { 
   CameraScreen, 
   AnalysisResultScreen, 
-  AddItemTypeSelector,
-  ClothingItemForm 
+  AddItemTypeSelector
 } from './src/features/outfit-analysis';
 import { WardrobeScreen, ItemEditor } from './src/features/virtual-wardrobe';
 import { ActivityIndicator, View } from 'react-native';
@@ -51,13 +50,6 @@ function MainStack() {
         component={RecommendationDetailScreen}
         options={{
           animation: 'slide_from_right',
-        }}
-      />
-      <Stack.Screen 
-        name="ClothingItemForm" 
-        component={ClothingItemForm}
-        options={{
-          presentation: 'modal',
         }}
       />
       <Stack.Screen 
