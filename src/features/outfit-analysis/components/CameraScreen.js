@@ -83,18 +83,14 @@ export default function CameraScreen({ navigation, route }) {
       // Utiliser l'analyse OpenAI pour les deux types (outfit et clothing)
       const result = await analyzeOutfit(capturedImage.uri, user.id);
       
-      if (itemType === 'outfit') {
-        navigation.navigate('AnalysisResult', { analysisId: result.id });
-      } else {
-        // Pour les vêtements individuels, aller directement à la garde-robe après l'analyse
-        navigation.reset({
-          index: 1,
-          routes: [
-            { name: 'Home' },
-            { name: 'WardrobeScreen' }
-          ],
-        });
-      }
+      // Pour tous les types, aller directement à la garde-robe
+      navigation.reset({
+        index: 1,
+        routes: [
+          { name: 'Home' },
+          { name: 'WardrobeScreen' }
+        ],
+      });
     } catch (error) {
       Alert.alert(
         'Erreur',
