@@ -14,19 +14,28 @@ export default function OutfitPiecesSection({ analysisId }) {
   const [pieces, setPieces] = useState([]);
   const [loading, setLoading] = useState(true);
   const [expandedPiece, setExpandedPiece] = useState(null);
+  
+  console.log('OutfitPiecesSection rendered with analysisId:', analysisId);
 
   useEffect(() => {
     loadPieces();
   }, [analysisId]);
 
   const loadPieces = async () => {
-    if (!analysisId) return;
+    if (!analysisId) {
+      console.log('No analysisId provided');
+      return;
+    }
     
+    console.log('Loading pieces for analysis:', analysisId);
     setLoading(true);
     try {
       const { data, error } = await outfitAnalysisSupabaseAPI.getOutfitPieces(analysisId);
+      console.log('Pieces loaded:', { data, error });
       if (!error && data) {
         setPieces(data);
+      } else if (error) {
+        console.error('Error from API:', error);
       }
     } catch (error) {
       console.error('Error loading outfit pieces:', error);
@@ -68,7 +77,17 @@ export default function OutfitPiecesSection({ analysisId }) {
   }
 
   if (pieces.length === 0) {
-    return null;
+    return (
+      <View style={styles.container}>
+        <Text style={styles.sectionTitle}>Pièces détectées</Text>
+        <View style={styles.emptyState}>
+          <Text style={styles.emptyText}>
+            Aucune pièce détaillée pour cette tenue.
+            {'\n'}Les nouvelles analyses incluront automatiquement les détails de chaque pièce.
+          </Text>
+        </View>
+      </View>
+    );
   }
 
   return (
@@ -170,6 +189,18 @@ export default function OutfitPiecesSection({ analysisId }) {
 }
 
 const styles = StyleSheet.create({
+  emptyState: {
+    backgroundColor: '#f9fafb',
+    borderRadius: 12,
+    padding: 20,
+    alignItems: 'center',
+  },
+  emptyText: {
+    fontSize: 14,
+    color: '#6b7280',
+    textAlign: 'center',
+    lineHeight: 20,
+  },
   container: {
     marginBottom: 24,
   },

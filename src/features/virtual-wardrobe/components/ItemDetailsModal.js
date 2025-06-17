@@ -19,6 +19,10 @@ const { width, height } = Dimensions.get('window');
 
 export default function ItemDetailsModal({ item, visible, onClose, onEdit, onToggleFavorite }) {
   if (!item) return null;
+  
+  console.log('ItemDetailsModal - item:', item);
+  console.log('ItemDetailsModal - itemType:', item.itemType);
+  console.log('ItemDetailsModal - id:', item.id);
 
   const getColorHex = (colorName) => {
     const colors = {
