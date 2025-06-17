@@ -86,33 +86,11 @@ export const outfitAnalysisSupabaseAPI = {
 
       if (analysisError) throw analysisError;
       
-      // 4. Créer aussi une entrée dans clothing_items pour la garde-robe
-      const { data: clothingItem, error: clothingError } = await supabase
-        .from('clothing_items')
-        .insert({
-          user_id: userId,
-          image_url: publicUrl,
-          type: analysis.type || 'outerwear',
-          name: `${analysis.type || 'Vêtement'} ${analysis.style || 'analysé'}`,
-          brand: analysis.brand_style,
-          color: analysis.colors?.primary?.[0] || 'non défini',
-          colors: analysis.colors?.primary || [],
-          materials: analysis.material ? [analysis.material] : [],
-          seasons: analysis.seasons || [],
-          tags: [...(analysis.occasions || []), ...(analysis.seasons || [])]
-        })
-        .select()
-        .single();
-
-      if (clothingError) {
-        console.error('Error creating clothing item:', clothingError);
-      }
-
+      // Pour les tenues complètes, on ne crée PAS d'entrée dans clothing_items
+      // car outfit_analyses est déjà chargé dans useWardrobe
+      
       return {
-        data: {
-          ...analysis,
-          clothingItemId: clothingItem?.id
-        },
+        data: analysis,
         error: null
       };
     } catch (error) {
