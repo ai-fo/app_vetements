@@ -173,10 +173,15 @@ export const wardrobeSupabaseAPI = {
    */
   async deleteItem(itemId) {
     try {
-      const { error } = await supabase
+      console.log('Attempting to delete item with ID:', itemId);
+      
+      const { data, error } = await supabase
         .from('clothing_items')
         .delete()
-        .eq('id', itemId);
+        .eq('id', itemId)
+        .select();
+
+      console.log('Delete response:', { data, error });
 
       if (error) throw error;
 
