@@ -95,6 +95,15 @@ export function useWardrobe(userId) {
       // Trouver l'item pour récupérer l'imagePath
       const item = items.find(i => i.id === itemId);
       console.log('Found item:', item);
+      console.log('Item type:', item?.itemType);
+      
+      // Si c'est une analyse d'outfit, on doit la supprimer différemment
+      if (item?.itemType === 'OUTFIT') {
+        console.log('This is an outfit analysis, not a clothing item');
+        // Pour l'instant, on ne peut pas supprimer les analyses d'outfit
+        setError('Les analyses de tenue ne peuvent pas être supprimées pour le moment');
+        return false;
+      }
       
       const response = await wardrobeSupabaseAPI.deleteItem(itemId);
       console.log('Delete API response:', response);

@@ -175,15 +175,40 @@ export const wardrobeSupabaseAPI = {
     try {
       console.log('Attempting to delete item with ID:', itemId);
       
-      const { data, error } = await supabase
+      // Vérifier d'abord si l'item existe
+      const { data: checkData, error: checkError } = await supabase
+        .from('clothing_items')
+        .select('id')
+        .eq('id', itemId)
+        .single();
+      
+      console.log('Item exists check:', { checkData, checkError });
+      
+      if (checkError || !checkData) {
+        throw new Error('Item not found');
+      }
+      
+      const { data, error, count } = await supabase
         .from('clothing_items')
         .delete()
         .eq('id', itemId)
         .select();
 
-      console.log('Delete response:', { data, error });
+      console.log('Delete response:', { data, error, count });
 
       if (error) throw error;
+      
+      // Vérifier après suppression
+      const { data: afterCheck, error: afterError } = await supabase
+        .from('clothing_items')
+        .select('id')
+        .eq('id', itemId);
+      
+      console.log('After delete check:', { afterCheck, afterError });
+      
+      if (afterCheck && afterCheck.length > 0) {
+        throw new Error('Item still exists after deletion');
+      }
 
       return {
         success: true,
