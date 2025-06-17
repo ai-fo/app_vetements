@@ -2,123 +2,111 @@ import { supabase } from '../../../shared/api/supabase';
 import { storageService } from '../../../shared/api/storage';
 import { openaiService } from '../../../services/openaiService';
 
-// Générateur de pièces détaillées pour l'analyse simulée
-const generateDetailedPieces = (style = 'casual') => {
-  const pieceTemplates = {
-    casual: [
-      {
-        type: 'top',
-        name: 'T-shirt basique',
-        color: 'blanc',
-        material: 'coton',
-        brand_estimation: 'Zara, H&M, Uniqlo',
-        price_range: '15-30€',
-        style: 'décontracté',
-        fit: 'regular'
-      },
-      {
-        type: 'bottom',
-        name: 'Jean droit',
-        color: 'bleu',
-        material: 'denim',
-        brand_estimation: 'Levi\'s, Gap',
-        price_range: '50-100€',
-        style: 'classique',
-        fit: 'regular'
-      },
-      {
-        type: 'shoes',
-        name: 'Baskets casual',
-        color: 'blanc',
-        material: 'toile',
-        brand_estimation: 'Converse, Vans',
-        price_range: '50-80€',
-        style: 'décontracté',
-        fit: 'standard'
-      }
+// Simuler une détection dynamique des pièces visibles sur la photo
+const generateDynamicPiecesDetection = () => {
+  // Simule ce que l'IA devrait détecter sur une photo réelle
+  const detectedPieces = [];
+  
+  // Définir les possibilités de détection
+  const possibleDetections = {
+    tops: [
+      { name: 'T-shirt', materials: ['coton', 'polyester'], brands: ['H&M', 'Zara', 'Uniqlo'], priceRange: '15-40€' },
+      { name: 'Chemise', materials: ['coton', 'lin'], brands: ['Ralph Lauren', 'Massimo Dutti'], priceRange: '50-120€' },
+      { name: 'Pull', materials: ['laine', 'coton mélangé'], brands: ['COS', 'Arket'], priceRange: '60-150€' },
+      { name: 'Veste', materials: ['denim', 'cuir', 'polyester'], brands: ['Levi\'s', 'The Kooples'], priceRange: '80-300€' },
+      { name: 'Manteau', materials: ['laine', 'cachemire'], brands: ['Mango', 'Sandro'], priceRange: '150-500€' },
+      { name: 'Sweat', materials: ['coton', 'polyester'], brands: ['Nike', 'Champion'], priceRange: '40-80€' }
     ],
-    formal: [
-      {
-        type: 'top',
-        name: 'Chemise oxford',
-        color: 'bleu clair',
-        material: 'coton oxford',
-        brand_estimation: 'Ralph Lauren, Brooks Brothers',
-        price_range: '60-120€',
-        style: 'formel',
-        fit: 'slim'
-      },
-      {
-        type: 'bottom',
-        name: 'Pantalon de costume',
-        color: 'gris anthracite',
-        material: 'laine mélangée',
-        brand_estimation: 'Hugo Boss, Massimo Dutti',
-        price_range: '100-200€',
-        style: 'business',
-        fit: 'tailored'
-      },
-      {
-        type: 'shoes',
-        name: 'Derbies en cuir',
-        color: 'noir',
-        material: 'cuir véritable',
-        brand_estimation: 'Church\'s, Loake',
-        price_range: '150-300€',
-        style: 'formel',
-        fit: 'standard'
-      }
+    bottoms: [
+      { name: 'Jean', materials: ['denim'], brands: ['Levi\'s', 'Diesel', 'G-Star'], priceRange: '60-150€' },
+      { name: 'Pantalon', materials: ['coton', 'laine'], brands: ['Dockers', 'Hugo Boss'], priceRange: '70-200€' },
+      { name: 'Short', materials: ['coton', 'lin'], brands: ['Lacoste', 'Tommy Hilfiger'], priceRange: '40-100€' },
+      { name: 'Jupe', materials: ['polyester', 'coton'], brands: ['Zara', 'Maje'], priceRange: '40-120€' },
+      { name: 'Jogging', materials: ['coton', 'polyester'], brands: ['Adidas', 'Puma'], priceRange: '40-80€' }
     ],
-    sporty: [
-      {
-        type: 'top',
-        name: 'T-shirt technique',
-        color: 'noir',
-        material: 'polyester respirant',
-        brand_estimation: 'Nike, Adidas, Under Armour',
-        price_range: '30-60€',
-        style: 'sportif',
-        fit: 'fitted'
-      },
-      {
-        type: 'bottom',
-        name: 'Jogging technique',
-        color: 'gris',
-        material: 'polyester élasthanne',
-        brand_estimation: 'Nike, Puma',
-        price_range: '40-80€',
-        style: 'sportif',
-        fit: 'regular'
-      },
-      {
-        type: 'shoes',
-        name: 'Sneakers de running',
-        color: 'noir/blanc',
-        material: 'mesh synthétique',
-        brand_estimation: 'Nike, Adidas, New Balance',
-        price_range: '80-150€',
-        style: 'sportif',
-        fit: 'standard'
-      }
+    shoes: [
+      { name: 'Baskets', materials: ['cuir', 'toile', 'synthétique'], brands: ['Nike', 'Adidas', 'Veja'], priceRange: '60-200€' },
+      { name: 'Bottes', materials: ['cuir', 'suède'], brands: ['Dr. Martens', 'Timberland'], priceRange: '120-300€' },
+      { name: 'Chaussures habillées', materials: ['cuir'], brands: ['Clarks', 'Geox'], priceRange: '100-250€' },
+      { name: 'Sandales', materials: ['cuir', 'synthétique'], brands: ['Birkenstock', 'Havaianas'], priceRange: '30-100€' }
+    ],
+    accessories: [
+      { name: 'Sac', materials: ['cuir', 'toile'], brands: ['Longchamp', 'Michael Kors'], priceRange: '50-300€' },
+      { name: 'Montre', materials: ['acier', 'cuir'], brands: ['Casio', 'Fossil'], priceRange: '50-500€' },
+      { name: 'Chapeau', materials: ['coton', 'laine'], brands: ['New Era', 'Stetson'], priceRange: '30-100€' },
+      { name: 'Écharpe', materials: ['laine', 'cachemire'], brands: ['Acne Studios', 'COS'], priceRange: '40-150€' },
+      { name: 'Ceinture', materials: ['cuir'], brands: ['Hermès', 'Lacoste'], priceRange: '40-200€' },
+      { name: 'Lunettes', materials: ['acétate', 'métal'], brands: ['Ray-Ban', 'Oakley'], priceRange: '80-300€' }
     ]
   };
 
-  // Sélectionner le template approprié ou utiliser casual par défaut
-  const selectedTemplate = pieceTemplates[style.toLowerCase()] || pieceTemplates.casual;
-  
-  // Ajouter potentiellement des accessoires
-  const accessories = Math.random() > 0.5 ? [{
-    type: 'accessory',
-    name: style === 'formal' ? 'Montre classique' : 'Casquette',
-    color: style === 'formal' ? 'argent' : 'noir',
-    material: style === 'formal' ? 'acier inoxydable' : 'coton',
-    brand_estimation: style === 'formal' ? 'Seiko, Tissot' : 'Nike, Adidas',
-    price_range: style === 'formal' ? '100-300€' : '20-40€',
-    style: style,
-    fit: 'unique'
-  }] : [];
+  const colors = ['noir', 'blanc', 'gris', 'bleu marine', 'beige', 'marron', 'vert kaki', 'bordeaux', 'bleu clair'];
+  const fits = ['slim', 'regular', 'oversized', 'tailored', 'relaxed'];
+  const styles = ['casual', 'streetwear', 'business casual', 'sportif', 'bohème', 'minimaliste', 'classique'];
 
-  return [...selectedTemplate, ...accessories];
+  // Détecter au moins un top visible
+  const topCount = Math.random() > 0.7 ? 2 : 1; // 30% de chance d'avoir 2 couches (ex: t-shirt + veste)
+  for (let i = 0; i < topCount; i++) {
+    const topItem = possibleDetections.tops[Math.floor(Math.random() * possibleDetections.tops.length)];
+    detectedPieces.push({
+      type: 'top',
+      name: topItem.name,
+      color: colors[Math.floor(Math.random() * colors.length)],
+      material: topItem.materials[Math.floor(Math.random() * topItem.materials.length)],
+      brand_estimation: topItem.brands.join(', '),
+      price_range: topItem.priceRange,
+      style: styles[Math.floor(Math.random() * styles.length)],
+      fit: fits[Math.floor(Math.random() * fits.length)]
+    });
+  }
+
+  // Détecter un bottom (si visible)
+  if (Math.random() > 0.1) { // 90% de chance qu'un bottom soit visible
+    const bottomItem = possibleDetections.bottoms[Math.floor(Math.random() * possibleDetections.bottoms.length)];
+    detectedPieces.push({
+      type: 'bottom',
+      name: bottomItem.name,
+      color: colors[Math.floor(Math.random() * colors.length)],
+      material: bottomItem.materials[Math.floor(Math.random() * bottomItem.materials.length)],
+      brand_estimation: bottomItem.brands.join(', '),
+      price_range: bottomItem.priceRange,
+      style: styles[Math.floor(Math.random() * styles.length)],
+      fit: fits[Math.floor(Math.random() * fits.length)]
+    });
+  }
+
+  // Détecter des chaussures (si visibles)
+  if (Math.random() > 0.3) { // 70% de chance que les chaussures soient visibles
+    const shoeItem = possibleDetections.shoes[Math.floor(Math.random() * possibleDetections.shoes.length)];
+    detectedPieces.push({
+      type: 'shoes',
+      name: shoeItem.name,
+      color: colors[Math.floor(Math.random() * colors.length)],
+      material: shoeItem.materials[Math.floor(Math.random() * shoeItem.materials.length)],
+      brand_estimation: shoeItem.brands.join(', '),
+      price_range: shoeItem.priceRange,
+      style: styles[Math.floor(Math.random() * styles.length)],
+      fit: 'standard'
+    });
+  }
+
+  // Détecter des accessoires (aléatoire)
+  const accessoryCount = Math.floor(Math.random() * 3); // 0 à 2 accessoires
+  for (let i = 0; i < accessoryCount; i++) {
+    const accessoryItem = possibleDetections.accessories[Math.floor(Math.random() * possibleDetections.accessories.length)];
+    detectedPieces.push({
+      type: 'accessory',
+      name: accessoryItem.name,
+      color: colors[Math.floor(Math.random() * colors.length)],
+      material: accessoryItem.materials[Math.floor(Math.random() * accessoryItem.materials.length)],
+      brand_estimation: accessoryItem.brands.join(', '),
+      price_range: accessoryItem.priceRange,
+      style: styles[Math.floor(Math.random() * styles.length)],
+      fit: 'unique'
+    });
+  }
+
+  return detectedPieces;
 };
 
 export const outfitAnalysisSupabaseAPI = {
@@ -137,22 +125,40 @@ export const outfitAnalysisSupabaseAPI = {
         if (openaiError) {
           console.error('OpenAI analysis error:', openaiError);
           // Utiliser l'analyse simulée en cas d'erreur
-          const randomStyle = ['casual', 'formal', 'sporty'][Math.floor(Math.random() * 3)];
+          const detectedPieces = generateDynamicPiecesDetection();
+          
+          // Analyser le style global basé sur les pièces détectées
+          const pieceStyles = detectedPieces.map(p => p.style);
+          const dominantStyle = pieceStyles.reduce((acc, style) => {
+            acc[style] = (acc[style] || 0) + 1;
+            return acc;
+          }, {});
+          const overallStyle = Object.keys(dominantStyle).reduce((a, b) => dominantStyle[a] > dominantStyle[b] ? a : b);
+          
+          // Extraire les couleurs principales
+          const pieceColors = detectedPieces.map(p => p.color);
+          const primaryColors = [...new Set(pieceColors)].slice(0, 3);
+          
           aiAnalysis = {
-            style: randomStyle === 'formal' ? 'Business chic' : randomStyle === 'sporty' ? 'Sportswear moderne' : 'Casual chic',
-            category: randomStyle === 'formal' ? 'professionnel' : randomStyle === 'sporty' ? 'sport' : 'quotidien',
+            style: overallStyle === 'business casual' ? 'Business chic' : 
+                   overallStyle === 'sportif' ? 'Sportswear moderne' : 
+                   overallStyle === 'streetwear' ? 'Urban style' : 'Casual chic',
+            category: overallStyle.includes('business') ? 'professionnel' : 
+                      overallStyle === 'sportif' ? 'sport' : 'quotidien',
             colors: {
-              primary: randomStyle === 'formal' ? ['noir', 'gris'] : randomStyle === 'sporty' ? ['noir', 'blanc'] : ['blanc', 'bleu'],
-              secondary: ['gris']
+              primary: primaryColors,
+              secondary: ['gris', 'beige'].filter(c => !primaryColors.includes(c))
             },
-            occasion: randomStyle === 'formal' ? 'travail' : randomStyle === 'sporty' ? 'sport' : 'quotidien',
+            occasion: overallStyle.includes('business') ? 'travail' : 
+                      overallStyle === 'sportif' ? 'sport' : 'quotidien',
             season: 'spring',
             recommendations: [
-              'Ajouter un accessoire coloré pour dynamiser la tenue',
-              'Une veste en jean serait parfaite pour compléter ce look'
+              `Cette tenue ${overallStyle} pourrait être complétée avec un accessoire contrastant`,
+              detectedPieces.length < 4 ? 'Ajouter une pièce supplémentaire pour plus de style' : 
+                                          'L\'ensemble est bien équilibré, attention à ne pas surcharger'
             ],
             confidence: 0.85,
-            pieces: generateDetailedPieces(randomStyle)
+            pieces: detectedPieces
           };
         } else {
           aiAnalysis = openaiData;
@@ -160,22 +166,40 @@ export const outfitAnalysisSupabaseAPI = {
       } catch (error) {
         console.error('Error calling OpenAI:', error);
         // Utiliser l'analyse simulée en cas d'erreur
-        const randomStyle = ['casual', 'formal', 'sporty'][Math.floor(Math.random() * 3)];
+        const detectedPieces = generateDynamicPiecesDetection();
+        
+        // Analyser le style global basé sur les pièces détectées
+        const pieceStyles = detectedPieces.map(p => p.style);
+        const dominantStyle = pieceStyles.reduce((acc, style) => {
+          acc[style] = (acc[style] || 0) + 1;
+          return acc;
+        }, {});
+        const overallStyle = Object.keys(dominantStyle).reduce((a, b) => dominantStyle[a] > dominantStyle[b] ? a : b);
+        
+        // Extraire les couleurs principales
+        const pieceColors = detectedPieces.map(p => p.color);
+        const primaryColors = [...new Set(pieceColors)].slice(0, 3);
+        
         aiAnalysis = {
-          style: randomStyle === 'formal' ? 'Business chic' : randomStyle === 'sporty' ? 'Sportswear moderne' : 'Casual chic',
-          category: randomStyle === 'formal' ? 'professionnel' : randomStyle === 'sporty' ? 'sport' : 'quotidien',
+          style: overallStyle === 'business casual' ? 'Business chic' : 
+                 overallStyle === 'sportif' ? 'Sportswear moderne' : 
+                 overallStyle === 'streetwear' ? 'Urban style' : 'Casual chic',
+          category: overallStyle.includes('business') ? 'professionnel' : 
+                    overallStyle === 'sportif' ? 'sport' : 'quotidien',
           colors: {
-            primary: randomStyle === 'formal' ? ['noir', 'gris'] : randomStyle === 'sporty' ? ['noir', 'blanc'] : ['blanc', 'bleu'],
-            secondary: ['gris']
+            primary: primaryColors,
+            secondary: ['gris', 'beige'].filter(c => !primaryColors.includes(c))
           },
-          occasion: randomStyle === 'formal' ? 'travail' : randomStyle === 'sporty' ? 'sport' : 'quotidien',
+          occasion: overallStyle.includes('business') ? 'travail' : 
+                    overallStyle === 'sportif' ? 'sport' : 'quotidien',
           season: 'spring',
           recommendations: [
-            'Ajouter un accessoire coloré pour dynamiser la tenue',
-            'Une veste en jean serait parfaite pour compléter ce look'
+            `Cette tenue ${overallStyle} pourrait être complétée avec un accessoire contrastant`,
+            detectedPieces.length < 4 ? 'Ajouter une pièce supplémentaire pour plus de style' : 
+                                        'L\'ensemble est bien équilibré, attention à ne pas surcharger'
           ],
           confidence: 0.85,
-          pieces: generateDetailedPieces(randomStyle)
+          pieces: detectedPieces
         };
       }
       
