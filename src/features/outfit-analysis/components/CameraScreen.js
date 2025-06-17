@@ -70,56 +70,8 @@ export default function CameraScreen({ navigation, route }) {
     });
 
     if (!result.canceled) {
-      // Pour la galerie, enregistrer directement sans passer par l'écran de preview
-      if (itemType === 'clothing') {
-        setIsAnalyzing(true);
-        try {
-          const fileName = `${user.id}/clothing/${Date.now()}_${Math.random().toString(36).substring(7)}.jpg`;
-          const { publicUrl: imageUrl, path: imagePath } = await storageService.uploadPhoto(
-            result.assets[0].uri,
-            fileName
-          );
-
-          const itemData = {
-            userId: user.id,
-            imageUrl,
-            imagePath,
-            itemType: ItemType.SINGLE_PIECE,
-            category: 'top',
-            colors: [],
-            brand: '',
-            name: 'Nouveau vêtement',
-            tags: [],
-            materials: [],
-            seasons: []
-          };
-
-          const { error } = await wardrobeAPI.createItem(itemData);
-
-          if (error) {
-            await storageService.deletePhoto(imagePath);
-            throw new Error(error);
-          }
-
-          // Réinitialiser la navigation pour éviter de retourner sur l'image
-          navigation.reset({
-            index: 1,
-            routes: [
-              { name: 'Home' },
-              { name: 'WardrobeScreen' }
-            ],
-          });
-        } catch (error) {
-          Alert.alert(
-            'Erreur',
-            "L'enregistrement a échoué. Veuillez réessayer."
-          );
-          setIsAnalyzing(false);
-        }
-      } else {
-        // Pour les tenues complètes, on garde le preview pour l'analyse
-        setCapturedImage(result.assets[0]);
-      }
+      // Pour tous les types (clothing et outfit), passer par l'analyse
+      setCapturedImage(result.assets[0]);
     }
   };
 
@@ -128,39 +80,13 @@ export default function CameraScreen({ navigation, route }) {
 
     setIsAnalyzing(true);
     try {
+      // Utiliser l'analyse OpenAI pour les deux types (outfit et clothing)
+      const result = await analyzeOutfit(capturedImage.uri, user.id);
+      
       if (itemType === 'outfit') {
-        const result = await analyzeOutfit(capturedImage.uri, user.id);
         navigation.navigate('AnalysisResult', { analysisId: result.id });
       } else {
-        // Pour les vêtements séparés, enregistrer directement
-        const fileName = `${user.id}/clothing/${Date.now()}_${Math.random().toString(36).substring(7)}.jpg`;
-        const { publicUrl: imageUrl, path: imagePath } = await storageService.uploadPhoto(
-          capturedImage.uri,
-          fileName
-        );
-
-        const itemData = {
-          userId: user.id,
-          imageUrl,
-          imagePath,
-          itemType: ItemType.SINGLE_PIECE,
-          category: 'top',
-          colors: [],
-          brand: '',
-          name: 'Nouveau vêtement',
-          tags: [],
-          materials: [],
-          seasons: []
-        };
-
-        const { error } = await wardrobeAPI.createItem(itemData);
-
-        if (error) {
-          await storageService.deletePhoto(imagePath);
-          throw new Error(error);
-        }
-
-        // Réinitialiser la navigation pour éviter de retourner sur l'image
+        // Pour les vêtements individuels, aller directement à la garde-robe après l'analyse
         navigation.reset({
           index: 1,
           routes: [
