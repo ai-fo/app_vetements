@@ -13,6 +13,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { ItemType } from '../types';
 import FavoriteButton from './FavoriteButton';
+import OutfitPiecesSection from './OutfitPiecesSection';
 
 const { width, height } = Dimensions.get('window');
 
@@ -103,6 +104,10 @@ export default function ItemDetailsModal({ item, visible, onClose, onEdit, onTog
             <View style={styles.content}>
               <Text style={styles.itemName}>{item.name}</Text>
               <Text style={styles.itemBrand}>{item.brand}</Text>
+
+              {item.itemType === ItemType.OUTFIT && (
+                <OutfitPiecesSection analysisId={item.id} />
+              )}
 
               <View style={styles.section}>
                 <Text style={styles.sectionTitle}>Couleurs</Text>

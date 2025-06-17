@@ -313,6 +313,30 @@ export const outfitAnalysisSupabaseAPI = {
     }
   },
 
+  // Récupérer les pièces d'une analyse
+  getOutfitPieces: async (analysisId) => {
+    try {
+      const { data, error } = await supabase
+        .from('outfit_pieces')
+        .select('*')
+        .eq('outfit_analysis_id', analysisId)
+        .order('layer_order', { ascending: true });
+
+      if (error) throw error;
+
+      return {
+        data: data || [],
+        error: null
+      };
+    } catch (error) {
+      console.error('Error fetching outfit pieces:', error);
+      return {
+        data: [],
+        error: error.message
+      };
+    }
+  },
+
   // Récupérer une analyse spécifique
   getAnalysis: async (analysisId) => {
     try {
