@@ -255,8 +255,51 @@ gh pr create --title "feat: [nom fonctionnalité]" --body "[description]"
 └── test_integration.py  # Tests module complet
 ```
 
+### ⚠️ OBLIGATION: Tests unitaires pour TOUTE intégration
+**CHAQUE nouvelle fonctionnalité ou modification DOIT inclure des tests unitaires**
+
+#### Avant de créer une PR:
+1. **Écrire les tests AVANT ou PENDANT le développement** (TDD recommandé)
+2. **Vérifier que TOUS les tests passent** : `npm test` ou `pytest`
+3. **Coverage minimum de 80%** pour le nouveau code
+4. **Tester les cas limites** : erreurs, données vides, permissions
+
+#### Types de tests requis:
+- **Tests unitaires** : Chaque fonction/méthode isolée
+- **Tests d'intégration** : Interactions entre composants
+- **Tests de régression** : S'assurer que les anciennes fonctionnalités marchent encore
+- **Tests E2E** (si applicable) : Flux utilisateur complet
+
+#### Exemple de test obligatoire:
+```javascript
+// Mauvais : Code sans test ❌
+const deleteItem = async (id) => {
+  const response = await api.delete(`/items/${id}`);
+  return response.data;
+};
+
+// Bon : Code avec tests ✅
+// deleteItem.test.js
+describe('deleteItem', () => {
+  it('should delete item successfully', async () => {
+    const result = await deleteItem('123');
+    expect(result.success).toBe(true);
+  });
+  
+  it('should handle deletion errors', async () => {
+    await expect(deleteItem(null)).rejects.toThrow();
+  });
+  
+  it('should update local state after deletion', async () => {
+    // Test que l'état local est mis à jour
+  });
+});
+```
+
 ### Checklist avant PR
-- [ ] Tests unitaires passants (coverage > 80%)
+- [ ] Tests unitaires écrits et passants (coverage > 80%)
+- [ ] Tests d'intégration pour les nouvelles features
+- [ ] Tous les tests existants passent encore
 - [ ] Linting sans erreurs
 - [ ] Types TypeScript corrects
 - [ ] Documentation du module à jour
