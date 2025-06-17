@@ -241,8 +241,40 @@ export const outfitAnalysisSupabaseAPI = {
 
       if (analysisError) throw analysisError;
       
-      // Pour les tenues complètes, on ne crée PAS d'entrée dans clothing_items
-      // car outfit_analyses est déjà chargé dans useWardrobe
+      // 4. Créer une entrée pour chaque pièce détectée dans outfit_pieces
+      if (aiAnalysis.pieces && aiAnalysis.pieces.length > 0) {
+        try {
+          const piecesData = aiAnalysis.pieces.map((piece, index) => ({
+            outfit_analysis_id: analysis.id,
+            user_id: userId,
+            type: piece.type,
+            name: piece.name,
+            description: `${piece.name} - ${piece.color}`,
+            color: piece.color,
+            material: piece.material || 'non spécifié',
+            brand_estimation: piece.brand_estimation,
+            price_range: piece.price_range,
+            style: piece.style,
+            fit: piece.fit,
+            layer_order: piece.type === 'top' ? index + 1 : 1, // Gérer l'ordre des couches pour les hauts
+            confidence: aiAnalysis.confidence || 0.85
+          }));
+          
+          const { data: insertedPieces, error: piecesError } = await supabase
+            .from('outfit_pieces')
+            .insert(piecesData)
+            .select();
+            
+          if (piecesError) {
+            console.error('Error inserting outfit pieces:', piecesError);
+          } else {
+            console.log(`Inserted ${insertedPieces.length} pieces for outfit analysis ${analysis.id}`);
+          }
+        } catch (error) {
+          console.error('Error creating outfit pieces:', error);
+          // On ne fait pas échouer l'analyse si l'insertion des pièces échoue
+        }
+      }
       
       return {
         data: analysis,
