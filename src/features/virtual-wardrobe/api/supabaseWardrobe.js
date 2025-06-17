@@ -173,12 +173,42 @@ export const wardrobeSupabaseAPI = {
    */
   async deleteItem(itemId) {
     try {
-      const { error } = await supabase
+      console.log('Attempting to delete item with ID:', itemId);
+      
+      // Vérifier d'abord si l'item existe
+      const { data: checkData, error: checkError } = await supabase
+        .from('clothing_items')
+        .select('id')
+        .eq('id', itemId)
+        .single();
+      
+      console.log('Item exists check:', { checkData, checkError });
+      
+      if (checkError || !checkData) {
+        throw new Error('Item not found');
+      }
+      
+      const { data, error, count } = await supabase
         .from('clothing_items')
         .delete()
-        .eq('id', itemId);
+        .eq('id', itemId)
+        .select();
+
+      console.log('Delete response:', { data, error, count });
 
       if (error) throw error;
+      
+      // Vérifier après suppression
+      const { data: afterCheck, error: afterError } = await supabase
+        .from('clothing_items')
+        .select('id')
+        .eq('id', itemId);
+      
+      console.log('After delete check:', { afterCheck, afterError });
+      
+      if (afterCheck && afterCheck.length > 0) {
+        throw new Error('Item still exists after deletion');
+      }
 
       return {
         success: true,
@@ -240,6 +270,36 @@ export const wardrobeSupabaseAPI = {
       return {
         data: null,
         error: error.message || 'Erreur lors de la mise à jour du favori'
+      };
+    }
+  },
+
+  /**
+   * Supprime une analyse d'outfit
+   */
+  async deleteOutfitAnalysis(analysisId) {
+    try {
+      console.log('Attempting to delete outfit analysis with ID:', analysisId);
+      
+      const { data, error } = await supabase
+        .from('outfit_analyses')
+        .delete()
+        .eq('id', analysisId)
+        .select();
+
+      console.log('Delete outfit analysis response:', { data, error });
+
+      if (error) throw error;
+
+      return {
+        success: true,
+        error: null
+      };
+    } catch (error) {
+      console.error('Error deleting outfit analysis:', error);
+      return {
+        success: false,
+        error: error.message || 'Erreur lors de la suppression de l\'analyse'
       };
     }
   }

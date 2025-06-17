@@ -47,9 +47,7 @@ export default function WardrobeScreen({ navigation }) {
           style: 'destructive',
           onPress: async () => {
             const success = await deleteItem(itemId);
-            if (success) {
-              Alert.alert('Succès', 'L\'article a été supprimé');
-            } else {
+            if (!success) {
               Alert.alert('Erreur', 'Impossible de supprimer l\'article');
             }
           }

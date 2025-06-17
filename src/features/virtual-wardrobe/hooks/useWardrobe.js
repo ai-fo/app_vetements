@@ -90,13 +90,31 @@ export function useWardrobe(userId) {
    */
   const deleteItem = async (itemId) => {
     try {
+      console.log('Starting deletion for item:', itemId);
+      
       // Trouver l'item pour récupérer l'imagePath
       const item = items.find(i => i.id === itemId);
+      console.log('Found item:', item);
+      console.log('Item type:', item?.itemType);
       
-      const response = await wardrobeSupabaseAPI.deleteItem(itemId);
+      // Si c'est une analyse d'outfit, on doit la supprimer différemment
+      let response;
+      if (item?.itemType === 'OUTFIT') {
+        console.log('This is an outfit analysis, using deleteOutfitAnalysis');
+        response = await wardrobeSupabaseAPI.deleteOutfitAnalysis(itemId);
+      } else {
+        console.log('This is a clothing item, using deleteItem');
+        response = await wardrobeSupabaseAPI.deleteItem(itemId);
+      }
+      
+      console.log('Delete API response:', response);
       
       if (response.error) {
         throw new Error(response.error);
+      }
+      
+      if (!response.success) {
+        throw new Error('Deletion failed without error message');
       }
       
       // Supprimer l'image du storage si elle existe
@@ -110,7 +128,13 @@ export function useWardrobe(userId) {
       }
       
       // Mettre à jour l'état local
-      setItems(prevItems => prevItems.filter(item => item.id !== itemId));
+      console.log('Updating local state, removing item:', itemId);
+      setItems(prevItems => {
+        const newItems = prevItems.filter(item => item.id !== itemId);
+        console.log('Items after deletion:', newItems.length);
+        return newItems;
+      });
+      
       return true;
     } catch (error) {
       console.error('Error deleting item:', error);
