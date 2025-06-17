@@ -98,14 +98,15 @@ export function useWardrobe(userId) {
       console.log('Item type:', item?.itemType);
       
       // Si c'est une analyse d'outfit, on doit la supprimer différemment
+      let response;
       if (item?.itemType === 'OUTFIT') {
-        console.log('This is an outfit analysis, not a clothing item');
-        // Pour l'instant, on ne peut pas supprimer les analyses d'outfit
-        setError('Les analyses de tenue ne peuvent pas être supprimées pour le moment');
-        return false;
+        console.log('This is an outfit analysis, using deleteOutfitAnalysis');
+        response = await wardrobeSupabaseAPI.deleteOutfitAnalysis(itemId);
+      } else {
+        console.log('This is a clothing item, using deleteItem');
+        response = await wardrobeSupabaseAPI.deleteItem(itemId);
       }
       
-      const response = await wardrobeSupabaseAPI.deleteItem(itemId);
       console.log('Delete API response:', response);
       
       if (response.error) {

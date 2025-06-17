@@ -272,5 +272,35 @@ export const wardrobeSupabaseAPI = {
         error: error.message || 'Erreur lors de la mise à jour du favori'
       };
     }
+  },
+
+  /**
+   * Supprime une analyse d'outfit
+   */
+  async deleteOutfitAnalysis(analysisId) {
+    try {
+      console.log('Attempting to delete outfit analysis with ID:', analysisId);
+      
+      const { data, error } = await supabase
+        .from('outfit_analyses')
+        .delete()
+        .eq('id', analysisId)
+        .select();
+
+      console.log('Delete outfit analysis response:', { data, error });
+
+      if (error) throw error;
+
+      return {
+        success: true,
+        error: null
+      };
+    } catch (error) {
+      console.error('Error deleting outfit analysis:', error);
+      return {
+        success: false,
+        error: error.message || 'Erreur lors de la suppression de l\'analyse'
+      };
+    }
   }
 };
