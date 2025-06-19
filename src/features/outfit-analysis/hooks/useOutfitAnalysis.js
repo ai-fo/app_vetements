@@ -6,12 +6,12 @@ export const useOutfitAnalysis = () => {
   const [loading, setLoading] = useState(false);
   const [analyses, setAnalyses] = useState([]);
 
-  const analyzeOutfit = async (imageUri, userId) => {
+  const analyzeOutfit = async (imageUri, userId, itemType = 'outfit') => {
     setLoading(true);
     try {
       // Utiliser l'API pour analyser l'image
       // L'upload sera géré par le backend
-      const { data, error } = await outfitAnalysisAPI.analyzeImage(imageUri, userId);
+      const { data, error } = await outfitAnalysisAPI.analyzeImage(imageUri, userId, itemType);
       
       if (error) throw new Error(error);
       

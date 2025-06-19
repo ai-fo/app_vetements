@@ -5,10 +5,7 @@ class OpenAIService {
     try {
       const formData = new FormData();
       
-      // Convertir l'URI en blob pour l'upload
-      const response = await fetch(imageUri);
-      const blob = await response.blob();
-      
+      // Pour React Native, on utilise directement l'URI
       formData.append('file', {
         uri: imageUri,
         type: 'image/jpeg',

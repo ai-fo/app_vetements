@@ -147,12 +147,6 @@ export default function OutfitPiecesSection({ analysisId }) {
                   </View>
                 </View>
 
-                {piece.brand_estimation && (
-                  <View style={styles.brandSection}>
-                    <Text style={styles.detailLabel}>Marques estimées</Text>
-                    <Text style={styles.brandText}>{piece.brand_estimation}</Text>
-                  </View>
-                )}
 
                 {piece.price_range && (
                   <View style={styles.priceSection}>

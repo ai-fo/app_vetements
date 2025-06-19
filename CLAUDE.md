@@ -5,9 +5,10 @@ Application React Native (vêtements) avec backend Python pour l'IA.
 
 ### ⚠️ IMPORTANT: Mode de développement
 **Le backend Python gérant l'IA est temporairement exclu du Git**. 
-- Toutes les fonctionnalités IA doivent être simulées (mock) côté frontend
-- Les appels API vers le backend doivent être commentés avec `// TODO: Activer quand le backend est prêt`
-- Utiliser des données factices pour les réponses IA
+- **NE JAMAIS SIMULER DE DONNÉES** - Si l'API ne fonctionne pas, afficher une erreur
+- Les appels API vers le backend doivent retourner une vraie réponse ou une erreur
+- Ne pas utiliser de données factices ou mockées
+- Si le backend n'est pas disponible, informer l'utilisateur
 - Le backend sera réintégré ultérieurement
 
 ## Architecture modulaire
@@ -114,9 +115,9 @@ interface CartItem { productId: string; quantity: number }
    - `api.ts` - Appels API (avec mocks pour l'IA)
    - `types.ts` - Types locaux
 3. Pour les fonctionnalités IA:
-   - Simuler les réponses dans les hooks
-   - Ajouter `// TODO: Activer l'API réelle`
-   - Utiliser des délais artificiels pour simuler l'attente
+   - Ne pas simuler les réponses - retourner une erreur si l'API n'est pas disponible
+   - Ajouter `// TODO: Activer l'API réelle` si nécessaire
+   - Afficher un message d'erreur clair à l'utilisateur
 
 ### Nouvelle fonctionnalité Backend
 1. Créer dossier `backend/modules/[nouveau-module]/`
@@ -144,21 +145,17 @@ backend/modules/favorites/
   └── models.py
 ```
 
-### Exemple de mock pour l'IA
+### Exemple de gestion d'erreur pour l'IA
 ```javascript
 // hooks/useOutfitAnalysis.js
 const analyzeOutfit = async (imageUri, userId) => {
-  // TODO: Activer quand le backend est prêt
-  // const result = await outfitAnalysisAPI.analyzeImage(imageUri);
-  
-  // Simulation temporaire
-  await new Promise(resolve => setTimeout(resolve, 2000));
-  return {
-    style: 'moderne',
-    category: 'casual',
-    colors: { primary: ['noir', 'blanc'] },
-    // ... autres données factices
-  };
+  try {
+    const result = await outfitAnalysisAPI.analyzeImage(imageUri);
+    return result;
+  } catch (error) {
+    // Ne pas simuler - afficher l'erreur
+    throw new Error('Le service d\'analyse n\'est pas disponible. Veuillez réessayer plus tard.');
+  }
 };
 ```
 

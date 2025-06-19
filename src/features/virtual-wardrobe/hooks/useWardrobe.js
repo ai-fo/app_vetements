@@ -37,19 +37,14 @@ export function useWardrobe(userId) {
     setError(null);
     
     try {
-      // Charger en parallèle pour de meilleures performances
-      const [clothingResponse, outfitAnalyses] = await Promise.all([
-        wardrobeSupabaseAPI.getItems(userId, filters),
-        wardrobeSupabaseAPI.getOutfitAnalyses(userId)
-      ]);
+      // Maintenant getItems retourne déjà tout (pièces simples + tenues)
+      const clothingResponse = await wardrobeSupabaseAPI.getItems(userId, filters);
       
-      // Combiner les résultats
-      const allItems = [
-        ...(clothingResponse.data || []),
-        ...(outfitAnalyses || [])
-      ];
+      if (clothingResponse.error) {
+        throw new Error(clothingResponse.error);
+      }
       
-      setItems(allItems);
+      setItems(clothingResponse.data || []);
     } catch (error) {
       console.error('Error loading wardrobe items:', error);
       setError('Impossible de charger votre garde-robe');

@@ -28,25 +28,11 @@ class OutfitAnalysisRequest(BaseModel):
     image_url: str
     user_preferences: Dict[str, Any] = {}
 
-class OutfitAnalysisResponse(BaseModel):
-    type: str = "clothing"
-    style: str
-    category: str
-    colors: Dict[str, List[str]]
-    material: str = ""
-    pattern: str = "uni"
-    occasion: str
-    season: str | List[str]
-    care_instructions: str = ""
-    brand_style: str = ""
-    recommendations: List[str]
-    confidence: float
-
 @app.get("/")
 async def root():
     return {"message": "AI Fashion Assistant API"}
 
-@app.post("/analyze-outfit", response_model=OutfitAnalysisResponse)
+@app.post("/analyze-outfit")
 async def analyze_outfit(file: UploadFile = File(...)):
     try:
         contents = await file.read()
@@ -58,28 +44,42 @@ async def analyze_outfit(file: UploadFile = File(...)):
             messages=[
                 {
                     "role": "system",
-                    "content": "Tu es un expert en mode. Réponds UNIQUEMENT avec du JSON valide, sans texte avant ou après."
+                    "content": "Tu es un expert en mode et styliste professionnel. Analyse les vêtements avec précision. Réponds UNIQUEMENT avec du JSON valide, sans texte avant ou après."
                 },
                 {
                     "role": "user",
                     "content": [
                         {
                             "type": "text",
-                            "text": """Analyse ce vêtement et retourne UNIQUEMENT ce JSON:
+                            "text": """Analyse cette image de vêtement(s). Identifie TOUTES les pièces visibles (haut, bas, chaussures, accessoires, etc.) et retourne UNIQUEMENT ce JSON:
 {
-  "type": "haut/bas/robe/veste/etc",
-  "style": "casual/formel/sportif/etc",
-  "category": "quotidien/soirée/sport/travail",
-  "colors": {"primary": ["couleur1"], "secondary": ["couleur2"]},
-  "material": "coton/laine/synthétique/etc",
-  "pattern": "uni/rayé/fleuri/etc",
-  "occasion": "travail/sport/soirée/etc",
-  "season": "spring/summer/fall/winter",
-  "care_instructions": "laver à 30°",
-  "brand_style": "casual/luxe/sportswear",
-  "recommendations": ["suggestion1", "suggestion2"],
-  "confidence": 0.8
-}"""
+  "type": "outfit" ou "single_piece",
+  "style": "casual/formel/sportif/streetwear/chic/bohème/minimaliste/etc",
+  "category": "quotidien/soirée/sport/travail/décontracté",
+  "colors": {"primary": ["couleur1", "couleur2"], "secondary": ["couleur3"]},
+  "material": "coton/laine/denim/cuir/synthétique/etc",
+  "pattern": "uni/rayé/fleuri/à carreaux/imprimé/etc",
+  "occasion": "travail/sport/soirée/weekend/casual/etc",
+  "season": ["spring", "summer", "fall", "winter"],
+  "care_instructions": "laver à 30°/nettoyage à sec/etc",
+  "brand_style": "casual/luxe/sportswear/fast-fashion/designer",
+  "recommendations": ["suggestion1 détaillée", "suggestion2 détaillée"],
+  "confidence": 0.85,
+  "pieces": [
+    {
+      "type": "top/bottom/outerwear/dress/shoes/accessory",
+      "name": "Nom descriptif de la pièce",
+      "color": "couleur principale",
+      "material": "matière",
+      "brand_estimation": "marque estimée ou null",
+      "price_range": "50-150€",
+      "style": "style de la pièce",
+      "fit": "slim/regular/loose/oversized"
+    }
+  ]
+}
+
+IMPORTANT: Le champ "pieces" doit contenir TOUTES les pièces visibles. Pour une tenue complète, inclure au minimum: haut, bas, chaussures si visibles."""
                         },
                         {
                             "type": "image_url",
@@ -90,7 +90,7 @@ async def analyze_outfit(file: UploadFile = File(...)):
                     ]
                 }
             ],
-            max_tokens=300
+            max_tokens=800
         )
         
         # Log de la réponse pour debug
@@ -108,7 +108,15 @@ async def analyze_outfit(file: UploadFile = File(...)):
                 cleaned = cleaned[:-3]
             result = json.loads(cleaned.strip())
         
-        return OutfitAnalysisResponse(**result)
+        # S'assurer que pieces existe toujours
+        if "pieces" not in result:
+            result["pieces"] = []
+            
+        # S'assurer que season est toujours un tableau
+        if isinstance(result.get("season"), str):
+            result["season"] = [result["season"]]
+        
+        return result
         
     except Exception as e:
         print(f"Erreur détaillée dans analyze_outfit: {type(e).__name__}: {str(e)}")

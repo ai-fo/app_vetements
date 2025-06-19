@@ -81,7 +81,6 @@ export default function WardrobeScreen({ navigation }) {
 
   const renderListItem = (item) => (
     <TouchableOpacity
-      key={item.id}
       style={styles.listItem}
       onPress={() => setSelectedItem(item)}
     >
@@ -196,7 +195,11 @@ export default function WardrobeScreen({ navigation }) {
           renderEmptyState()
         ) : (
           <View style={styles.list}>
-            {items.map(renderListItem)}
+            {items.map((item) => (
+              <React.Fragment key={item.id}>
+                {renderListItem(item)}
+              </React.Fragment>
+            ))}
           </View>
         )}
       </ScrollView>
