@@ -242,8 +242,10 @@ export const outfitAnalysisSupabaseAPI = {
       if (analysisError) throw analysisError;
       
       // 4. Créer une entrée pour chaque pièce détectée dans outfit_pieces
+      console.log('Checking if pieces exist:', aiAnalysis.pieces);
       if (aiAnalysis.pieces && aiAnalysis.pieces.length > 0) {
         try {
+          console.log(`Preparing to insert ${aiAnalysis.pieces.length} pieces`);
           const piecesData = aiAnalysis.pieces.map((piece, index) => ({
             outfit_analysis_id: analysis.id,
             user_id: userId,
@@ -260,6 +262,8 @@ export const outfitAnalysisSupabaseAPI = {
             confidence: aiAnalysis.confidence || 0.85
           }));
           
+          console.log('Pieces data to insert:', JSON.stringify(piecesData, null, 2));
+          
           const { data: insertedPieces, error: piecesError } = await supabase
             .from('outfit_pieces')
             .insert(piecesData)
@@ -267,13 +271,18 @@ export const outfitAnalysisSupabaseAPI = {
             
           if (piecesError) {
             console.error('Error inserting outfit pieces:', piecesError);
+            console.error('Error details:', JSON.stringify(piecesError, null, 2));
           } else {
-            console.log(`Inserted ${insertedPieces.length} pieces for outfit analysis ${analysis.id}`);
+            console.log(`Successfully inserted ${insertedPieces?.length || 0} pieces for outfit analysis ${analysis.id}`);
+            console.log('Inserted pieces:', JSON.stringify(insertedPieces, null, 2));
           }
         } catch (error) {
           console.error('Error creating outfit pieces:', error);
+          console.error('Error stack:', error.stack);
           // On ne fait pas échouer l'analyse si l'insertion des pièces échoue
         }
+      } else {
+        console.log('No pieces detected in analysis');
       }
       
       return {
