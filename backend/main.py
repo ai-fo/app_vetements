@@ -51,7 +51,7 @@ async def analyze_outfit(file: UploadFile = File(...)):
                     "content": [
                         {
                             "type": "text",
-                            "text": """Analyse cette image de vêtement(s). Identifie TOUTES les pièces visibles (haut, bas, chaussures, accessoires, etc.) et retourne UNIQUEMENT ce JSON:
+                            "text": """Analyse cette image de vêtement(s). Identifie TOUTES les pièces visibles et retourne UNIQUEMENT ce JSON:
 {
   "type": "outfit" ou "single_piece",
   "style": "casual/formel/sportif/streetwear/chic/bohème/minimaliste/etc",
@@ -71,7 +71,7 @@ async def analyze_outfit(file: UploadFile = File(...)):
       "name": "Nom descriptif de la pièce",
       "color": "couleur principale",
       "material": "matière",
-      "brand_estimation": "marque estimée ou null",
+      "brand_estimation": null,
       "price_range": "50-150€",
       "style": "style de la pièce",
       "fit": "slim/regular/loose/oversized"
@@ -79,7 +79,12 @@ async def analyze_outfit(file: UploadFile = File(...)):
   ]
 }
 
-IMPORTANT: Le champ "pieces" doit contenir TOUTES les pièces visibles. Pour une tenue complète, inclure au minimum: haut, bas, chaussures si visibles."""
+RÈGLES IMPORTANTES:
+1. Le champ "pieces" doit TOUJOURS contenir au moins 1 élément
+2. Si c'est une seule pièce visible, pieces contiendra 1 élément
+3. Si c'est une tenue complète (personne habillée), pieces doit contenir TOUTES les pièces visibles: haut, bas, chaussures, accessoires, etc.
+4. NE JAMAIS mettre brand_estimation - toujours null
+5. type = "outfit" si plusieurs pièces forment une tenue, "single_piece" si c'est un vêtement isolé"""
                         },
                         {
                             "type": "image_url",

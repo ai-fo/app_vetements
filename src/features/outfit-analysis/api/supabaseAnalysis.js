@@ -20,45 +20,48 @@ export const outfitAnalysisSupabaseAPI = {
           // Ne pas simuler - retourner une erreur
           throw new Error('Le service d\'analyse n\'est pas disponible. Veuillez réessayer plus tard.');
         } else {
-          // Vérifier si OpenAI retourne un format sans pieces (ancien format)
-          if (openaiData && !openaiData.pieces) {
-            console.log('OpenAI returned old format, generating pieces from response');
-            // Si c'est l'ancien format et pas de pièces détectées
-            const detectedPieces = [];
+          console.log('OpenAI response:', JSON.stringify(openaiData, null, 2));
+          
+          // Vérifier si OpenAI retourne un format sans pieces ou des pieces vides
+          if (openaiData && (!openaiData.pieces || openaiData.pieces.length === 0)) {
+            console.log('OpenAI returned no pieces, checking itemType:', itemType);
             
-            // Si c'est une analyse de veste seule et qu'on n'est pas en mode outfit
-            if (openaiData.type && itemType !== 'outfit') {
-              // Mapper les types français vers les types anglais
-              const typeMapping = {
-                'veste': 'outerwear',
-                'chemise': 'top',
-                'pantalon': 'bottom',
-                'chaussures': 'shoes',
-                'accessoire': 'accessory',
-                'robe': 'dress'
+            // Si c'est explicitement une tenue complète (itemType === 'outfit')
+            if (itemType === 'outfit') {
+              console.log('Item type is outfit, keeping as outfit even without pieces');
+              // Garder comme tenue complète même sans pièces détaillées
+              aiAnalysis = {
+                ...openaiData,
+                type: 'outfit',
+                pieces: [] // Garder vide, l'interface gèrera l'affichage
               };
+            } else {
+              // Si c'est une pièce unique, créer une pièce basée sur les données
+              console.log('Creating single piece from analysis data');
+              const detectedPieces = [];
               
-              const englishType = typeMapping[openaiData.type.toLowerCase()] || openaiData.type;
+              // Créer une pièce basée sur le type détecté ou le style
+              const pieceType = openaiData.type === 'single_piece' ? 'top' : openaiData.type || 'top';
               
               detectedPieces.push({
-                type: englishType,
-                name: openaiData.type.charAt(0).toUpperCase() + openaiData.type.slice(1) + ' ' + (openaiData.style || ''),
+                type: pieceType,
+                name: openaiData.style ? `${openaiData.style} ${pieceType}` : 'Article',
                 color: openaiData.colors?.primary?.[0] || 'non défini',
                 material: openaiData.material || 'non spécifié',
                 brand_estimation: null,
                 price_range: openaiData.brand_style === 'luxe' ? '200-500€' : 
                             openaiData.brand_style === 'casual' ? '50-150€' : '100-300€',
                 style: openaiData.style || 'non défini',
-                fit: openaiData.pattern === 'rayé' ? 'tailored' : 'regular'
+                fit: 'regular'
               });
+              
+              aiAnalysis = {
+                ...openaiData,
+                pieces: detectedPieces
+              };
             }
-            
-            // Ajouter les pièces détectées
-            aiAnalysis = {
-              ...openaiData,
-              pieces: detectedPieces
-            };
           } else {
+            // OpenAI a retourné des pièces
             aiAnalysis = openaiData;
           }
         }
@@ -71,6 +74,20 @@ export const outfitAnalysisSupabaseAPI = {
       // 3. Créer une entrée dans outfit_analyses avec les données OpenAI
       // Déterminer si c'est une pièce unique ou une tenue complète basé sur itemType
       const isSinglePiece = itemType !== 'outfit';
+      console.log('Creating analysis entry, isSinglePiece:', isSinglePiece, 'itemType:', itemType);
+      
+      // Déterminer la catégorie appropriée
+      let analysisCategory;
+      if (isSinglePiece) {
+        analysisCategory = 'piece_unique';
+      } else {
+        // Pour les tenues complètes, utiliser la catégorie retournée par l'IA ou 'quotidien' par défaut
+        analysisCategory = aiAnalysis.category || 'quotidien';
+        // S'assurer que la catégorie est bien une catégorie de tenue
+        if (analysisCategory === 'piece_unique') {
+          analysisCategory = 'quotidien';
+        }
+      }
       
       const { data: analysis, error: analysisError } = await supabase
         .from('outfit_analyses')
@@ -79,7 +96,7 @@ export const outfitAnalysisSupabaseAPI = {
           image_url: publicUrl,
           processing_status: 'completed',
           style: aiAnalysis.style,
-          category: isSinglePiece ? 'piece_unique' : (aiAnalysis.category || 'quotidien'),
+          category: analysisCategory,
           formality: Math.round(aiAnalysis.confidence * 10) || 5,
           versatility: 8,
           colors: aiAnalysis.colors,
@@ -97,7 +114,7 @@ export const outfitAnalysisSupabaseAPI = {
             style: piece.style,
             fit: piece.fit
           })) : [{
-            description: `${aiAnalysis.style} - ${aiAnalysis.category}`
+            description: `${aiAnalysis.style} - ${analysisCategory}`
           }],
           matching_suggestions: aiAnalysis.recommendations || [],
           analysis_confidence: (aiAnalysis.confidence || 0.8) * 100,

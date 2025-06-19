@@ -73,18 +73,19 @@ export const wardrobeSupabaseAPI = {
 
       // Transformer toutes les analyses en items de garde-robe
       const items = (data || []).map(analysis => {
-        // Si c'est une tenue complète (plusieurs pièces détectées)
-        if (analysis.category === 'quotidien' || analysis.category === 'professionnel' || 
-            analysis.category === 'sport' || analysis.category === 'soirée' || 
-            (analysis.items && analysis.items.length > 1)) {
-          return transformOutfitAnalysisToFrontend(analysis);
-        } else {
-          // Sinon c'est une pièce simple
+        console.log('Processing analysis:', { 
+          id: analysis.id, 
+          category: analysis.category,
+          itemsCount: analysis.items?.length 
+        });
+        
+        // Si c'est explicitement une pièce unique
+        if (analysis.category === 'piece_unique') {
           return {
             id: analysis.id,
             userId: analysis.user_id,
             itemType: 'SINGLE_PIECE',
-            category: analysis.items?.[0]?.type || analysis.category || 'top',
+            category: analysis.items?.[0]?.type || 'top',
             imageUrl: analysis.image_url,
             colors: analysis.colors?.primary || [],
             materials: analysis.materials || [],
@@ -95,6 +96,9 @@ export const wardrobeSupabaseAPI = {
             tags: analysis.occasions || [],
             isFavorite: false
           };
+        } else {
+          // Sinon c'est une tenue complète (toutes les autres catégories)
+          return transformOutfitAnalysisToFrontend(analysis);
         }
       });
 
