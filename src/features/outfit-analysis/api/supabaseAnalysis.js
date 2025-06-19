@@ -161,7 +161,48 @@ export const outfitAnalysisSupabaseAPI = {
             pieces: detectedPieces
           };
         } else {
-          aiAnalysis = openaiData;
+          // Vérifier si OpenAI retourne un format sans pieces (ancien format)
+          if (openaiData && !openaiData.pieces) {
+            console.log('OpenAI returned old format, generating pieces from response');
+            // Si c'est l'ancien format, créer les pièces à partir de la réponse
+            const detectedPieces = [];
+            
+            // Si c'est une analyse de veste seule
+            if (openaiData.type) {
+              // Mapper les types français vers les types anglais
+              const typeMapping = {
+                'veste': 'outerwear',
+                'chemise': 'top',
+                'pantalon': 'bottom',
+                'chaussures': 'shoes',
+                'accessoire': 'accessory',
+                'robe': 'dress'
+              };
+              
+              const englishType = typeMapping[openaiData.type.toLowerCase()] || openaiData.type;
+              
+              detectedPieces.push({
+                type: englishType,
+                name: openaiData.type.charAt(0).toUpperCase() + openaiData.type.slice(1) + ' ' + (openaiData.style || ''),
+                color: openaiData.colors?.primary?.[0] || 'non défini',
+                material: openaiData.material || 'non spécifié',
+                brand_estimation: openaiData.brand_style === 'luxe' ? 'Hugo Boss, Armani' : 
+                                 openaiData.brand_style === 'casual' ? 'Zara, H&M' : 'Marque non définie',
+                price_range: openaiData.brand_style === 'luxe' ? '200-500€' : 
+                            openaiData.brand_style === 'casual' ? '50-150€' : '100-300€',
+                style: openaiData.style || 'non défini',
+                fit: openaiData.pattern === 'rayé' ? 'tailored' : 'regular'
+              });
+            }
+            
+            // Ajouter les pièces générées
+            aiAnalysis = {
+              ...openaiData,
+              pieces: detectedPieces.length > 0 ? detectedPieces : generateDynamicPiecesDetection()
+            };
+          } else {
+            aiAnalysis = openaiData;
+          }
         }
       } catch (error) {
         console.error('Error calling OpenAI:', error);
