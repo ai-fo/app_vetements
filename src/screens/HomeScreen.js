@@ -17,6 +17,7 @@ import { useAuth } from '../features/auth';
 import { useOutfitAnalysis } from '../features/outfit-analysis';
 import { useNavigation } from '@react-navigation/native';
 import DailyRecommendation from '../features/outfit-analysis/components/DailyRecommendation';
+import { WeatherRecommendations } from '../features/weather-recommendations';
 
 const { width } = Dimensions.get('window');
 
@@ -25,6 +26,7 @@ export default function HomeScreen() {
   const { analyses, getUserAnalyses } = useOutfitAnalysis();
   const navigation = useNavigation();
   const [refreshing, setRefreshing] = useState(false);
+  const [showWeatherRecommendations, setShowWeatherRecommendations] = useState(false);
   const fadeAnim = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
@@ -110,6 +112,44 @@ export default function HomeScreen() {
             </View>
           </TouchableOpacity>
 
+          <TouchableOpacity 
+            style={styles.wardrobeButton}
+            onPress={() => setShowWeatherRecommendations(true)}
+            activeOpacity={0.9}
+          >
+            <View style={styles.wardrobeButtonShadow}>
+              <LinearGradient
+                colors={['#fff', '#f8fafc']}
+                style={styles.wardrobeButtonGradient}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
+              >
+                <View style={styles.wardrobeButtonInner}>
+                  <LinearGradient
+                    colors={['#10b981', '#059669']}
+                    style={styles.iconGradient}
+                    start={{ x: 0, y: 0 }}
+                    end={{ x: 1, y: 1 }}
+                  >
+                    <Ionicons name="partly-sunny" size={28} color="#fff" />
+                  </LinearGradient>
+                  
+                  <View style={styles.wardrobeButtonText}>
+                    <Text style={styles.wardrobeButtonTitle}>Recommandations Météo</Text>
+                    <Text style={styles.wardrobeButtonSubtitle}>Tenues adaptées à la météo du jour</Text>
+                  </View>
+                  
+                  <View style={[styles.arrowContainer, { backgroundColor: 'rgba(16, 185, 129, 0.1)' }]}>
+                    <Ionicons name="arrow-forward" size={24} color="#10b981" />
+                  </View>
+                </View>
+                
+                <View style={[styles.liquidAccent, { backgroundColor: 'rgba(16, 185, 129, 0.08)' }]} />
+                <View style={[styles.liquidAccent2, { backgroundColor: 'rgba(5, 150, 105, 0.06)' }]} />
+              </LinearGradient>
+            </View>
+          </TouchableOpacity>
+
         </Animated.View>
       </ScrollView>
       
@@ -139,6 +179,11 @@ export default function HomeScreen() {
           </LinearGradient>
         </TouchableOpacity>
       </View>
+
+      <WeatherRecommendations 
+        visible={showWeatherRecommendations}
+        onClose={() => setShowWeatherRecommendations(false)}
+      />
     </LinearGradient>
   );
 }
