@@ -151,8 +151,49 @@ export const useRecommendations = (userId) => {
         // Mettre à jour la météo
         setWeather(data.weather);
         
-        // Traiter les recommandations
+        // Fonction de validation météo
+        const isWeatherAppropriate = (item, temperature) => {
+          const itemName = (item.name || '').toLowerCase();
+          const itemCategory = (item.category || '').toLowerCase();
+          const materials = (item.materials || []).map(m => m.toLowerCase());
+          
+          // Si température >= 30°C, rejeter les vêtements chauds
+          if (temperature >= 30) {
+            const warmClothes = ['pull', 'sweat', 'veste', 'manteau', 'doudoune', 'cardigan épais'];
+            const warmMaterials = ['laine', 'cachemire', 'velours', 'polaire'];
+            
+            for (const warm of warmClothes) {
+              if (itemName.includes(warm) || itemCategory.includes(warm)) {
+                console.warn(`Rejected ${item.name} - too warm for ${temperature}°C`);
+                return false;
+              }
+            }
+            
+            for (const material of materials) {
+              if (warmMaterials.some(warm => material.includes(warm))) {
+                console.warn(`Rejected ${item.name} - warm material (${material}) for ${temperature}°C`);
+                return false;
+              }
+            }
+          }
+          
+          // Si température 20-29°C, rejeter les vêtements très chauds
+          if (temperature >= 20 && temperature < 30) {
+            const veryWarmClothes = ['pull épais', 'doudoune', 'manteau', 'parka'];
+            for (const warm of veryWarmClothes) {
+              if (itemName.includes(warm)) {
+                console.warn(`Rejected ${item.name} - too warm for ${temperature}°C`);
+                return false;
+              }
+            }
+          }
+          
+          return true;
+        };
+        
+        // Traiter les recommandations avec validation
         const processedRecommendations = [];
+        const currentTemp = data.weather.temp;
         
         for (const rec of data.recommendations) {
           if (rec.id.startsWith('combo-')) {
@@ -160,7 +201,10 @@ export const useRecommendations = (userId) => {
             const ids = rec.id.replace('combo-', '').split('-');
             const pieces = ids.map(id => items.find(item => item.id === id)).filter(Boolean);
             
-            if (pieces.length > 0) {
+            // Vérifier que toutes les pièces sont appropriées
+            const allAppropriate = pieces.every(piece => isWeatherAppropriate(piece, currentTemp));
+            
+            if (pieces.length > 0 && allAppropriate) {
               processedRecommendations.push({
                 id: rec.id,
                 name: 'Ensemble recommandé',
@@ -175,7 +219,7 @@ export const useRecommendations = (userId) => {
           } else {
             // C'est un item unique
             const item = items.find(i => i.id === rec.id);
-            if (item) {
+            if (item && isWeatherAppropriate(item, currentTemp)) {
               processedRecommendations.push({
                 ...item,
                 score: rec.score,
@@ -187,6 +231,7 @@ export const useRecommendations = (userId) => {
           }
         }
         
+        console.log(`Filtered recommendations: ${data.recommendations.length} -> ${processedRecommendations.length}`);
         setRecommendations(processedRecommendations);
       }
     } catch (error) {

@@ -338,13 +338,24 @@ VÊTEMENTS RÉCEMMENT PORTÉS (à éviter):
 GARDE-ROBE DISPONIBLE:
 {json.dumps(request.wardrobe_items, ensure_ascii=False)}
 
-RÈGLES IMPORTANTES:
+RÈGLES IMPORTANTES ET OBLIGATOIRES:
 1. ÉVITER absolument les vêtements avec les IDs dans recently_worn_ids
-2. Les recommandations DOIVENT être cohérentes avec la météo:
-   - Si > 30°C: vêtements légers, respirants, couleurs claires
-   - Si < 10°C: vêtements chauds, plusieurs couches
-   - Si pluie: vêtements imperméables ou résistants à l'eau
-3. Prioriser la variété tout en restant approprié à la météo
+2. COHÉRENCE MÉTÉO STRICTE - NE JAMAIS DÉROGER À CES RÈGLES:
+   - Si température >= 30°C: 
+     * INTERDITS: pulls, sweats, vestes chaudes, laine, cachemire, velours
+     * OBLIGATOIRES: t-shirts, chemises légères, shorts, robes légères, lin, coton léger
+   - Si température 20-29°C:
+     * INTERDITS: pulls épais, doudounes, manteaux, laine épaisse
+     * AUTORISÉS: chemises, t-shirts, pantalons légers, robes, cardigans légers
+   - Si température 10-19°C:
+     * AUTORISÉS: pulls légers, vestes, jeans, chemises manches longues
+   - Si température < 10°C:
+     * RECOMMANDÉS: pulls chauds, manteaux, écharpes, vestes chaudes
+   - Si pluie: privilégier imperméables ou résistants à l'eau
+3. VÉRIFIER que chaque pièce recommandée a des matières adaptées:
+   - Chaleur (>25°C): coton, lin, viscose, matières respirantes
+   - Froid (<15°C): laine, cachemire, polyester, matières chaudes
+4. NE JAMAIS recommander un pull/sweat/veste chaude si température > 25°C
 
 Génère 1 à 3 recommandations pertinentes. Priorise:
 1. Les tenues complètes (itemType: OUTFIT) adaptées à la météo ET non récemment portées
@@ -368,7 +379,7 @@ Retourne UNIQUEMENT ce JSON:
       "id": "id_du_vetement_ou_combinaison",
       "score": 95,
       "reason": "Pourquoi cette recommandation est parfaite pour aujourd'hui",
-      "weather_adaptation": "Comment cette tenue s'adapte à la météo",
+      "weather_adaptation": "OBLIGATOIRE: Expliquer précisément pourquoi ces vêtements sont adaptés à {weather['current']['temperature']}°C (matières, coupe, épaisseur)",
       "style_tips": "Conseils de style supplémentaires"
     }}
   ]
