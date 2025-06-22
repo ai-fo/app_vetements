@@ -283,26 +283,25 @@ async def match_outfit(request: Dict[str, Any]):
 async def get_daily_recommendations(request: DailyRecommendationRequest):
     """Génère des recommandations quotidiennes basées sur la météo et la garde-robe"""
     try:
-        # Récupérer les données météo
-        weather = await get_weather_data(request.city, request.country_code)
+        # TODO: Connecter l'API météo plus tard
+        # weather = await get_weather_data(request.city, request.country_code)
         
-        if not weather:
-            # Si pas de météo, utiliser des valeurs par défaut
-            weather = {
-                "city": request.city,
-                "current": {
-                    "temperature": 20,
-                    "humidity": 50,
-                    "precipitation": 0,
-                    "wind_speed": 10,
-                    "weather_code": 2
-                },
-                "daily": {
-                    "max_temp": 22,
-                    "min_temp": 18,
-                    "precipitation": 0
-                }
+        # Pour l'instant, utiliser une météo fixe à 35°C pour les tests
+        weather = {
+            "city": request.city,
+            "current": {
+                "temperature": 35,
+                "humidity": 65,
+                "precipitation": 0,
+                "wind_speed": 15,
+                "weather_code": 0  # Ciel dégagé
+            },
+            "daily": {
+                "max_temp": 37,
+                "min_temp": 28,
+                "precipitation": 0
             }
+        }
         
         # Interpréter les conditions météo
         weather_description = interpret_weather_code(weather["current"]["weather_code"])
