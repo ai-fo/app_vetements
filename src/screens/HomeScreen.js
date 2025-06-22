@@ -9,10 +9,13 @@ import {
   ScrollView,
   Image,
   TouchableWithoutFeedback,
+  Alert,
+  ActivityIndicator,
 } from 'react-native';
 import { StatusBar } from 'expo-status-bar';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
+import * as ImagePicker from 'expo-image-picker';
 import { useAuth } from '../features/auth';
 import { useOutfitAnalysis } from '../features/outfit-analysis';
 import { useNavigation } from '@react-navigation/native';
@@ -22,9 +25,10 @@ const { width } = Dimensions.get('window');
 
 export default function HomeScreen() {
   const { user, signOut } = useAuth();
-  const { analyses, getUserAnalyses } = useOutfitAnalysis();
+  const { analyses, getUserAnalyses, analyzeOutfit } = useOutfitAnalysis();
   const navigation = useNavigation();
   const [refreshing, setRefreshing] = useState(false);
+  const [isProcessing, setIsProcessing] = useState(false);
   const fadeAnim = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
@@ -50,6 +54,52 @@ export default function HomeScreen() {
 
   const handleAddOutfit = () => {
     navigation.navigate('AddOutfit');
+  };
+
+  const handleQuickAddFromGallery = async () => {
+    try {
+      // Demander la permission pour accéder à la galerie
+      const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+      if (status !== 'granted') {
+        Alert.alert(
+          'Permission refusée',
+          'Nous avons besoin de votre permission pour accéder à la galerie.'
+        );
+        return;
+      }
+
+      // Ouvrir la galerie
+      const result = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ['images'],
+        allowsEditing: true,
+        aspect: [3, 4],
+        quality: 0.8,
+      });
+
+      if (!result.canceled) {
+        setIsProcessing(true);
+        try {
+          // Analyser l'image directement comme un vêtement
+          await analyzeOutfit(result.assets[0].uri, user.id, 'clothing');
+          
+          // Aller directement à la garde-robe
+          navigation.navigate('WardrobeScreen');
+        } catch (error) {
+          Alert.alert(
+            'Erreur',
+            "L'ajout du vêtement a échoué. Veuillez réessayer."
+          );
+        } finally {
+          setIsProcessing(false);
+        }
+      }
+    } catch (error) {
+      console.error('Error picking image:', error);
+      Alert.alert(
+        'Erreur',
+        'Une erreur est survenue lors de l\'ouverture de la galerie.'
+      );
+    }
   };
 
   const handleOutfitPress = (analysisId) => {
@@ -116,6 +166,7 @@ export default function HomeScreen() {
       {/* Floating Action Buttons */}
       <View style={styles.floatingButtonsContainer}>
         <TouchableOpacity 
+          testID="floating-button-profile"
           style={styles.floatingButton} 
           onPress={() => navigation.navigate('Profile')}
           activeOpacity={0.8}
@@ -124,21 +175,54 @@ export default function HomeScreen() {
             <Ionicons name="person" size={22} color="#667eea" />
           </View>
         </TouchableOpacity>
-        
+
         <TouchableOpacity 
-          style={styles.addButton} 
+          testID="floating-button-camera"
+          style={styles.floatingButton} 
           onPress={handleAddOutfit}
           activeOpacity={0.8}
         >
           <LinearGradient
             colors={['#667eea', '#764ba2']}
+            style={styles.floatingButtonGradient}
+          >
+            <Ionicons name="camera" size={22} color="#fff" />
+          </LinearGradient>
+        </TouchableOpacity>
+        
+        <TouchableOpacity 
+          style={styles.addButton} 
+          onPress={handleQuickAddFromGallery}
+          activeOpacity={0.8}
+          disabled={isProcessing}
+        >
+          <LinearGradient
+            colors={['#667eea', '#764ba2']}
             style={styles.addButtonGradient}
           >
-            <Ionicons name="add" size={20} color="#fff" />
-            <Text style={styles.addButtonText}>Ajouter un vêtement</Text>
+            {isProcessing ? (
+              <ActivityIndicator size="small" color="#fff" />
+            ) : (
+              <>
+                <Ionicons name="images" size={20} color="#fff" />
+                <Text style={styles.addButtonText}>Ajouter un vêtement</Text>
+              </>
+            )}
           </LinearGradient>
         </TouchableOpacity>
       </View>
+
+      {/* Overlay de traitement */}
+      {isProcessing && (
+        <View style={styles.processingOverlay}>
+          <View style={styles.processingContainer}>
+            <ActivityIndicator size="large" color="#667eea" />
+            <Text style={styles.processingText}>
+              Ajout à votre garde-robe...
+            </Text>
+          </View>
+        </View>
+      )}
     </LinearGradient>
   );
 }
@@ -165,6 +249,7 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     paddingHorizontal: 20,
+    alignItems: 'center',
   },
   floatingButton: {
     width: 56,
@@ -289,5 +374,33 @@ const styles = StyleSheet.create({
     borderRadius: 50,
     backgroundColor: 'rgba(118, 75, 162, 0.06)',
     transform: [{ scale: 1.3 }],
+  },
+  processingOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(0, 0, 0, 0.7)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 1000,
+  },
+  processingContainer: {
+    backgroundColor: '#fff',
+    borderRadius: 20,
+    padding: 30,
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 10,
+  },
+  processingText: {
+    marginTop: 15,
+    fontSize: 16,
+    color: '#1f2937',
+    fontWeight: '500',
   },
 });

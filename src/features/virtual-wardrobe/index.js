@@ -7,6 +7,7 @@ export { default as ItemDetailsModal } from './components/ItemDetailsModal';
 export { default as ItemEditor } from './components/ItemEditor';
 export { default as FilterBar } from './components/FilterBar';
 export { default as FavoriteButton } from './components/FavoriteButton';
+export { default as QuickAddButton } from './components/QuickAddButton';
 
 // Hooks
 export { useWardrobe } from './hooks/useWardrobe';

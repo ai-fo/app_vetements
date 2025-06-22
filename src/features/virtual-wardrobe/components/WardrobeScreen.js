@@ -19,6 +19,7 @@ import { ItemType, ClothingCategory, Season } from '../types';
 import ItemDetailsModal from './ItemDetailsModal';
 import FilterBar from './FilterBar';
 import FavoriteButton from './FavoriteButton';
+import QuickAddButton from './QuickAddButton';
 
 const { width } = Dimensions.get('window');
 const ITEM_WIDTH = (width - 60) / 2;
@@ -63,18 +64,24 @@ export default function WardrobeScreen({ navigation }) {
       <Text style={styles.emptyStateText}>
         Commencez à ajouter des vêtements en utilisant l'appareil photo
       </Text>
-      <TouchableOpacity 
-        style={styles.addButton}
-        onPress={() => navigation.navigate('AddOutfit')}
-      >
-        <LinearGradient
-          colors={['#667eea', '#764ba2']}
-          style={styles.addButtonGradient}
+      <View style={styles.emptyStateButtons}>
+        <TouchableOpacity 
+          style={styles.addButton}
+          onPress={() => navigation.navigate('AddOutfit')}
         >
-          <Ionicons name="camera" size={24} color="#fff" />
-          <Text style={styles.addButtonText}>Ajouter une tenue</Text>
-        </LinearGradient>
-      </TouchableOpacity>
+          <LinearGradient
+            colors={['#667eea', '#764ba2']}
+            style={styles.addButtonGradient}
+          >
+            <Ionicons name="camera" size={24} color="#fff" />
+            <Text style={styles.addButtonText}>Analyser une tenue</Text>
+          </LinearGradient>
+        </TouchableOpacity>
+        
+        <QuickAddButton 
+          onSuccess={refreshWardrobe}
+        />
+      </View>
     </View>
   );
 
@@ -224,17 +231,10 @@ export default function WardrobeScreen({ navigation }) {
       )}
 
       {items.length > 0 && (
-        <TouchableOpacity 
+        <QuickAddButton 
           style={styles.floatingButton}
-          onPress={() => navigation.navigate('AddOutfit')}
-        >
-          <LinearGradient
-            colors={['#667eea', '#764ba2']}
-            style={styles.floatingButtonGradient}
-          >
-            <Ionicons name="add" size={28} color="#fff" />
-          </LinearGradient>
-        </TouchableOpacity>
+          onSuccess={refreshWardrobe}
+        />
       )}
     </View>
   );
@@ -401,5 +401,11 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.3,
     shadowRadius: 6,
     elevation: 8,
+  },
+  emptyStateButtons: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 20,
+    marginTop: 20,
   },
 });
