@@ -4,5 +4,6 @@ export const API_CONFIG = {
     ANALYZE_OUTFIT: '/analyze-outfit',
     GENERATE_SUGGESTIONS: '/generate-outfit-suggestions',
     MATCH_OUTFIT: '/match-outfit',
+    DAILY_RECOMMENDATIONS: '/daily-recommendations',
   }
 };

@@ -1,12 +1,15 @@
 import { useState, useEffect } from 'react';
 import { useWardrobe } from '../../virtual-wardrobe/hooks/useWardrobe';
 import { ItemType } from '../../virtual-wardrobe/types';
+import { dailyRecommendationService } from '../../../services/dailyRecommendationService';
+import * as Location from 'expo-location';
 
 export const useRecommendations = (userId) => {
   const { items = [], loading: wardrobeLoading } = useWardrobe(userId);
   const [recommendations, setRecommendations] = useState([]);
   const [loading, setLoading] = useState(true);
   const [weather, setWeather] = useState(null);
+  const [city, setCity] = useState('Paris');
   const [preferenceHistory, setPreferenceHistory] = useState([]);
 
   // Obtenir la saison actuelle
@@ -18,111 +21,134 @@ export const useRecommendations = (userId) => {
     return 'winter';
   };
 
-  // Simuler l'obtention de données météo
-  const fetchWeatherData = async () => {
-    // TODO: Activer quand le backend est prêt
-    // const weatherData = await weatherAPI.getCurrentWeather();
-    
-    const conditions = [
-      { temp: 25, condition: 'ensoleillé', description: 'Ciel dégagé', icon: 'sunny' },
-      { temp: 20, condition: 'nuageux', description: 'Partiellement nuageux', icon: 'partly-sunny' },
-      { temp: 15, condition: 'pluvieux', description: 'Pluie légère', icon: 'rainy' },
-      { temp: 10, condition: 'froid', description: 'Temps frais', icon: 'cloud' },
-      { temp: 5, condition: 'neigeux', description: 'Neige légère', icon: 'snow' },
-    ];
-    
-    const randomWeather = conditions[Math.floor(Math.random() * conditions.length)];
-    return {
-      ...randomWeather,
-      humidity: Math.floor(Math.random() * 40) + 40,
-      wind: Math.floor(Math.random() * 20) + 5,
-      sunrise: '06:30',
-      sunset: '19:45',
-    };
+  // Obtenir la localisation de l'utilisateur
+  const getUserLocation = async () => {
+    try {
+      let { status } = await Location.requestForegroundPermissionsAsync();
+      if (status !== 'granted') {
+        return 'Paris'; // Valeur par défaut
+      }
+
+      let location = await Location.getCurrentPositionAsync({});
+      let reverseGeocode = await Location.reverseGeocodeAsync({
+        latitude: location.coords.latitude,
+        longitude: location.coords.longitude,
+      });
+
+      if (reverseGeocode.length > 0) {
+        const city = reverseGeocode[0].city || reverseGeocode[0].subregion || 'Paris';
+        setCity(city);
+        return city;
+      }
+    } catch (error) {
+      console.error('Error getting location:', error);
+    }
+    return 'Paris';
   };
 
-  // Calculer un score de pertinence pour chaque vêtement
-  const calculateRelevanceScore = (item, weatherData, currentSeason) => {
-    let score = 0;
-    
-    // Score basé sur la saison
-    if (item.seasons?.includes(currentSeason) || item.seasons?.includes('all_season')) {
-      score += 30;
-    }
-    
-    // Score basé sur les favoris
-    if (item.isFavorite) {
-      score += 20;
-    }
-    
-    // Score basé sur la météo
-    if (weatherData) {
-      if (weatherData.temp > 20 && item.category?.toLowerCase().includes('léger')) {
-        score += 15;
-      }
-      if (weatherData.temp < 15 && item.category?.toLowerCase().includes('chaud')) {
-        score += 15;
-      }
-      if (weatherData.condition === 'pluvieux' && item.category?.toLowerCase().includes('imperméable')) {
-        score += 25;
-      }
-    }
-    
-    // Score basé sur la variété (éviter de recommander toujours les mêmes)
-    if (!preferenceHistory.includes(item.id)) {
-      score += 10;
-    }
-    
-    // Score aléatoire pour la diversité
-    score += Math.random() * 10;
-    
-    return score;
-  };
-
-  // Générer des recommandations intelligentes
+  // Générer des recommandations via l'API
   const generateRecommendations = async () => {
     setLoading(true);
     
     try {
-      const weatherData = await fetchWeatherData();
-      setWeather(weatherData);
-      
       if (!items || items.length === 0) {
         setRecommendations([]);
+        setWeather(null);
         return;
       }
-      
+
+      // Obtenir la ville de l'utilisateur
+      const userCity = await getUserLocation();
       const currentSeason = getCurrentSeason();
       
-      // Calculer les scores pour tous les items
-      const scoredItems = items.map(item => ({
-        ...item,
-        score: calculateRelevanceScore(item, weatherData, currentSeason)
+      // Préparer les données de la garde-robe pour l'API
+      const wardrobeData = items.map(item => ({
+        id: item.id,
+        name: item.name || '',
+        brand: item.brand || '',
+        category: item.category || '',
+        itemType: item.itemType,
+        colors: item.colors || [],
+        materials: item.materials || [],
+        seasons: item.seasons || [],
+        tags: item.tags || [],
+        imageUrl: item.imageUrl,
+        isFavorite: item.isFavorite || false,
+        style: item.style || '',
+        description: item.description || ''
       }));
-      
-      // Trier par score décroissant
-      scoredItems.sort((a, b) => b.score - a.score);
-      
-      // Prendre les meilleures recommandations
-      const maxRecommendations = 5;
-      const topRecommendations = [];
-      
-      // D'abord les tenues complètes
-      const outfits = scoredItems.filter(item => item.itemType === ItemType.OUTFIT);
-      topRecommendations.push(...outfits.slice(0, 3));
-      
-      // Ensuite les items individuels si nécessaire
-      if (topRecommendations.length < maxRecommendations) {
-        const individualItems = scoredItems.filter(item => item.itemType !== ItemType.OUTFIT);
-        topRecommendations.push(
-          ...individualItems.slice(0, maxRecommendations - topRecommendations.length)
-        );
+
+      // Appeler l'API pour obtenir les recommandations
+      const { data, error } = await dailyRecommendationService.getDailyRecommendations({
+        city: userCity,
+        wardrobeItems: wardrobeData,
+        currentSeason: currentSeason
+      });
+
+      if (error) {
+        console.error('API Error:', error);
+        // Fallback sur des recommandations basiques
+        setWeather({
+          temp: 20,
+          condition: 'nuageux',
+          description: 'Partiellement nuageux',
+          icon: 'partly-sunny',
+          humidity: 50,
+          wind: 10
+        });
+        
+        // Recommander les 3 premiers items
+        const basicRecs = items.slice(0, 3);
+        setRecommendations(basicRecs);
+        return;
       }
-      
-      setRecommendations(topRecommendations);
+
+      if (data) {
+        // Mettre à jour la météo
+        setWeather(data.weather);
+        
+        // Traiter les recommandations
+        const processedRecommendations = [];
+        
+        for (const rec of data.recommendations) {
+          if (rec.id.startsWith('combo-')) {
+            // C'est une combinaison de pièces
+            const ids = rec.id.replace('combo-', '').split('-');
+            const pieces = ids.map(id => items.find(item => item.id === id)).filter(Boolean);
+            
+            if (pieces.length > 0) {
+              processedRecommendations.push({
+                id: rec.id,
+                name: 'Ensemble recommandé',
+                pieces: pieces,
+                isMultiplePieces: true,
+                score: rec.score,
+                reason: rec.reason,
+                weatherAdaptation: rec.weather_adaptation,
+                styleTips: rec.style_tips
+              });
+            }
+          } else {
+            // C'est un item unique
+            const item = items.find(i => i.id === rec.id);
+            if (item) {
+              processedRecommendations.push({
+                ...item,
+                score: rec.score,
+                reason: rec.reason,
+                weatherAdaptation: rec.weather_adaptation,
+                styleTips: rec.style_tips
+              });
+            }
+          }
+        }
+        
+        setRecommendations(processedRecommendations);
+      }
     } catch (error) {
       console.error('Error generating recommendations:', error);
       setRecommendations([]);
+      setWeather(null);
     } finally {
       setLoading(false);
     }
@@ -144,121 +170,93 @@ export const useRecommendations = (userId) => {
     setLoading(true);
     
     try {
-      const weatherData = await fetchWeatherData();
-      setWeather(weatherData);
-      
       if (!items || items.length === 0) {
         setRecommendations([]);
         return null;
       }
-      
+
+      // Obtenir la ville de l'utilisateur
+      const userCity = await getUserLocation();
       const currentSeason = getCurrentSeason();
       
-      // Analyser les besoins de l'utilisateur
-      const needsLower = userNeeds.toLowerCase();
-      
-      // Mots-clés pour différents contextes
-      const contextKeywords = {
-        professional: ['entretien', 'professionnel', 'bureau', 'travail', 'réunion', 'présentation', 'client', 'business'],
-        casual: ['décontracté', 'relax', 'casual', 'amis', 'sortie', 'balade', 'week-end'],
-        sport: ['sport', 'gym', 'course', 'fitness', 'entraînement', 'yoga', 'marche'],
-        romantic: ['rendez-vous', 'romantique', 'dîner', 'soirée', 'date', 'restaurant'],
-        party: ['fête', 'soirée', 'anniversaire', 'célébration', 'club', 'danse'],
-        comfort: ['confort', 'maison', 'cosy', 'détente', 'repos', 'chill'],
-      };
-      
-      // Déterminer le contexte principal
-      let mainContext = 'casual';
-      let contextScore = {};
-      
-      Object.entries(contextKeywords).forEach(([context, keywords]) => {
-        contextScore[context] = keywords.filter(keyword => needsLower.includes(keyword)).length;
+      // Préparer les données de la garde-robe pour l'API
+      const wardrobeData = items.map(item => ({
+        id: item.id,
+        name: item.name || '',
+        brand: item.brand || '',
+        category: item.category || '',
+        itemType: item.itemType,
+        colors: item.colors || [],
+        materials: item.materials || [],
+        seasons: item.seasons || [],
+        tags: item.tags || [],
+        imageUrl: item.imageUrl,
+        isFavorite: item.isFavorite || false,
+        style: item.style || '',
+        description: item.description || ''
+      }));
+
+      // Appeler l'API avec les besoins spécifiques
+      const { data, error } = await dailyRecommendationService.getDailyRecommendations({
+        city: userCity,
+        wardrobeItems: wardrobeData,
+        currentSeason: currentSeason,
+        userNeeds: userNeeds
       });
-      
-      mainContext = Object.entries(contextScore)
-        .sort(([,a], [,b]) => b - a)[0][0];
-      
-      // Calculer les scores avec prise en compte du contexte
-      const scoredItems = items.map(item => {
-        let score = calculateRelevanceScore(item, weatherData, currentSeason);
+
+      if (error) {
+        console.error('API Error:', error);
+        return null;
+      }
+
+      if (data && data.recommendations.length > 0) {
+        // Mettre à jour la météo
+        setWeather(data.weather);
         
-        // Bonus pour le contexte approprié
-        const itemCategory = (item.category || '').toLowerCase();
-        const itemStyle = (item.style || '').toLowerCase();
-        const itemDescription = (item.description || '').toLowerCase();
+        // Traiter la première recommandation
+        const rec = data.recommendations[0];
+        let bestRecommendation;
         
-        switch (mainContext) {
-          case 'professional':
-            if (itemCategory.includes('formel') || itemStyle.includes('élégant') || 
-                itemDescription.includes('bureau') || itemDescription.includes('professionnel')) {
-              score += 50;
-            }
-            break;
-          case 'sport':
-            if (itemCategory.includes('sport') || itemStyle.includes('sportif') || 
-                itemDescription.includes('sport') || itemDescription.includes('fitness')) {
-              score += 50;
-            }
-            break;
-          case 'romantic':
-            if (itemStyle.includes('élégant') || itemStyle.includes('chic') || 
-                itemDescription.includes('soirée')) {
-              score += 40;
-            }
-            break;
-          case 'party':
-            if (itemStyle.includes('festif') || itemDescription.includes('soirée') || 
-                itemDescription.includes('fête')) {
-              score += 40;
-            }
-            break;
-          case 'comfort':
-            if (itemStyle.includes('confortable') || itemDescription.includes('confort') || 
-                itemCategory.includes('casual')) {
-              score += 40;
-            }
-            break;
+        if (rec.id.startsWith('combo-')) {
+          // C'est une combinaison de pièces
+          const ids = rec.id.replace('combo-', '').split('-');
+          const pieces = ids.map(id => items.find(item => item.id === id)).filter(Boolean);
+          
+          if (pieces.length > 0) {
+            bestRecommendation = {
+              id: rec.id,
+              name: 'Tenue recommandée pour vos besoins',
+              pieces: pieces,
+              isMultiplePieces: true,
+              score: rec.score,
+              reason: rec.reason,
+              weatherAdaptation: rec.weather_adaptation,
+              styleTips: rec.style_tips,
+              userNeeds: userNeeds
+            };
+          }
+        } else {
+          // C'est un item unique
+          const item = items.find(i => i.id === rec.id);
+          if (item) {
+            bestRecommendation = {
+              ...item,
+              score: rec.score,
+              reason: rec.reason,
+              weatherAdaptation: rec.weather_adaptation,
+              styleTips: rec.style_tips,
+              userNeeds: userNeeds
+            };
+          }
         }
         
-        return { ...item, score };
-      });
-      
-      // Trier et sélectionner le meilleur
-      scoredItems.sort((a, b) => b.score - a.score);
-      
-      // Privilégier les tenues complètes pour les besoins spécifiques
-      const outfits = scoredItems.filter(item => item.itemType === ItemType.OUTFIT);
-      let bestRecommendation = outfits[0] || scoredItems[0];
-      
-      // Si pas de tenue complète appropriée, créer une combinaison
-      if (!outfits.length || outfits[0].score < 50) {
-        const tops = scoredItems.filter(item => 
-          item.category?.toLowerCase().includes('haut') || 
-          item.category?.toLowerCase().includes('shirt') ||
-          item.category?.toLowerCase().includes('chemise')
-        );
-        const bottoms = scoredItems.filter(item => 
-          item.category?.toLowerCase().includes('pantalon') || 
-          item.category?.toLowerCase().includes('jean') ||
-          item.category?.toLowerCase().includes('jupe')
-        );
-        
-        if (tops.length > 0 && bottoms.length > 0) {
-          bestRecommendation = {
-            id: 'needs-combination-' + Date.now(),
-            name: `Tenue ${mainContext === 'professional' ? 'professionnelle' : 
-                         mainContext === 'sport' ? 'sportive' : 
-                         mainContext === 'romantic' ? 'romantique' : 'adaptée'}`,
-            pieces: [tops[0], bottoms[0]],
-            isMultiplePieces: true,
-            context: mainContext,
-            userNeeds: userNeeds
-          };
+        if (bestRecommendation) {
+          setRecommendations([bestRecommendation]);
+          return bestRecommendation;
         }
       }
       
-      setRecommendations([bestRecommendation]);
-      return bestRecommendation;
+      return null;
     } catch (error) {
       console.error('Error generating needs-based recommendation:', error);
       return null;
