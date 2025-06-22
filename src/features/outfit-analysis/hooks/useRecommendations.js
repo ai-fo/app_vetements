@@ -101,6 +101,9 @@ export const useRecommendations = (userId) => {
       const history = await loadWearHistory();
       const recentlyWornIds = getRecentlyWornIds(history);
       
+      console.log('Recently worn IDs:', recentlyWornIds);
+      console.log('Total wardrobe items:', items.length);
+      
       // Préparer les données de la garde-robe pour l'API
       const wardrobeData = items.map(item => ({
         id: item.id,
@@ -197,16 +200,14 @@ export const useRecommendations = (userId) => {
 
   // Marquer une tenue comme portée
   const markAsWorn = async (itemId) => {
+    console.log('Marking as worn:', itemId);
+    
     const newHistoryItem = {
       itemId: itemId,
       timestamp: Date.now()
     };
     
-    const updatedHistory = [...preferenceHistory, newHistoryItem];
-    setPreferenceHistory(updatedHistory);
-    
-    // Sauvegarder dans AsyncStorage
-    await saveWearHistory(updatedHistory);
+    let updatedHistory = [...preferenceHistory, newHistoryItem];
     
     // Si c'est une combinaison, marquer aussi les pièces individuelles
     if (itemId.startsWith('combo-')) {
@@ -217,10 +218,21 @@ export const useRecommendations = (userId) => {
           timestamp: Date.now()
         };
         updatedHistory.push(pieceHistoryItem);
+        console.log('Also marking piece as worn:', id);
       }
-      setPreferenceHistory(updatedHistory);
-      await saveWearHistory(updatedHistory);
     }
+    
+    // Nettoyer l'historique - garder seulement les 30 derniers jours
+    const thirtyDaysAgo = Date.now() - (30 * 24 * 60 * 60 * 1000);
+    updatedHistory = updatedHistory.filter(item => item.timestamp > thirtyDaysAgo);
+    
+    setPreferenceHistory(updatedHistory);
+    
+    // Sauvegarder dans AsyncStorage
+    await saveWearHistory(updatedHistory);
+    
+    console.log('Wear history updated, total items:', updatedHistory.length);
+    console.log('Recently worn IDs:', getRecentlyWornIds(updatedHistory));
   };
 
   // Rafraîchir les recommandations

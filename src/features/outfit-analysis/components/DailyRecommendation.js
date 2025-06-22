@@ -26,7 +26,8 @@ export default function DailyRecommendation({ analyses, navigation }) {
     recommendations, 
     generateNeedsBasedRecommendation,
     refreshRecommendations: refreshRecs,
-    loading: recsLoading
+    loading: recsLoading,
+    markAsWorn
   } = useRecommendations(user?.id);
   const [recommendedOutfit, setRecommendedOutfit] = useState(null);
   const [isMultiplePieces, setIsMultiplePieces] = useState(false);
@@ -76,7 +77,13 @@ export default function DailyRecommendation({ analyses, navigation }) {
     }
   }, [recommendations, recsLoading, weatherLoading]);
 
-  const handlePress = (outfit) => {
+  const handlePress = async (outfit) => {
+    // Marquer comme portée quand l'utilisateur clique pour voir les détails
+    if (outfit && outfit.id) {
+      await markAsWorn(outfit.id);
+      console.log('Marked as worn when viewing details:', outfit.id);
+    }
+    
     // Passer les informations nécessaires à la page de détail
     navigation.navigate('RecommendationDetail', { 
       outfitId: outfit.id,
@@ -90,6 +97,12 @@ export default function DailyRecommendation({ analyses, navigation }) {
 
 
   const handleRefresh = async () => {
+    // Marquer la tenue actuelle comme portée AVANT de demander une nouvelle
+    if (recommendedOutfit && recommendedOutfit.id) {
+      await markAsWorn(recommendedOutfit.id);
+      console.log('Marked as worn:', recommendedOutfit.id);
+    }
+    
     Animated.sequence([
       Animated.timing(fadeAnim, {
         toValue: 0.5,
