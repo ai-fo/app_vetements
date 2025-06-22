@@ -161,12 +161,14 @@ const analyzeOutfit = async (imageUri, userId) => {
 
 ## Commandes essentielles
 
+⚠️ **IMPORTANT**: Ne jamais lancer l'application (ni frontend ni backend) - l'utilisateur s'en occupe.
+
 ```bash
-# Frontend
+# Frontend (pour référence uniquement)
 npm install && npx expo start
 npm run lint && npm test
 
-# Backend
+# Backend (pour référence uniquement)
 pip install -r requirements.txt
 uvicorn backend.main:app --reload
 pytest && pylint backend/

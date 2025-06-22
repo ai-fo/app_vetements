@@ -15,7 +15,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useAuth } from '../../auth';
 import { useWardrobe } from '../hooks/useWardrobe';
-import { ItemType, ClothingCategory, Season } from '../types';
+import { ItemType, ClothingCategory, Season } from '../types/wardrobe.types';
 import ItemDetailsModal from './ItemDetailsModal';
 import FilterBar from './FilterBar';
 import FavoriteButton from './FavoriteButton';

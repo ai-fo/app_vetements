@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
-import { ItemType } from '../types';
+import { ItemType } from '../types/wardrobe.types';
 import { storageService } from '../../../shared/api/storage';
 import { wardrobeSupabaseAPI } from '../api/supabaseWardrobe';
 
@@ -46,7 +46,6 @@ export function useWardrobe(userId) {
       
       setItems(clothingResponse.data || []);
     } catch (error) {
-      console.error('Error loading wardrobe items:', error);
       setError('Impossible de charger votre garde-robe');
       setItems([]);
     } finally {
@@ -74,7 +73,6 @@ export function useWardrobe(userId) {
       
       return true;
     } catch (error) {
-      console.error('Error updating item:', error);
       setError('Impossible de mettre à jour l\'article');
       return false;
     }
@@ -85,24 +83,15 @@ export function useWardrobe(userId) {
    */
   const deleteItem = async (itemId) => {
     try {
-      console.log('Starting deletion for item:', itemId);
-      
       // Trouver l'item pour récupérer l'imagePath
       const item = items.find(i => i.id === itemId);
-      console.log('Found item:', item);
-      console.log('Item type:', item?.itemType);
-      
       // Si c'est une analyse d'outfit, on doit la supprimer différemment
       let response;
       if (item?.itemType === 'OUTFIT') {
-        console.log('This is an outfit analysis, using deleteOutfitAnalysis');
         response = await wardrobeSupabaseAPI.deleteOutfitAnalysis(itemId);
       } else {
-        console.log('This is a clothing item, using deleteItem');
         response = await wardrobeSupabaseAPI.deleteItem(itemId);
       }
-      
-      console.log('Delete API response:', response);
       
       if (response.error) {
         throw new Error(response.error);
@@ -117,22 +106,18 @@ export function useWardrobe(userId) {
         try {
           await storageService.deletePhoto(item.imagePath);
         } catch (error) {
-          console.error('Error deleting photo from storage:', error);
           // Continue même si la suppression de l'image échoue
         }
       }
       
       // Mettre à jour l'état local
-      console.log('Updating local state, removing item:', itemId);
       setItems(prevItems => {
         const newItems = prevItems.filter(item => item.id !== itemId);
-        console.log('Items after deletion:', newItems.length);
         return newItems;
       });
       
       return true;
     } catch (error) {
-      console.error('Error deleting item:', error);
       setError('Impossible de supprimer l\'article');
       return false;
     }
@@ -170,7 +155,6 @@ export function useWardrobe(userId) {
       
       return true;
     } catch (error) {
-      console.error('Error toggling favorite:', error);
       setError('Impossible de mettre à jour le favori');
       return false;
     }

@@ -17,7 +17,6 @@ class WeatherService {
       // Demander la permission
       const { status } = await Location.requestForegroundPermissionsAsync();
       if (status !== 'granted') {
-        console.log('Permission de localisation refusée');
         // Retourner Paris par défaut
         return { latitude: 48.8566, longitude: 2.3522 };
       }
@@ -32,7 +31,6 @@ class WeatherService {
         longitude: location.coords.longitude,
       };
     } catch (error) {
-      console.error('Erreur de géolocalisation:', error);
       // Retourner Paris par défaut
       return { latitude: 48.8566, longitude: 2.3522 };
     }
@@ -52,7 +50,6 @@ class WeatherService {
         }
       }
     } catch (error) {
-      console.error('Erreur de lecture du cache:', error);
     }
     return null;
   }
@@ -66,7 +63,6 @@ class WeatherService {
       };
       await AsyncStorage.setItem(CACHE_KEY, JSON.stringify(cacheData));
     } catch (error) {
-      console.error('Erreur de sauvegarde du cache:', error);
     }
   }
 
@@ -97,21 +93,9 @@ class WeatherService {
         }
       }
 
-      // Si pas d'API key configurée, retourner des données mock
+      // Si pas d'API key configurée, lancer une erreur
       if (!this.apiKey || this.apiKey === '' || this.apiKey === 'your-openweathermap-api-key') {
-        console.log('API key météo non configurée, utilisation de données mock');
-        return {
-          temp: 20,
-          condition: 'ensoleillé',
-          description: 'Ciel dégagé',
-          icon: 'sunny',
-          humidity: 65,
-          wind: 12,
-          city: 'Paris (mode démo)',
-          feels_like: 19,
-          temp_min: 17,
-          temp_max: 23,
-        };
+        throw new Error('API key météo non configurée');
       }
 
       // Obtenir la localisation
@@ -148,18 +132,7 @@ class WeatherService {
 
       return weatherData;
     } catch (error) {
-      console.error('Erreur lors de la récupération de la météo:', error);
-      
-      // Retourner des données par défaut en cas d'erreur
-      return {
-        temp: 20,
-        condition: 'nuageux',
-        description: 'Partiellement nuageux',
-        icon: 'cloud',
-        humidity: 60,
-        wind: 10,
-        city: 'Localisation inconnue',
-      };
+      throw error;
     }
   }
 
@@ -167,23 +140,7 @@ class WeatherService {
   async getWeatherForecast(days = 5) {
     try {
       if (!this.apiKey || this.apiKey === '' || this.apiKey === 'your-openweathermap-api-key') {
-        console.log('API key météo non configurée pour les prévisions');
-        // Retourner des prévisions mockées
-        const today = new Date();
-        return Array.from({ length: days }, (_, i) => {
-          const date = new Date(today);
-          date.setDate(date.getDate() + i);
-          const temps = [18, 22, 19, 21, 20];
-          const conditions = ['sunny', 'cloud', 'partly-sunny', 'cloud', 'sunny'];
-          const conditionLabels = ['ensoleillé', 'nuageux', 'partiellement nuageux', 'nuageux', 'ensoleillé'];
-          
-          return {
-            date,
-            temp: temps[i % temps.length],
-            condition: conditionLabels[i % conditionLabels.length],
-            icon: conditions[i % conditions.length],
-          };
-        });
+        throw new Error('API key météo non configurée pour les prévisions');
       }
 
       const location = await this.getCurrentLocation();
@@ -232,8 +189,7 @@ class WeatherService {
         };
       }).slice(0, days);
     } catch (error) {
-      console.error('Erreur lors de la récupération des prévisions:', error);
-      return [];
+      throw error;
     }
   }
 

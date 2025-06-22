@@ -9,7 +9,7 @@ import {
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
-import { useAuth } from '../features/auth';
+import { useAuth } from '../../auth';
 import { useNavigation } from '@react-navigation/native';
 
 export default function ProfileScreen() {
@@ -21,31 +21,31 @@ export default function ProfileScreen() {
       icon: 'person-outline',
       title: 'Informations personnelles',
       subtitle: 'Gérer vos informations',
-      onPress: () => console.log('Personal info'),
+      onPress: () => {},
     },
     {
       icon: 'notifications-outline',
       title: 'Notifications',
       subtitle: 'Gérer vos préférences',
-      onPress: () => console.log('Notifications'),
+      onPress: () => {},
     },
     {
       icon: 'shield-checkmark-outline',
       title: 'Confidentialité',
       subtitle: 'Paramètres de sécurité',
-      onPress: () => console.log('Privacy'),
+      onPress: () => {},
     },
     {
       icon: 'help-circle-outline',
       title: 'Aide et support',
       subtitle: 'Centre d\'aide',
-      onPress: () => console.log('Help'),
+      onPress: () => {},
     },
     {
       icon: 'information-circle-outline',
       title: 'À propos',
       subtitle: 'Version 1.0.0',
-      onPress: () => console.log('About'),
+      onPress: () => {},
     },
   ];
 

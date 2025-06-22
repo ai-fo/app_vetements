@@ -8,41 +8,22 @@ import {
   ScrollView,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { outfitAnalysisSupabaseAPI } from '../../outfit-analysis/api/supabaseAnalysis';
 
-export default function OutfitPiecesSection({ analysisId }) {
-  const [pieces, setPieces] = useState([]);
-  const [loading, setLoading] = useState(true);
+export default function OutfitPiecesSection({ analysisId, pieces: propPieces }) {
+  const [pieces, setPieces] = useState(propPieces || []);
+  const [loading, setLoading] = useState(!propPieces);
   const [expandedPiece, setExpandedPiece] = useState(null);
   
-  console.log('OutfitPiecesSection rendered with analysisId:', analysisId);
-
   useEffect(() => {
-    loadPieces();
-  }, [analysisId]);
-
-  const loadPieces = async () => {
-    if (!analysisId) {
-      console.log('No analysisId provided');
-      return;
-    }
-    
-    console.log('Loading pieces for analysis:', analysisId);
-    setLoading(true);
-    try {
-      const { data, error } = await outfitAnalysisSupabaseAPI.getOutfitPieces(analysisId);
-      console.log('Pieces loaded:', { data, error });
-      if (!error && data) {
-        setPieces(data);
-      } else if (error) {
-        console.error('Error from API:', error);
-      }
-    } catch (error) {
-      console.error('Error loading outfit pieces:', error);
-    } finally {
+    if (propPieces) {
+      setPieces(propPieces);
       setLoading(false);
+    } else {
+      // Si aucune pièce n'est fournie en props, on ne charge rien
+      setLoading(false);
+      setPieces([]);
     }
-  };
+  }, [propPieces]);
 
   const getTypeIcon = (type) => {
     const icons = {
@@ -148,15 +129,6 @@ export default function OutfitPiecesSection({ analysisId }) {
                 </View>
 
 
-                {piece.price_range && (
-                  <View style={styles.priceSection}>
-                    <Text style={styles.detailLabel}>Gamme de prix</Text>
-                    <View style={styles.priceTag}>
-                      <Ionicons name="pricetag-outline" size={16} color="#667eea" />
-                      <Text style={styles.priceText}>{piece.price_range}</Text>
-                    </View>
-                  </View>
-                )}
 
                 {piece.confidence && (
                   <View style={styles.confidenceBar}>
@@ -280,25 +252,6 @@ const styles = StyleSheet.create({
     color: '#4b5563',
     fontStyle: 'italic',
     marginTop: 4,
-  },
-  priceSection: {
-    marginTop: 12,
-  },
-  priceTag: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#e0e7ff',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 20,
-    alignSelf: 'flex-start',
-    marginTop: 4,
-  },
-  priceText: {
-    fontSize: 14,
-    color: '#4338ca',
-    fontWeight: '600',
-    marginLeft: 4,
   },
   confidenceBar: {
     marginTop: 16,

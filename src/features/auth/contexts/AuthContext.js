@@ -65,7 +65,6 @@ export const AuthProvider = ({ children }) => {
         }
       }
     } catch (error) {
-      console.error('Error checking user:', error);
     } finally {
       setLoading(false);
     }
@@ -109,7 +108,7 @@ export const AuthProvider = ({ children }) => {
     try {
       // Déconnexion Supabase
       const { error: supabaseError } = await supabase.auth.signOut();
-      if (supabaseError) console.error('Supabase signout error:', supabaseError);
+      if (supabaseError) throw supabaseError;
       
       // Déconnexion API custom
       await authAPI.logout();
@@ -120,7 +119,7 @@ export const AuthProvider = ({ children }) => {
       await AsyncStorage.removeItem('authToken');
       await apiClient.setAuthToken(null);
     } catch (error) {
-      console.error('Error signing out:', error);
+      throw error;
     }
   };
 
@@ -128,19 +127,7 @@ export const AuthProvider = ({ children }) => {
     try {
       // Vérifier d'abord si Supabase est correctement configuré
       if (!supabaseUrl || supabaseUrl === 'https://placeholder.supabase.co') {
-        console.log('Supabase not configured, using demo mode');
-        // Mode démo - créer un utilisateur fictif
-        const demoUser = {
-          id: 'demo-user-google',
-          email: 'demo@google.com',
-          user_metadata: {
-            name: 'Utilisateur Demo',
-            avatar_url: 'https://api.dicebear.com/7.x/avataaars/svg?seed=demo'
-          }
-        };
-        setUser(demoUser);
-        await AsyncStorage.setItem('user', JSON.stringify(demoUser));
-        return { data: demoUser, error: null };
+        throw new Error('Supabase non configuré');
       }
 
       // Utiliser une URL de redirection fixe pour éviter les problèmes localhost
@@ -149,8 +136,6 @@ export const AuthProvider = ({ children }) => {
         android: 'liquidapp://auth/callback',
         default: 'liquidapp://auth/callback'
       });
-      
-      console.log('Redirect URL:', redirectUrl);
       
       const { data, error } = await supabase.auth.signInWithOAuth({
         provider: 'google',
@@ -165,7 +150,6 @@ export const AuthProvider = ({ children }) => {
       });
 
       if (error) {
-        console.error('OAuth error:', error);
         throw error;
       }
 
@@ -180,7 +164,6 @@ export const AuthProvider = ({ children }) => {
 
       if (res.type === 'success' && res.url) {
         const { url } = res;
-        console.log('Callback URL:', url);
         
         // Essayer d'extraire depuis le fragment (#)
         const fragment = url.split('#')[1];
@@ -228,29 +211,6 @@ export const AuthProvider = ({ children }) => {
         throw new Error('Erreur inconnue lors de l\'authentification');
       }
     } catch (error) {
-      console.error('Error during Google sign in:', error);
-      
-      // En cas d'erreur, proposer le mode démo
-      if (error.message?.includes('OAuth') || error.message?.includes('provider')) {
-        const useDemoMode = true; // Dans un cas réel, on demanderait à l'utilisateur
-        if (useDemoMode) {
-          const demoUser = {
-            id: 'demo-user-google-fallback',
-            email: 'demo@google.com',
-            user_metadata: {
-              name: 'Utilisateur Demo',
-              avatar_url: 'https://api.dicebear.com/7.x/avataaars/svg?seed=demo'
-            }
-          };
-          setUser(demoUser);
-          await AsyncStorage.setItem('user', JSON.stringify(demoUser));
-          return { 
-            data: demoUser, 
-            error: new Error('Connexion Google temporairement indisponible. Mode démo activé.') 
-          };
-        }
-      }
-      
       return { data: null, error };
     }
   };

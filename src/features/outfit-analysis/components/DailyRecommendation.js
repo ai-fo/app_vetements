@@ -11,9 +11,8 @@ import {
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
-import { useWardrobe } from '../../virtual-wardrobe/hooks/useWardrobe';
+import { useWardrobe, ItemType } from '../../virtual-wardrobe';
 import { useAuth } from '../../auth';
-import { ItemType } from '../../virtual-wardrobe/types';
 import { useMood } from '../hooks/useMood';
 import { useWeather } from '../hooks/useWeather';
 import { useRecommendations } from '../hooks/useRecommendations';
@@ -26,13 +25,15 @@ export default function DailyRecommendation({ analyses, navigation }) {
     recommendations, 
     generateNeedsBasedRecommendation,
     refreshRecommendations: refreshRecs,
-    loading: recsLoading
+    loading: recsLoading,
+    markAsWorn
   } = useRecommendations(user?.id);
   const [recommendedOutfit, setRecommendedOutfit] = useState(null);
   const [isMultiplePieces, setIsMultiplePieces] = useState(false);
   const [loading, setLoading] = useState(true);
   const [showNeedsInput, setShowNeedsInput] = useState(false);
   const [userNeeds, setUserNeeds] = useState(null);
+  const [showStyleTips, setShowStyleTips] = useState(false);
   const { weather, loading: weatherLoading, error: weatherError, refreshWeather } = useWeather();
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const slideAnim = useRef(new Animated.Value(50)).current;
@@ -76,7 +77,12 @@ export default function DailyRecommendation({ analyses, navigation }) {
     }
   }, [recommendations, recsLoading, weatherLoading]);
 
-  const handlePress = (outfit) => {
+  const handlePress = async (outfit) => {
+    // Marquer comme portée quand l'utilisateur clique pour voir les détails
+    if (outfit && outfit.id) {
+      await markAsWorn(outfit.id);
+      }
+    
     // Passer les informations nécessaires à la page de détail
     navigation.navigate('RecommendationDetail', { 
       outfitId: outfit.id,
@@ -90,6 +96,14 @@ export default function DailyRecommendation({ analyses, navigation }) {
 
 
   const handleRefresh = async () => {
+    // Marquer la tenue actuelle comme portée AVANT de demander une nouvelle
+    if (recommendedOutfit && recommendedOutfit.id) {
+      await markAsWorn(recommendedOutfit.id);
+    }
+    
+    // Activer le loading
+    setLoading(true);
+    
     Animated.sequence([
       Animated.timing(fadeAnim, {
         toValue: 0.5,
@@ -103,12 +117,17 @@ export default function DailyRecommendation({ analyses, navigation }) {
       }),
     ]).start();
 
-    // Rafraîchir les recommandations et la météo
-    await refreshRecs();
-    refreshWeather();
-    
-    // Réinitialiser les besoins utilisateur
-    setUserNeeds(null);
+    try {
+      // Rafraîchir les recommandations et la météo
+      await refreshRecs();
+      refreshWeather();
+      
+      // Réinitialiser les besoins utilisateur
+      setUserNeeds(null);
+    } finally {
+      // Désactiver le loading après le rafraîchissement
+      setLoading(false);
+    }
   };
 
   const handleNeedsSubmit = async (needs) => {
@@ -157,7 +176,6 @@ export default function DailyRecommendation({ analyses, navigation }) {
         ]).start();
       }
     } catch (error) {
-      console.error('Error generating needs-based recommendation:', error);
       // Fallback sur une recommandation normale
       handleRefresh();
     } finally {
@@ -262,6 +280,11 @@ export default function DailyRecommendation({ analyses, navigation }) {
               <View style={styles.badgeBlur}>
                 <Ionicons name="sparkles" size={16} color="#fff" />
                 <Text style={styles.badgeText}>Recommandé pour vous</Text>
+                {recommendedOutfit.score && (
+                  <View style={styles.scoreContainer}>
+                    <Text style={styles.scoreText}>{recommendedOutfit.score}%</Text>
+                  </View>
+                )}
               </View>
             </View>
 
@@ -305,15 +328,66 @@ export default function DailyRecommendation({ analyses, navigation }) {
                   {recommendedOutfit.pieces.map(p => p.name).join(' • ')}
                 </Text>
               )}
+              
+              {/* Raison de la recommandation */}
+              {recommendedOutfit.reason && (
+                <View style={styles.reasonSection}>
+                  <View style={styles.reasonHeader}>
+                    <Ionicons name="bulb-outline" size={16} color="#fbbf24" />
+                    <Text style={styles.reasonTitle}>Pourquoi cette tenue ?</Text>
+                  </View>
+                  <Text style={styles.reasonText}>{recommendedOutfit.reason}</Text>
+                </View>
+              )}
+              
+              {/* Adaptation météo */}
+              {recommendedOutfit.weatherAdaptation && (
+                <View style={styles.weatherAdaptSection}>
+                  <View style={styles.weatherAdaptHeader}>
+                    <Ionicons name="thermometer-outline" size={16} color="#60a5fa" />
+                    <Text style={styles.weatherAdaptTitle}>Adaptation météo</Text>
+                  </View>
+                  <Text style={styles.weatherAdaptText}>{recommendedOutfit.weatherAdaptation}</Text>
+                </View>
+              )}
+              
+              {/* Conseils de style (extensible) */}
+              {recommendedOutfit.styleTips && (
+                <TouchableOpacity 
+                  style={styles.styleTipsToggle}
+                  onPress={() => setShowStyleTips(!showStyleTips)}
+                  activeOpacity={0.8}
+                >
+                  <View style={styles.styleTipsHeader}>
+                    <Ionicons name="color-palette-outline" size={16} color="#a78bfa" />
+                    <Text style={styles.styleTipsTitle}>Conseils de style</Text>
+                    <Ionicons 
+                      name={showStyleTips ? "chevron-up" : "chevron-down"} 
+                      size={16} 
+                      color="#a78bfa" 
+                    />
+                  </View>
+                  {showStyleTips && (
+                    <Text style={styles.styleTipsText}>{recommendedOutfit.styleTips}</Text>
+                  )}
+                </TouchableOpacity>
+              )}
 
               {/* Actions */}
               <View style={styles.actions}>
                 <TouchableOpacity 
-                  style={styles.secondaryActionButton}
+                  style={[styles.secondaryActionButton, loading && styles.disabledButton]}
                   onPress={handleRefresh}
+                  disabled={loading}
                 >
-                  <Ionicons name="sparkles" size={18} color="#fff" />
-                  <Text style={styles.secondaryActionText}>Nouvelle suggestion</Text>
+                  {loading ? (
+                    <ActivityIndicator size="small" color="#fff" />
+                  ) : (
+                    <>
+                      <Ionicons name="sparkles" size={18} color="#fff" />
+                      <Text style={styles.secondaryActionText}>Nouvelle suggestion</Text>
+                    </>
+                  )}
                 </TouchableOpacity>
                 <TouchableOpacity 
                   style={[styles.actionButton, styles.primaryAction]}
@@ -442,6 +516,18 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: '#fff',
   },
+  scoreContainer: {
+    backgroundColor: 'rgba(255,255,255,0.2)',
+    borderRadius: 12,
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    marginLeft: 8,
+  },
+  scoreText: {
+    fontSize: 11,
+    fontWeight: '700',
+    color: '#fff',
+  },
   imageContainer: {
     height: 280,
     position: 'relative',
@@ -505,7 +591,74 @@ const styles = StyleSheet.create({
   piecesDescription: {
     fontSize: 14,
     color: 'rgba(255,255,255,0.8)',
-    marginBottom: 20,
+    marginBottom: 16,
+  },
+  reasonSection: {
+    backgroundColor: 'rgba(251, 191, 36, 0.15)',
+    borderRadius: 12,
+    padding: 12,
+    marginBottom: 10,
+  },
+  reasonHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginBottom: 6,
+  },
+  reasonTitle: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#fbbf24',
+  },
+  reasonText: {
+    fontSize: 13,
+    color: 'rgba(255,255,255,0.9)',
+    lineHeight: 18,
+  },
+  weatherAdaptSection: {
+    backgroundColor: 'rgba(96, 165, 250, 0.15)',
+    borderRadius: 12,
+    padding: 12,
+    marginBottom: 16,
+  },
+  weatherAdaptHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    marginBottom: 6,
+  },
+  weatherAdaptTitle: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#60a5fa',
+  },
+  weatherAdaptText: {
+    fontSize: 13,
+    color: 'rgba(255,255,255,0.9)',
+    lineHeight: 18,
+  },
+  styleTipsToggle: {
+    backgroundColor: 'rgba(167, 139, 250, 0.15)',
+    borderRadius: 12,
+    padding: 12,
+    marginBottom: 16,
+  },
+  styleTipsHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  styleTipsTitle: {
+    fontSize: 13,
+    fontWeight: '600',
+    color: '#a78bfa',
+    flex: 1,
+  },
+  styleTipsText: {
+    fontSize: 13,
+    color: 'rgba(255,255,255,0.9)',
+    lineHeight: 18,
+    marginTop: 8,
   },
   actions: {
     flexDirection: 'row',
@@ -533,6 +686,9 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '500',
     color: '#fff',
+  },
+  disabledButton: {
+    opacity: 0.6,
   },
   primaryAction: {
     flexDirection: 'row',

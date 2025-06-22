@@ -16,8 +16,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { useAuth } from '../../auth';
 import { useOutfitAnalysis } from '../hooks/useOutfitAnalysis';
 import { storageService } from '../../../shared/api/storage';
-import { wardrobeAPI } from '../../virtual-wardrobe/api';
-import { ItemType } from '../../virtual-wardrobe/types';
+import { wardrobeAPI, ItemType } from '../../virtual-wardrobe';
 
 // Import Camera conditionnellement
 let Camera = null;
@@ -25,8 +24,7 @@ try {
   const ExpoCamera = require('expo-camera');
   Camera = ExpoCamera.Camera;
 } catch (error) {
-  console.log('expo-camera not available');
-}
+  }
 
 export default function CameraScreen({ navigation, route }) {
   const itemType = route.params?.itemType || 'outfit';

@@ -9,7 +9,7 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
-import { ItemType, ClothingCategory, Season } from '../types';
+import { ItemType, ClothingCategory, Season } from '../types/wardrobe.types';
 
 export default function FilterBar({ filters, onFiltersChange }) {
   const [showFilterModal, setShowFilterModal] = useState(false);

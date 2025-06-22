@@ -23,6 +23,11 @@ export const outfitAnalysisAPI = {
     return outfitAnalysisSupabaseAPI.deleteAnalysis(analysisId);
   },
 
+  // Récupérer les pièces d'une analyse
+  getOutfitPieces: async (analysisId) => {
+    return outfitAnalysisSupabaseAPI.getOutfitPieces(analysisId);
+  },
+
   // Ajouter un vêtement à la garde-robe depuis une analyse
   addToWardrobe: async (analysisId, itemData) => {
     // TODO: Activer quand le backend est prêt

@@ -1,6 +1,14 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-const API_URL = process.env.EXPO_PUBLIC_API_URL || 'http://localhost:8000';
+const API_URL = process.env.EXPO_PUBLIC_API_URL || 'http://localhost:8045';
+
+// API endpoints for AI services
+export const API_ENDPOINTS = {
+  ANALYZE_OUTFIT: '/analyze-outfit',
+  GENERATE_SUGGESTIONS: '/generate-outfit-suggestions',
+  MATCH_OUTFIT: '/match-outfit',
+  DAILY_RECOMMENDATIONS: '/daily-recommendations',
+};
 
 class APIClient {
   constructor() {
@@ -50,7 +58,6 @@ class APIClient {
 
       return { data, error: null };
     } catch (error) {
-      console.error('API Error:', error);
       return { data: null, error: error.message };
     }
   }
@@ -115,7 +122,6 @@ class APIClient {
 
       return { data, error: null };
     } catch (error) {
-      console.error('Upload Error:', error);
       return { data: null, error: error.message };
     }
   }

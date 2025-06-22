@@ -1,6 +1,6 @@
 import { supabase } from '../../../shared/api/supabase';
 import { storageService } from '../../../shared/api/storage';
-import { openaiService } from '../../../services/openaiService';
+import { openaiService } from '../services/openaiService';
 
 export const outfitAnalysisSupabaseAPI = {
   // Analyser et sauvegarder une image de tenue
@@ -15,20 +15,16 @@ export const outfitAnalysisSupabaseAPI = {
       try {
         const { data: openaiData, error: openaiError } = await openaiService.analyzeOutfit(imageUri);
         
+        console.log('OpenAI response:', JSON.stringify(openaiData, null, 2));
+        
         if (openaiError) {
-          console.error('OpenAI analysis error:', openaiError);
           // Ne pas simuler - retourner une erreur
           throw new Error('Le service d\'analyse n\'est pas disponible. Veuillez réessayer plus tard.');
         } else {
-          console.log('OpenAI response:', JSON.stringify(openaiData, null, 2));
-          
           // Vérifier si OpenAI retourne un format sans pieces ou des pieces vides
           if (openaiData && (!openaiData.pieces || openaiData.pieces.length === 0)) {
-            console.log('OpenAI returned no pieces, checking itemType:', itemType);
-            
             // Si c'est explicitement une tenue complète (itemType === 'outfit')
             if (itemType === 'outfit') {
-              console.log('Item type is outfit, keeping as outfit even without pieces');
               // Garder comme tenue complète même sans pièces détaillées
               aiAnalysis = {
                 ...openaiData,
@@ -37,7 +33,6 @@ export const outfitAnalysisSupabaseAPI = {
               };
             } else {
               // Si c'est une pièce unique, créer une pièce basée sur les données
-              console.log('Creating single piece from analysis data');
               const detectedPieces = [];
               
               // Créer une pièce basée sur le type détecté ou le style
@@ -49,8 +44,6 @@ export const outfitAnalysisSupabaseAPI = {
                 color: openaiData.colors?.primary?.[0] || 'non défini',
                 material: openaiData.material || 'non spécifié',
                 brand_estimation: null,
-                price_range: openaiData.brand_style === 'luxe' ? '200-500€' : 
-                            openaiData.brand_style === 'casual' ? '50-150€' : '100-300€',
                 style: openaiData.style || 'non défini',
                 fit: 'regular'
               });
@@ -66,7 +59,6 @@ export const outfitAnalysisSupabaseAPI = {
           }
         }
       } catch (error) {
-        console.error('Error calling OpenAI:', error);
         // Ne pas simuler - propager l'erreur
         throw new Error('Le service d\'analyse n\'est pas disponible. Veuillez réessayer plus tard.');
       }
@@ -74,8 +66,6 @@ export const outfitAnalysisSupabaseAPI = {
       // 3. Créer une entrée dans outfit_analyses avec les données OpenAI
       // Déterminer si c'est une pièce unique ou une tenue complète basé sur itemType
       const isSinglePiece = itemType !== 'outfit';
-      console.log('Creating analysis entry, isSinglePiece:', isSinglePiece, 'itemType:', itemType);
-      
       // Déterminer la catégorie appropriée
       let analysisCategory;
       if (isSinglePiece) {
@@ -126,10 +116,10 @@ export const outfitAnalysisSupabaseAPI = {
       if (analysisError) throw analysisError;
       
       // 4. Créer une entrée pour chaque pièce détectée dans outfit_pieces
-      console.log('Checking if pieces exist:', aiAnalysis.pieces);
       if (aiAnalysis.pieces && aiAnalysis.pieces.length > 0) {
+        console.log('Attempting to save pieces:', aiAnalysis.pieces);
+        console.log('Analysis ID:', analysis.id);
         try {
-          console.log(`Preparing to insert ${aiAnalysis.pieces.length} pieces`);
           const piecesData = aiAnalysis.pieces.map((piece, index) => ({
             outfit_analysis_id: analysis.id,
             user_id: userId,
@@ -138,14 +128,13 @@ export const outfitAnalysisSupabaseAPI = {
             description: `${piece.name} - ${piece.color}`,
             color: piece.color,
             material: piece.material || 'non spécifié',
-            price_range: piece.price_range,
             style: piece.style,
             fit: piece.fit,
             layer_order: piece.type === 'top' ? index + 1 : 1, // Gérer l'ordre des couches pour les hauts
             confidence: aiAnalysis.confidence || 0.85
           }));
           
-          console.log('Pieces data to insert:', JSON.stringify(piecesData, null, 2));
+          console.log('Pieces data to insert:', piecesData);
           
           const { data: insertedPieces, error: piecesError } = await supabase
             .from('outfit_pieces')
@@ -153,19 +142,17 @@ export const outfitAnalysisSupabaseAPI = {
             .select();
             
           if (piecesError) {
-            console.error('Error inserting outfit pieces:', piecesError);
-            console.error('Error details:', JSON.stringify(piecesError, null, 2));
+            console.error('Erreur lors de l\'insertion des pièces:', piecesError);
+            console.error('Error details:', piecesError);
           } else {
-            console.log(`Successfully inserted ${insertedPieces?.length || 0} pieces for outfit analysis ${analysis.id}`);
-            console.log('Inserted pieces:', JSON.stringify(insertedPieces, null, 2));
+            console.log('Pièces insérées avec succès:', insertedPieces);
+            console.log('Number of pieces inserted:', insertedPieces?.length);
           }
         } catch (error) {
-          console.error('Error creating outfit pieces:', error);
-          console.error('Error stack:', error.stack);
           // On ne fait pas échouer l'analyse si l'insertion des pièces échoue
         }
       } else {
-        console.log('No pieces detected in analysis');
+        console.log('Aucune pièce détectée dans l\'analyse');
       }
       
       return {
@@ -173,7 +160,6 @@ export const outfitAnalysisSupabaseAPI = {
         error: null
       };
     } catch (error) {
-      console.error('Error analyzing outfit:', error);
       return {
         data: null,
         error: error.message
@@ -186,7 +172,10 @@ export const outfitAnalysisSupabaseAPI = {
     try {
       const { data, error } = await supabase
         .from('outfit_analyses')
-        .select('*')
+        .select(`
+          *,
+          outfit_pieces (*)
+        `)
         .eq('user_id', userId)
         .order('created_at', { ascending: false });
 
@@ -197,7 +186,6 @@ export const outfitAnalysisSupabaseAPI = {
         error: null
       };
     } catch (error) {
-      console.error('Error fetching user analyses:', error);
       return {
         data: [],
         error: error.message
@@ -221,7 +209,6 @@ export const outfitAnalysisSupabaseAPI = {
         error: null
       };
     } catch (error) {
-      console.error('Error fetching outfit pieces:', error);
       return {
         data: [],
         error: error.message
@@ -232,20 +219,31 @@ export const outfitAnalysisSupabaseAPI = {
   // Récupérer une analyse spécifique
   getAnalysis: async (analysisId) => {
     try {
+      console.log('Getting analysis with ID:', analysisId);
+      
       const { data, error } = await supabase
         .from('outfit_analyses')
-        .select('*')
+        .select(`
+          *,
+          outfit_pieces (*)
+        `)
         .eq('id', analysisId)
         .single();
 
-      if (error) throw error;
+      if (error) {
+        console.error('Error getting analysis:', error);
+        throw error;
+      }
+      
+      console.log('Analysis retrieved:', data);
+      console.log('Outfit pieces in analysis:', data?.outfit_pieces);
 
       return {
         data,
         error: null
       };
     } catch (error) {
-      console.error('Error fetching analysis:', error);
+      console.error('Exception in getAnalysis:', error);
       return {
         data: null,
         error: error.message
@@ -277,7 +275,7 @@ export const outfitAnalysisSupabaseAPI = {
           const path = analysis.image_url.split('/').pop();
           await storageService.deletePhoto(`wardrobe/${path}`);
         } catch (error) {
-          console.error('Error deleting image:', error);
+          console.error('Erreur lors de la suppression de l\'image:', error);
         }
       }
 
@@ -286,7 +284,6 @@ export const outfitAnalysisSupabaseAPI = {
         error: null
       };
     } catch (error) {
-      console.error('Error deleting analysis:', error);
       return {
         data: null,
         error: error.message

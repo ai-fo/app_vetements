@@ -49,7 +49,6 @@ export const storageService = {
         path: data.path
       };
     } catch (error) {
-      console.error('Erreur lors de l\'upload:', error);
       throw new Error(`Impossible d'uploader l'image: ${error.message}`);
     }
   },
@@ -70,7 +69,6 @@ export const storageService = {
         throw error;
       }
     } catch (error) {
-      console.error('Erreur lors de la suppression:', error);
       throw new Error(`Impossible de supprimer l'image: ${error.message}`);
     }
   },
@@ -105,7 +103,6 @@ export const storageService = {
         size: file.metadata?.size
       }));
     } catch (error) {
-      console.error('Erreur lors de la récupération des photos:', error);
       throw new Error(`Impossible de récupérer les photos: ${error.message}`);
     }
   },
