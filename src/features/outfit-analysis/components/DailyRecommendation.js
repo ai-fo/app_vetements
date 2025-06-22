@@ -31,12 +31,16 @@ export default function DailyRecommendation({ analyses, navigation }) {
   const [recommendedOutfit, setRecommendedOutfit] = useState(null);
   const [isMultiplePieces, setIsMultiplePieces] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+  const [isWaitingForNewRecs, setIsWaitingForNewRecs] = useState(false);
   const [showNeedsInput, setShowNeedsInput] = useState(false);
   const [userNeeds, setUserNeeds] = useState(null);
-  const [showStyleTips, setShowStyleTips] = useState(false);
   const { weather, loading: weatherLoading, error: weatherError, refreshWeather } = useWeather();
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const slideAnim = useRef(new Animated.Value(50)).current;
+  const rotateAnim = useRef(new Animated.Value(0)).current;
+  const cardFlipAnim = useRef(new Animated.Value(0)).current;
+  const slideXAnim = useRef(new Animated.Value(0)).current;
 
   const getSeasonLabel = (season) => {
     const labels = {
@@ -50,6 +54,11 @@ export default function DailyRecommendation({ analyses, navigation }) {
   };
 
 
+  // Debug effect pour surveiller refreshing
+  useEffect(() => {
+    console.log('Refreshing state changed to:', refreshing);
+  }, [refreshing]);
+
   useEffect(() => {
     if (!recsLoading && !weatherLoading && recommendations && recommendations.length > 0) {
       // Utiliser la première recommandation
@@ -57,6 +66,16 @@ export default function DailyRecommendation({ analyses, navigation }) {
       setRecommendedOutfit(firstRec);
       setIsMultiplePieces(!!firstRec.pieces);
       setLoading(false);
+      
+      // Si on attendait de nouvelles recommandations et qu'on est en train de rafraîchir
+      if (isWaitingForNewRecs && refreshing) {
+        console.log('New recommendations loaded, but keeping loading state for UX');
+        // On désactivera le loading dans handleRefresh après le délai
+        setTimeout(() => {
+          setRefreshing(false);
+          setIsWaitingForNewRecs(false);
+        }, 500);
+      }
       
       // Animations d'entrée
       Animated.parallel([
@@ -90,32 +109,27 @@ export default function DailyRecommendation({ analyses, navigation }) {
       isMultiplePieces: isMultiplePieces,
       weather: weather,
       mood: mood,
-      events: [] // TODO: Intégrer avec le calendrier
+      events: [], // TODO: Intégrer avec le calendrier
+      weatherAdaptation: outfit.weatherAdaptation,
+      styleTips: outfit.styleTips
     });
   };
 
 
   const handleRefresh = async () => {
+    console.log('handleRefresh called, setting refreshing to true');
+    
+    // Sauvegarder l'ID actuel pour détecter le changement
+    const currentOutfitId = recommendedOutfit?.id;
+    
     // Marquer la tenue actuelle comme portée AVANT de demander une nouvelle
     if (recommendedOutfit && recommendedOutfit.id) {
       await markAsWorn(recommendedOutfit.id);
     }
     
-    // Activer le loading
-    setLoading(true);
-    
-    Animated.sequence([
-      Animated.timing(fadeAnim, {
-        toValue: 0.5,
-        duration: 200,
-        useNativeDriver: true,
-      }),
-      Animated.timing(fadeAnim, {
-        toValue: 1,
-        duration: 200,
-        useNativeDriver: true,
-      }),
-    ]).start();
+    // Activer le loading et marquer qu'on attend de nouvelles recommandations
+    setRefreshing(true);
+    setIsWaitingForNewRecs(true);
 
     try {
       // Rafraîchir les recommandations et la météo
@@ -124,9 +138,15 @@ export default function DailyRecommendation({ analyses, navigation }) {
       
       // Réinitialiser les besoins utilisateur
       setUserNeeds(null);
-    } finally {
-      // Désactiver le loading après le rafraîchissement
-      setLoading(false);
+      
+      // Garder le loading actif minimum 2 secondes pour une bonne UX
+      await new Promise(resolve => setTimeout(resolve, 2000));
+      
+    } catch (error) {
+      console.error('Error refreshing:', error);
+      // En cas d'erreur, désactiver le loading
+      setRefreshing(false);
+      setIsWaitingForNewRecs(false);
     }
   };
 
@@ -280,11 +300,6 @@ export default function DailyRecommendation({ analyses, navigation }) {
               <View style={styles.badgeBlur}>
                 <Ionicons name="sparkles" size={16} color="#fff" />
                 <Text style={styles.badgeText}>Recommandé pour vous</Text>
-                {recommendedOutfit.score && (
-                  <View style={styles.scoreContainer}>
-                    <Text style={styles.scoreText}>{recommendedOutfit.score}%</Text>
-                  </View>
-                )}
               </View>
             </View>
 
@@ -339,55 +354,25 @@ export default function DailyRecommendation({ analyses, navigation }) {
                   <Text style={styles.reasonText}>{recommendedOutfit.reason}</Text>
                 </View>
               )}
-              
-              {/* Adaptation météo */}
-              {recommendedOutfit.weatherAdaptation && (
-                <View style={styles.weatherAdaptSection}>
-                  <View style={styles.weatherAdaptHeader}>
-                    <Ionicons name="thermometer-outline" size={16} color="#60a5fa" />
-                    <Text style={styles.weatherAdaptTitle}>Adaptation météo</Text>
-                  </View>
-                  <Text style={styles.weatherAdaptText}>{recommendedOutfit.weatherAdaptation}</Text>
-                </View>
-              )}
-              
-              {/* Conseils de style (extensible) */}
-              {recommendedOutfit.styleTips && (
-                <TouchableOpacity 
-                  style={styles.styleTipsToggle}
-                  onPress={() => setShowStyleTips(!showStyleTips)}
-                  activeOpacity={0.8}
-                >
-                  <View style={styles.styleTipsHeader}>
-                    <Ionicons name="color-palette-outline" size={16} color="#a78bfa" />
-                    <Text style={styles.styleTipsTitle}>Conseils de style</Text>
-                    <Ionicons 
-                      name={showStyleTips ? "chevron-up" : "chevron-down"} 
-                      size={16} 
-                      color="#a78bfa" 
-                    />
-                  </View>
-                  {showStyleTips && (
-                    <Text style={styles.styleTipsText}>{recommendedOutfit.styleTips}</Text>
-                  )}
-                </TouchableOpacity>
-              )}
 
               {/* Actions */}
               <View style={styles.actions}>
                 <TouchableOpacity 
-                  style={[styles.secondaryActionButton, loading && styles.disabledButton]}
-                  onPress={handleRefresh}
-                  disabled={loading}
+                  style={[styles.secondaryActionButton, refreshing && styles.disabledButton]}
+                  onPress={() => {
+                    console.log('Button pressed!');
+                    handleRefresh();
+                  }}
+                  disabled={refreshing}
                 >
-                  {loading ? (
+                  {refreshing ? (
                     <ActivityIndicator size="small" color="#fff" />
                   ) : (
-                    <>
-                      <Ionicons name="sparkles" size={18} color="#fff" />
-                      <Text style={styles.secondaryActionText}>Nouvelle suggestion</Text>
-                    </>
+                    <Ionicons name="sparkles" size={18} color="#fff" />
                   )}
+                  <Text style={styles.secondaryActionText}>
+                    {refreshing ? "Chargement..." : "Nouvelle suggestion"}
+                  </Text>
                 </TouchableOpacity>
                 <TouchableOpacity 
                   style={[styles.actionButton, styles.primaryAction]}
@@ -398,6 +383,19 @@ export default function DailyRecommendation({ analyses, navigation }) {
                 </TouchableOpacity>
               </View>
             </View>
+            
+            {/* Overlay de loading */}
+            {refreshing && (
+              <View style={styles.loadingOverlay}>
+                <View style={styles.loadingContainer}>
+                  <ActivityIndicator size="large" color="#fff" />
+                  <Text style={styles.loadingText}>Recherche d'une nouvelle tenue...</Text>
+                </View>
+              </View>
+            )}
+            
+            {/* Debug - À retirer */}
+            {console.log('Refreshing state:', refreshing)}
           </LinearGradient>
         </View>
       </View>
@@ -688,7 +686,8 @@ const styles = StyleSheet.create({
     color: '#fff',
   },
   disabledButton: {
-    opacity: 0.6,
+    backgroundColor: 'rgba(255,255,255,0.3)',
+    borderColor: 'rgba(255,255,255,0.4)',
   },
   primaryAction: {
     flexDirection: 'row',
@@ -757,5 +756,27 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
     color: '#667eea',
+  },
+  loadingOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(0,0,0,0.7)',
+    borderRadius: 24,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  loadingContainer: {
+    alignItems: 'center',
+    padding: 20,
+  },
+  loadingText: {
+    marginTop: 16,
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#fff',
+    textAlign: 'center',
   },
 });
