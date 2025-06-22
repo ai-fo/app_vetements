@@ -22,7 +22,7 @@ export default function RecommendationDetailScreen() {
   const route = useRoute();
   const { user } = useAuth();
   const { items } = useWardrobe(user?.id);
-  const { outfitId, outfit: passedOutfit, isMultiplePieces, weather, mood, events } = route.params || {};
+  const { outfitId, outfit: passedOutfit, isMultiplePieces, weather, mood, events, weatherAdaptation, styleTips } = route.params || {};
   
   const [outfit, setOutfit] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -245,10 +245,29 @@ export default function RecommendationDetailScreen() {
           ))}
         </View>
 
-        {/* Conseils styling */}
+        {/* Adaptation météo */}
+        {weatherAdaptation && (
+          <View style={styles.adaptationSection}>
+            <Text style={styles.sectionTitle}>Adaptation météo</Text>
+            <View style={styles.adaptationCard}>
+              <View style={styles.adaptationRow}>
+                <Ionicons name="thermometer" size={20} color="#60a5fa" />
+                <Text style={styles.adaptationText}>{weatherAdaptation}</Text>
+              </View>
+            </View>
+          </View>
+        )}
+
+        {/* Conseils de style */}
         <View style={styles.tipsSection}>
-          <Text style={styles.sectionTitle}>Conseils styling</Text>
+          <Text style={styles.sectionTitle}>Conseils de style</Text>
           <View style={styles.tipsCard}>
+            {styleTips && (
+              <View style={styles.tipRow}>
+                <Ionicons name="color-palette" size={20} color="#a78bfa" />
+                <Text style={styles.tipText}>{styleTips}</Text>
+              </View>
+            )}
             <View style={styles.tipRow}>
               <Ionicons name="bulb" size={20} color="#667eea" />
               <Text style={styles.tipText}>
@@ -548,5 +567,27 @@ const styles = StyleSheet.create({
   weatherLocationText: {
     fontSize: 14,
     color: '#9ca3af',
+  },
+  adaptationSection: {
+    paddingHorizontal: 20,
+    paddingTop: 20,
+  },
+  adaptationCard: {
+    backgroundColor: 'rgba(96, 165, 250, 0.1)',
+    borderRadius: 16,
+    padding: 20,
+    borderWidth: 1,
+    borderColor: 'rgba(96, 165, 250, 0.2)',
+  },
+  adaptationRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    gap: 12,
+  },
+  adaptationText: {
+    flex: 1,
+    fontSize: 14,
+    color: '#60a5fa',
+    lineHeight: 20,
   },
 });
