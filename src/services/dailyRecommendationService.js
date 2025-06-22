@@ -14,7 +14,8 @@ class DailyRecommendationService {
           country_code: params.countryCode || 'FR',
           wardrobe_items: params.wardrobeItems || [],
           user_needs: params.userNeeds || null,
-          current_season: params.currentSeason || null
+          current_season: params.currentSeason || null,
+          recently_worn_ids: params.recentlyWornIds || []
         }),
       });
 

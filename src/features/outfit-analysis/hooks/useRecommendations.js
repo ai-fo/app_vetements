@@ -3,6 +3,7 @@ import { useWardrobe } from '../../virtual-wardrobe/hooks/useWardrobe';
 import { ItemType } from '../../virtual-wardrobe/types';
 import { dailyRecommendationService } from '../../../services/dailyRecommendationService';
 import * as Location from 'expo-location';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 export const useRecommendations = (userId) => {
   const { items = [], loading: wardrobeLoading } = useWardrobe(userId);
@@ -11,6 +12,41 @@ export const useRecommendations = (userId) => {
   const [weather, setWeather] = useState(null);
   const [city, setCity] = useState('Paris');
   const [preferenceHistory, setPreferenceHistory] = useState([]);
+
+  // Charger l'historique des vêtements portés
+  const loadWearHistory = async () => {
+    try {
+      const history = await AsyncStorage.getItem(`wear_history_${userId}`);
+      if (history) {
+        const parsed = JSON.parse(history);
+        // Garder seulement les 30 derniers jours
+        const thirtyDaysAgo = Date.now() - (30 * 24 * 60 * 60 * 1000);
+        const recentHistory = parsed.filter(item => item.timestamp > thirtyDaysAgo);
+        setPreferenceHistory(recentHistory);
+        return recentHistory;
+      }
+    } catch (error) {
+      console.error('Error loading wear history:', error);
+    }
+    return [];
+  };
+
+  // Sauvegarder l'historique
+  const saveWearHistory = async (newHistory) => {
+    try {
+      await AsyncStorage.setItem(`wear_history_${userId}`, JSON.stringify(newHistory));
+    } catch (error) {
+      console.error('Error saving wear history:', error);
+    }
+  };
+
+  // Obtenir les IDs récemment portés (derniers 7 jours)
+  const getRecentlyWornIds = (history) => {
+    const sevenDaysAgo = Date.now() - (7 * 24 * 60 * 60 * 1000);
+    return history
+      .filter(item => item.timestamp > sevenDaysAgo)
+      .map(item => item.itemId);
+  };
 
   // Obtenir la saison actuelle
   const getCurrentSeason = () => {
@@ -61,6 +97,10 @@ export const useRecommendations = (userId) => {
       const userCity = await getUserLocation();
       const currentSeason = getCurrentSeason();
       
+      // Charger l'historique et obtenir les IDs récemment portés
+      const history = await loadWearHistory();
+      const recentlyWornIds = getRecentlyWornIds(history);
+      
       // Préparer les données de la garde-robe pour l'API
       const wardrobeData = items.map(item => ({
         id: item.id,
@@ -82,7 +122,8 @@ export const useRecommendations = (userId) => {
       const { data, error } = await dailyRecommendationService.getDailyRecommendations({
         city: userCity,
         wardrobeItems: wardrobeData,
-        currentSeason: currentSeason
+        currentSeason: currentSeason,
+        recentlyWornIds: recentlyWornIds
       });
 
       if (error) {
@@ -155,9 +196,31 @@ export const useRecommendations = (userId) => {
   };
 
   // Marquer une tenue comme portée
-  const markAsWorn = (itemId) => {
-    setPreferenceHistory(prev => [...prev, itemId].slice(-10)); // Garder les 10 derniers
-    // TODO: Sauvegarder dans le backend quand prêt
+  const markAsWorn = async (itemId) => {
+    const newHistoryItem = {
+      itemId: itemId,
+      timestamp: Date.now()
+    };
+    
+    const updatedHistory = [...preferenceHistory, newHistoryItem];
+    setPreferenceHistory(updatedHistory);
+    
+    // Sauvegarder dans AsyncStorage
+    await saveWearHistory(updatedHistory);
+    
+    // Si c'est une combinaison, marquer aussi les pièces individuelles
+    if (itemId.startsWith('combo-')) {
+      const ids = itemId.replace('combo-', '').split('-');
+      for (const id of ids) {
+        const pieceHistoryItem = {
+          itemId: id,
+          timestamp: Date.now()
+        };
+        updatedHistory.push(pieceHistoryItem);
+      }
+      setPreferenceHistory(updatedHistory);
+      await saveWearHistory(updatedHistory);
+    }
   };
 
   // Rafraîchir les recommandations
@@ -196,12 +259,17 @@ export const useRecommendations = (userId) => {
         description: item.description || ''
       }));
 
+      // Charger l'historique et obtenir les IDs récemment portés
+      const history = await loadWearHistory();
+      const recentlyWornIds = getRecentlyWornIds(history);
+      
       // Appeler l'API avec les besoins spécifiques
       const { data, error } = await dailyRecommendationService.getDailyRecommendations({
         city: userCity,
         wardrobeItems: wardrobeData,
         currentSeason: currentSeason,
-        userNeeds: userNeeds
+        userNeeds: userNeeds,
+        recentlyWornIds: recentlyWornIds
       });
 
       if (error) {
@@ -270,6 +338,13 @@ export const useRecommendations = (userId) => {
       generateRecommendations();
     }
   }, [wardrobeLoading]);
+
+  // Charger l'historique au démarrage
+  useEffect(() => {
+    if (userId) {
+      loadWearHistory();
+    }
+  }, [userId]);
 
   return {
     recommendations,

@@ -36,6 +36,7 @@ class DailyRecommendationRequest(BaseModel):
     wardrobe_items: List[Dict[str, Any]] = []
     user_needs: Optional[str] = None
     current_season: Optional[str] = None
+    recently_worn_ids: List[str] = []  # IDs des vêtements portés récemment
 
 async def get_weather_data(city: str, country_code: str = "FR"):
     """Récupère les données météo pour une ville donnée"""
@@ -331,11 +332,22 @@ SAISON: {request.current_season or 'all_season'}
 
 {f"BESOINS SPÉCIFIQUES: {request.user_needs}" if request.user_needs else ""}
 
+VÊTEMENTS RÉCEMMENT PORTÉS (à éviter):
+{json.dumps(request.recently_worn_ids) if request.recently_worn_ids else "Aucun"}
+
 GARDE-ROBE DISPONIBLE:
 {json.dumps(request.wardrobe_items, ensure_ascii=False)}
 
+RÈGLES IMPORTANTES:
+1. ÉVITER absolument les vêtements avec les IDs dans recently_worn_ids
+2. Les recommandations DOIVENT être cohérentes avec la météo:
+   - Si > 30°C: vêtements légers, respirants, couleurs claires
+   - Si < 10°C: vêtements chauds, plusieurs couches
+   - Si pluie: vêtements imperméables ou résistants à l'eau
+3. Prioriser la variété tout en restant approprié à la météo
+
 Génère 1 à 3 recommandations pertinentes. Priorise:
-1. Les tenues complètes (itemType: OUTFIT) adaptées à la météo
+1. Les tenues complètes (itemType: OUTFIT) adaptées à la météo ET non récemment portées
 2. Les combinaisons de pièces individuelles si aucune tenue complète ne convient
 3. Les pièces uniques exceptionnelles si particulièrement adaptées
 
