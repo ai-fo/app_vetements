@@ -1,4 +1,4 @@
-import { API_CONFIG } from '../config/api';
+import { apiClient, API_ENDPOINTS } from '../../../shared/api/client';
 
 class OpenAIService {
   async analyzeOutfit(imageUri) {
@@ -12,7 +12,7 @@ class OpenAIService {
         name: 'outfit.jpg',
       });
 
-      const result = await fetch(`${API_CONFIG.BASE_URL}${API_CONFIG.ENDPOINTS.ANALYZE_OUTFIT}`, {
+      const result = await fetch(`${apiClient.baseURL}${API_ENDPOINTS.ANALYZE_OUTFIT}`, {
         method: 'POST',
         body: formData,
         headers: {
@@ -27,14 +27,13 @@ class OpenAIService {
       const data = await result.json();
       return { data, error: null };
     } catch (error) {
-      console.error('OpenAI analyze outfit error:', error);
       return { data: null, error: error.message };
     }
   }
 
   async generateSuggestions(preferences) {
     try {
-      const result = await fetch(`${API_CONFIG.BASE_URL}${API_CONFIG.ENDPOINTS.GENERATE_SUGGESTIONS}`, {
+      const result = await fetch(`${apiClient.baseURL}${API_ENDPOINTS.GENERATE_SUGGESTIONS}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -50,14 +49,13 @@ class OpenAIService {
       const data = await result.json();
       return { data, error: null };
     } catch (error) {
-      console.error('OpenAI generate suggestions error:', error);
       return { data: null, error: error.message };
     }
   }
 
   async matchOutfit(item, wardrobe) {
     try {
-      const result = await fetch(`${API_CONFIG.BASE_URL}${API_CONFIG.ENDPOINTS.MATCH_OUTFIT}`, {
+      const result = await fetch(`${apiClient.baseURL}${API_ENDPOINTS.MATCH_OUTFIT}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -73,7 +71,6 @@ class OpenAIService {
       const data = await result.json();
       return { data, error: null };
     } catch (error) {
-      console.error('OpenAI match outfit error:', error);
       return { data: null, error: error.message };
     }
   }

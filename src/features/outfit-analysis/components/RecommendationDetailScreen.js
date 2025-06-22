@@ -12,8 +12,8 @@ import {
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { useNavigation, useRoute } from '@react-navigation/native';
-import { useWardrobe } from '../features/virtual-wardrobe/hooks/useWardrobe';
-import { useAuth } from '../features/auth';
+import { useWardrobe } from '../../virtual-wardrobe/hooks/useWardrobe';
+import { useAuth } from '../../auth';
 
 const { width: screenWidth } = Dimensions.get('window');
 

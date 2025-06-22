@@ -11,7 +11,7 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
-import { ItemType } from '../types';
+import { ItemType } from '../types/wardrobe.types';
 import FavoriteButton from './FavoriteButton';
 import OutfitPiecesSection from './OutfitPiecesSection';
 
@@ -20,10 +20,6 @@ const { width, height } = Dimensions.get('window');
 export default function ItemDetailsModal({ item, visible, onClose, onEdit, onToggleFavorite }) {
   if (!item) return null;
   
-  console.log('ItemDetailsModal - item:', item);
-  console.log('ItemDetailsModal - itemType:', item.itemType);
-  console.log('ItemDetailsModal - id:', item.id);
-
   const getColorHex = (colorName) => {
     const colors = {
       'noir': '#000000',

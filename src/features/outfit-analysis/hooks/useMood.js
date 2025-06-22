@@ -27,8 +27,7 @@ export const useMood = () => {
         setMood(savedMood);
       }
     } catch (error) {
-      console.error('Error loading mood:', error);
-    } finally {
+      } finally {
       setLoading(false);
     }
   };
@@ -38,8 +37,7 @@ export const useMood = () => {
       await AsyncStorage.setItem(MOOD_KEY, newMood);
       setMood(newMood);
     } catch (error) {
-      console.error('Error saving mood:', error);
-    }
+      }
   };
 
   const getMoodInfo = (moodId) => {

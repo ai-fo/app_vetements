@@ -2,13 +2,13 @@ import React from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import { createStackNavigator } from '@react-navigation/stack';
 import { AuthProvider, useAuth, LoginScreen, SignUpScreen } from './src/features/auth';
-import HomeScreen from './src/screens/HomeScreen';
-import RecommendationDetailScreen from './src/screens/RecommendationDetailScreen';
-import ProfileScreen from './src/screens/ProfileScreen';
+import { HomeScreen } from './src/features/home';
+import { ProfileScreen } from './src/features/profile';
 import { 
   CameraScreen, 
   AnalysisResultScreen, 
-  AddItemTypeSelector
+  AddItemTypeSelector,
+  RecommendationDetailScreen
 } from './src/features/outfit-analysis';
 import { WardrobeScreen, ItemEditor } from './src/features/virtual-wardrobe';
 import { ActivityIndicator, View } from 'react-native';

@@ -23,13 +23,11 @@ export const useWeather = () => {
       weatherService.getWeatherForecast(5).then(forecastData => {
         setForecast(forecastData);
       }).catch(err => {
-        console.error('Erreur prévisions:', err);
-      });
+        });
 
     } catch (err) {
       setError('Impossible de charger la météo');
-      console.error('Erreur météo:', err);
-    } finally {
+      } finally {
       setLoading(false);
       setRefreshing(false);
     }

@@ -1,9 +1,9 @@
-import { API_CONFIG } from '../config/api';
+import { apiClient, API_ENDPOINTS } from '../../../shared/api/client';
 
 class DailyRecommendationService {
   async getDailyRecommendations(params) {
     try {
-      const response = await fetch(`${API_CONFIG.BASE_URL}${API_CONFIG.ENDPOINTS.DAILY_RECOMMENDATIONS}`, {
+      const response = await fetch(`${apiClient.baseURL}${API_ENDPOINTS.DAILY_RECOMMENDATIONS}`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -27,7 +27,6 @@ class DailyRecommendationService {
       const data = await response.json();
       return { data, error: null };
     } catch (error) {
-      console.error('Daily recommendation error:', error);
       return { data: null, error: error.message };
     }
   }

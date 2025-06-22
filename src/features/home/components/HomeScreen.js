@@ -13,10 +13,10 @@ import {
 import { StatusBar } from 'expo-status-bar';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
-import { useAuth } from '../features/auth';
-import { useOutfitAnalysis } from '../features/outfit-analysis';
+import { useAuth } from '../../auth';
+import { useOutfitAnalysis } from '../../outfit-analysis';
 import { useNavigation } from '@react-navigation/native';
-import DailyRecommendation from '../features/outfit-analysis/components/DailyRecommendation';
+import DailyRecommendation from '../../outfit-analysis/components/DailyRecommendation';
 
 const { width } = Dimensions.get('window');
 
@@ -42,8 +42,7 @@ export default function HomeScreen() {
       try {
         await getUserAnalyses(user.id);
       } catch (error) {
-        console.error('Error loading analyses:', error);
-      }
+        }
       setRefreshing(false);
     }
   };

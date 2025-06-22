@@ -12,6 +12,7 @@ import {
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { useOutfitAnalysis } from '../hooks/useOutfitAnalysis';
+import OutfitPiecesSection from '../../virtual-wardrobe/components/OutfitPiecesSection';
 
 export default function AnalysisResultScreen({ route, navigation }) {
   const { analysisId } = route.params;
@@ -26,6 +27,9 @@ export default function AnalysisResultScreen({ route, navigation }) {
   const loadAnalysis = async () => {
     try {
       const data = await getAnalysisById(analysisId);
+      console.log('Analysis data loaded:', data);
+      console.log('Outfit pieces:', data?.outfit_pieces);
+      console.log('Number of pieces:', data?.outfit_pieces?.length);
       setAnalysis(data);
     } catch (error) {
       console.error('Error loading analysis:', error);
@@ -39,7 +43,6 @@ export default function AnalysisResultScreen({ route, navigation }) {
       await deleteAnalysis(analysisId);
       navigation.goBack();
     } catch (error) {
-      console.error('Error deleting analysis:', error);
     }
   };
 
@@ -99,6 +102,8 @@ export default function AnalysisResultScreen({ route, navigation }) {
 
         {analysis.processing_status === 'completed' && (
           <View style={styles.content}>
+            <OutfitPiecesSection analysisId={analysisId} pieces={analysis.outfit_pieces} />
+            
             <View style={styles.section}>
               <Text style={styles.sectionTitle}>Informations générales</Text>
               <View style={styles.infoCard}>

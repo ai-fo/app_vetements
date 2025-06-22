@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { outfitAnalysisAPI } from '../api';
-import { ItemType } from '../../virtual-wardrobe/types';
+import { ItemType } from '../../virtual-wardrobe';
 
 export const useOutfitAnalysis = () => {
   const [loading, setLoading] = useState(false);
@@ -20,7 +20,6 @@ export const useOutfitAnalysis = () => {
       
       return data;
     } catch (error) {
-      console.error('Analyze outfit error:', error);
       throw error;
     } finally {
       setLoading(false);
@@ -37,7 +36,6 @@ export const useOutfitAnalysis = () => {
       setAnalyses(data || []);
       return data;
     } catch (error) {
-      console.error('Get analyses error:', error);
       throw error;
     } finally {
       setLoading(false);
@@ -52,7 +50,6 @@ export const useOutfitAnalysis = () => {
       
       return data;
     } catch (error) {
-      console.error('Get analysis error:', error);
       throw error;
     }
   };
@@ -68,7 +65,6 @@ export const useOutfitAnalysis = () => {
       
       return data;
     } catch (error) {
-      console.error('Delete analysis error:', error);
       throw error;
     }
   };
@@ -81,7 +77,6 @@ export const useOutfitAnalysis = () => {
       
       return data;
     } catch (error) {
-      console.error('Add to wardrobe error:', error);
       throw error;
     }
   };

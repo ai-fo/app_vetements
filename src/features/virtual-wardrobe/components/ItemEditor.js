@@ -13,7 +13,7 @@ import {
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useWardrobe } from '../hooks/useWardrobe';
-import { ItemType, ClothingCategory, Season, Material } from '../types';
+import { ItemType, ClothingCategory, Season, Material } from '../types/wardrobe.types';
 import FavoriteButton from './FavoriteButton';
 
 export default function ItemEditor({ navigation, route }) {

@@ -11,9 +11,8 @@ import {
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
-import { useWardrobe } from '../../virtual-wardrobe/hooks/useWardrobe';
+import { useWardrobe, ItemType } from '../../virtual-wardrobe';
 import { useAuth } from '../../auth';
-import { ItemType } from '../../virtual-wardrobe/types';
 import { useMood } from '../hooks/useMood';
 import { useWeather } from '../hooks/useWeather';
 import { useRecommendations } from '../hooks/useRecommendations';
@@ -82,8 +81,7 @@ export default function DailyRecommendation({ analyses, navigation }) {
     // Marquer comme portée quand l'utilisateur clique pour voir les détails
     if (outfit && outfit.id) {
       await markAsWorn(outfit.id);
-      console.log('Marked as worn when viewing details:', outfit.id);
-    }
+      }
     
     // Passer les informations nécessaires à la page de détail
     navigation.navigate('RecommendationDetail', { 
@@ -101,8 +99,10 @@ export default function DailyRecommendation({ analyses, navigation }) {
     // Marquer la tenue actuelle comme portée AVANT de demander une nouvelle
     if (recommendedOutfit && recommendedOutfit.id) {
       await markAsWorn(recommendedOutfit.id);
-      console.log('Marked as worn:', recommendedOutfit.id);
     }
+    
+    // Activer le loading
+    setLoading(true);
     
     Animated.sequence([
       Animated.timing(fadeAnim, {
@@ -117,12 +117,17 @@ export default function DailyRecommendation({ analyses, navigation }) {
       }),
     ]).start();
 
-    // Rafraîchir les recommandations et la météo
-    await refreshRecs();
-    refreshWeather();
-    
-    // Réinitialiser les besoins utilisateur
-    setUserNeeds(null);
+    try {
+      // Rafraîchir les recommandations et la météo
+      await refreshRecs();
+      refreshWeather();
+      
+      // Réinitialiser les besoins utilisateur
+      setUserNeeds(null);
+    } finally {
+      // Désactiver le loading après le rafraîchissement
+      setLoading(false);
+    }
   };
 
   const handleNeedsSubmit = async (needs) => {
@@ -171,7 +176,6 @@ export default function DailyRecommendation({ analyses, navigation }) {
         ]).start();
       }
     } catch (error) {
-      console.error('Error generating needs-based recommendation:', error);
       // Fallback sur une recommandation normale
       handleRefresh();
     } finally {
@@ -372,11 +376,18 @@ export default function DailyRecommendation({ analyses, navigation }) {
               {/* Actions */}
               <View style={styles.actions}>
                 <TouchableOpacity 
-                  style={styles.secondaryActionButton}
+                  style={[styles.secondaryActionButton, loading && styles.disabledButton]}
                   onPress={handleRefresh}
+                  disabled={loading}
                 >
-                  <Ionicons name="sparkles" size={18} color="#fff" />
-                  <Text style={styles.secondaryActionText}>Nouvelle suggestion</Text>
+                  {loading ? (
+                    <ActivityIndicator size="small" color="#fff" />
+                  ) : (
+                    <>
+                      <Ionicons name="sparkles" size={18} color="#fff" />
+                      <Text style={styles.secondaryActionText}>Nouvelle suggestion</Text>
+                    </>
+                  )}
                 </TouchableOpacity>
                 <TouchableOpacity 
                   style={[styles.actionButton, styles.primaryAction]}
@@ -675,6 +686,9 @@ const styles = StyleSheet.create({
     fontSize: 14,
     fontWeight: '500',
     color: '#fff',
+  },
+  disabledButton: {
+    opacity: 0.6,
   },
   primaryAction: {
     flexDirection: 'row',

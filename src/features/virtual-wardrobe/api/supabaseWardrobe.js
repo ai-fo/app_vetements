@@ -73,12 +73,6 @@ export const wardrobeSupabaseAPI = {
 
       // Transformer toutes les analyses en items de garde-robe
       const items = (data || []).map(analysis => {
-        console.log('Processing analysis:', { 
-          id: analysis.id, 
-          category: analysis.category,
-          itemsCount: analysis.items?.length 
-        });
-        
         // Si c'est explicitement une pièce unique
         if (analysis.category === 'piece_unique') {
           return {
@@ -107,7 +101,6 @@ export const wardrobeSupabaseAPI = {
         error: null
       };
     } catch (error) {
-      console.error('Error fetching wardrobe items:', error);
       return {
         data: [],
         error: error.message || 'Erreur lors de la récupération des articles'
@@ -177,7 +170,6 @@ export const wardrobeSupabaseAPI = {
         error: null
       };
     } catch (error) {
-      console.error('Error creating wardrobe item:', error);
       return {
         data: null,
         error: error.message || 'Erreur lors de la création de l\'article'
@@ -254,7 +246,6 @@ export const wardrobeSupabaseAPI = {
         error: null
       };
     } catch (error) {
-      console.error('Error updating wardrobe item:', error);
       return {
         data: null,
         error: error.message || 'Erreur lors de la mise à jour'
@@ -286,7 +277,6 @@ export const wardrobeSupabaseAPI = {
 
       return (data || []).map(transformOutfitAnalysisToFrontend);
     } catch (error) {
-      console.error('Error fetching outfit analyses:', error);
       throw error;
     }
   },
@@ -298,13 +288,11 @@ export const wardrobeSupabaseAPI = {
     try {
       // Pour l'instant, on ne gère pas les favoris dans outfit_analyses
       // On pourrait ajouter un champ is_favorite dans outfit_analyses si nécessaire
-      console.log('Toggle favorite not implemented for outfit_analyses');
       return {
         data: { isFavorite },
         error: null
       };
     } catch (error) {
-      console.error('Error toggling favorite:', error);
       return {
         data: null,
         error: error.message || 'Erreur lors de la mise à jour du favori'
@@ -317,15 +305,11 @@ export const wardrobeSupabaseAPI = {
    */
   async deleteOutfitAnalysis(analysisId) {
     try {
-      console.log('Attempting to delete outfit analysis with ID:', analysisId);
-      
       const { data, error } = await supabase
         .from('outfit_analyses')
         .delete()
         .eq('id', analysisId)
         .select();
-
-      console.log('Delete outfit analysis response:', { data, error });
 
       if (error) throw error;
 
@@ -334,7 +318,6 @@ export const wardrobeSupabaseAPI = {
         error: null
       };
     } catch (error) {
-      console.error('Error deleting outfit analysis:', error);
       return {
         success: false,
         error: error.message || 'Erreur lors de la suppression de l\'analyse'

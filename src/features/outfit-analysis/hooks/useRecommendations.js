@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
-import { useWardrobe } from '../../virtual-wardrobe/hooks/useWardrobe';
-import { ItemType } from '../../virtual-wardrobe/types';
-import { dailyRecommendationService } from '../../../services/dailyRecommendationService';
+import { useWardrobe } from '../../virtual-wardrobe';
+import { ItemType } from '../../virtual-wardrobe';
+import { dailyRecommendationService } from '../services/dailyRecommendationService';
 import * as Location from 'expo-location';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
@@ -26,8 +26,7 @@ export const useRecommendations = (userId) => {
         return recentHistory;
       }
     } catch (error) {
-      console.error('Error loading wear history:', error);
-    }
+      }
     return [];
   };
 
@@ -36,8 +35,7 @@ export const useRecommendations = (userId) => {
     try {
       await AsyncStorage.setItem(`wear_history_${userId}`, JSON.stringify(newHistory));
     } catch (error) {
-      console.error('Error saving wear history:', error);
-    }
+      }
   };
 
   // Obtenir les IDs récemment portés (derniers 7 jours)
@@ -77,8 +75,7 @@ export const useRecommendations = (userId) => {
         return city;
       }
     } catch (error) {
-      console.error('Error getting location:', error);
-    }
+      }
     return 'Paris';
   };
 
@@ -101,9 +98,6 @@ export const useRecommendations = (userId) => {
       const history = await loadWearHistory();
       const recentlyWornIds = getRecentlyWornIds(history);
       
-      console.log('Recently worn IDs:', recentlyWornIds);
-      console.log('Total wardrobe items:', items.length);
-      
       // Préparer les données de la garde-robe pour l'API
       const wardrobeData = items.map(item => ({
         id: item.id,
@@ -122,6 +116,9 @@ export const useRecommendations = (userId) => {
       }));
 
       // Appeler l'API pour obtenir les recommandations
+      console.log('Items in wardrobe:', wardrobeData.map(i => ({ id: i.id, name: i.name })));
+      console.log('Recently worn IDs:', recentlyWornIds);
+      
       const { data, error } = await dailyRecommendationService.getDailyRecommendations({
         city: userCity,
         wardrobeItems: wardrobeData,
@@ -130,7 +127,6 @@ export const useRecommendations = (userId) => {
       });
 
       if (error) {
-        console.error('API Error:', error);
         // Fallback sur des recommandations basiques
         setWeather({
           temp: 20,
@@ -164,14 +160,12 @@ export const useRecommendations = (userId) => {
             
             for (const warm of warmClothes) {
               if (itemName.includes(warm) || itemCategory.includes(warm)) {
-                console.warn(`Rejected ${item.name} - too warm for ${temperature}°C`);
                 return false;
               }
             }
             
             for (const material of materials) {
               if (warmMaterials.some(warm => material.includes(warm))) {
-                console.warn(`Rejected ${item.name} - warm material (${material}) for ${temperature}°C`);
                 return false;
               }
             }
@@ -182,7 +176,6 @@ export const useRecommendations = (userId) => {
             const veryWarmClothes = ['pull épais', 'doudoune', 'manteau', 'parka'];
             for (const warm of veryWarmClothes) {
               if (itemName.includes(warm)) {
-                console.warn(`Rejected ${item.name} - too warm for ${temperature}°C`);
                 return false;
               }
             }
@@ -198,7 +191,13 @@ export const useRecommendations = (userId) => {
         for (const rec of data.recommendations) {
           if (rec.id.startsWith('combo-')) {
             // C'est une combinaison de pièces
-            const ids = rec.id.replace('combo-', '').split('-');
+            // Extraire les UUIDs du format combo-uuid1-uuid2
+            const comboString = rec.id.replace('combo-', '');
+            // Regex pour matcher des UUIDs (format: 8-4-4-4-12 caractères hexadécimaux)
+            const uuidRegex = /[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/g;
+            const ids = comboString.match(uuidRegex) || [];
+            
+            console.log('Parsing combo:', rec.id, '-> IDs:', ids);
             const pieces = ids.map(id => items.find(item => item.id === id)).filter(Boolean);
             
             // Vérifier que toutes les pièces sont appropriées
@@ -219,7 +218,9 @@ export const useRecommendations = (userId) => {
           } else {
             // C'est un item unique
             const item = items.find(i => i.id === rec.id);
-            if (item && isWeatherAppropriate(item, currentTemp)) {
+            if (!item) {
+              console.warn('Recommended item not found in wardrobe:', rec.id);
+            } else if (item && isWeatherAppropriate(item, currentTemp)) {
               processedRecommendations.push({
                 ...item,
                 score: rec.score,
@@ -231,11 +232,9 @@ export const useRecommendations = (userId) => {
           }
         }
         
-        console.log(`Filtered recommendations: ${data.recommendations.length} -> ${processedRecommendations.length}`);
         setRecommendations(processedRecommendations);
       }
     } catch (error) {
-      console.error('Error generating recommendations:', error);
       setRecommendations([]);
       setWeather(null);
     } finally {
@@ -245,8 +244,6 @@ export const useRecommendations = (userId) => {
 
   // Marquer une tenue comme portée
   const markAsWorn = async (itemId) => {
-    console.log('Marking as worn:', itemId);
-    
     const newHistoryItem = {
       itemId: itemId,
       timestamp: Date.now()
@@ -263,7 +260,6 @@ export const useRecommendations = (userId) => {
           timestamp: Date.now()
         };
         updatedHistory.push(pieceHistoryItem);
-        console.log('Also marking piece as worn:', id);
       }
     }
     
@@ -275,9 +271,6 @@ export const useRecommendations = (userId) => {
     
     // Sauvegarder dans AsyncStorage
     await saveWearHistory(updatedHistory);
-    
-    console.log('Wear history updated, total items:', updatedHistory.length);
-    console.log('Recently worn IDs:', getRecentlyWornIds(updatedHistory));
   };
 
   // Rafraîchir les recommandations
@@ -330,7 +323,6 @@ export const useRecommendations = (userId) => {
       });
 
       if (error) {
-        console.error('API Error:', error);
         return null;
       }
 
@@ -383,7 +375,6 @@ export const useRecommendations = (userId) => {
       
       return null;
     } catch (error) {
-      console.error('Error generating needs-based recommendation:', error);
       return null;
     } finally {
       setLoading(false);
