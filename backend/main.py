@@ -131,27 +131,62 @@ async def root():
     return {"message": "AI Fashion Assistant API"}
 
 @app.post("/analyze-outfit")
-async def analyze_outfit(file: UploadFile = File(...)):
+async def analyze_outfit(file: UploadFile = File(...), item_type: Optional[str] = None):
     try:
         contents = await file.read()
         
         base64_image = base64.b64encode(contents).decode('utf-8')
         
-        response = client.chat.completions.create(
-            model="gpt-4o-mini",
-            messages=[
-                {
-                    "role": "system",
-                    "content": "Tu es un expert en mode et styliste professionnel. Analyse les vêtements avec précision. Réponds UNIQUEMENT avec du JSON valide, sans texte avant ou après."
-                },
-                {
-                    "role": "user",
-                    "content": [
-                        {
-                            "type": "text",
-                            "text": """Analyse cette image de vêtement(s). Identifie TOUTES les pièces visibles et retourne UNIQUEMENT ce JSON:
+        # Adapter le prompt selon le type d'item
+        system_prompt = "Tu es un expert en mode et styliste professionnel. Analyse les vêtements avec précision. Réponds UNIQUEMENT avec du JSON valide, sans texte avant ou après."
+        
+        if item_type == "clothing":
+            # Pour une pièce unique, se concentrer sur la pièce du milieu
+            user_prompt = """ATTENTION: L'utilisateur veut ajouter UNE SEULE PIÈCE DE VÊTEMENT.
+CONCENTRE-TOI UNIQUEMENT SUR LA PIÈCE PRINCIPALE AU CENTRE DE L'IMAGE.
+Ignore les autres vêtements ou accessoires visibles sur les côtés.
+
+Analyse cette pièce unique et retourne UNIQUEMENT ce JSON:
 {
-  "type": "outfit" ou "single_piece",
+  "type": "single_piece",
+  "style": "casual/formel/sportif/streetwear/chic/bohème/minimaliste/etc",
+  "category": "piece_unique",
+  "colors": {"primary": ["couleur1", "couleur2"], "secondary": ["couleur3"]},
+  "material": "coton/laine/denim/cuir/synthétique/etc",
+  "pattern": "uni/rayé/fleuri/à carreaux/imprimé/etc",
+  "occasion": "travail/sport/soirée/weekend/casual/etc",
+  "season": ["spring", "summer", "fall", "winter"],
+  "care_instructions": "laver à 30°/nettoyage à sec/etc",
+  "brand_style": "casual/luxe/sportswear/fast-fashion/designer",
+  "recommendations": ["suggestion1 détaillée", "suggestion2 détaillée"],
+  "confidence": 0.85,
+  "pieces": [
+    {
+      "type": "tshirt/shirt/sweater/pullover/jacket/coat/pants/jeans/shorts/skirt/dress/shoes/accessory",
+      "name": "Nom descriptif précis (ex: T-shirt blanc basique, Pull en maille torsadée, Pantalon cargo)",
+      "color": "couleur principale",
+      "material": "matière",
+      "brand_estimation": null,
+      "price_range": "50-150€",
+      "style": "style de la pièce",
+      "fit": "slim/regular/loose/oversized"
+    }
+  ]
+}
+
+RÈGLES CRITIQUES POUR PIÈCE UNIQUE:
+1. ANALYSER UNIQUEMENT LA PIÈCE AU CENTRE/MILIEU DE L'IMAGE
+2. Le champ "pieces" doit contenir EXACTEMENT 1 élément
+3. Le type dans pieces DOIT être spécifique: tshirt, shirt, sweater, pullover, jacket, coat, pants, jeans, shorts, skirt, dress, shoes, accessory
+4. NE PAS utiliser "top" ou "bottom" - être PRÉCIS sur le type exact
+5. category DOIT être "piece_unique"
+6. type (global) DOIT être "single_piece"
+7. Ignorer complètement les autres vêtements visibles"""
+        else:
+            # Pour une tenue complète
+            user_prompt = """Analyse cette image de tenue complète. Identifie TOUTES les pièces visibles et retourne UNIQUEMENT ce JSON:
+{
+  "type": "outfit",
   "style": "casual/formel/sportif/streetwear/chic/bohème/minimaliste/etc",
   "category": "quotidien/soirée/sport/travail/décontracté",
   "colors": {"primary": ["couleur1", "couleur2"], "secondary": ["couleur3"]},
@@ -165,7 +200,7 @@ async def analyze_outfit(file: UploadFile = File(...)):
   "confidence": 0.85,
   "pieces": [
     {
-      "type": "top/bottom/outerwear/dress/shoes/accessory",
+      "type": "tshirt/shirt/sweater/pullover/jacket/coat/pants/jeans/shorts/skirt/dress/shoes/accessory",
       "name": "Nom descriptif de la pièce",
       "color": "couleur principale",
       "material": "matière",
@@ -177,12 +212,26 @@ async def analyze_outfit(file: UploadFile = File(...)):
   ]
 }
 
-RÈGLES IMPORTANTES:
-1. Le champ "pieces" doit TOUJOURS contenir au moins 1 élément
-2. Si c'est une seule pièce visible, pieces contiendra 1 élément
-3. Si c'est une tenue complète (personne habillée), pieces doit contenir TOUTES les pièces visibles: haut, bas, chaussures, accessoires, etc.
-4. NE JAMAIS mettre brand_estimation - toujours null
-5. type = "outfit" si plusieurs pièces forment une tenue, "single_piece" si c'est un vêtement isolé"""
+RÈGLES IMPORTANTES POUR TENUE COMPLÈTE:
+1. Le champ "pieces" doit contenir TOUTES les pièces visibles
+2. type = "outfit" car c'est une tenue complète
+3. Lister toutes les pièces: hauts, bas, chaussures, accessoires
+4. Types spécifiques: tshirt, shirt, sweater, pullover, jacket, coat, pants, jeans, shorts, skirt, dress, shoes, accessory
+5. category peut être quotidien/soirée/sport/travail/décontracté"""
+        
+        response = client.chat.completions.create(
+            model="gpt-4o-mini",
+            messages=[
+                {
+                    "role": "system",
+                    "content": system_prompt
+                },
+                {
+                    "role": "user",
+                    "content": [
+                        {
+                            "type": "text",
+                            "text": user_prompt
                         },
                         {
                             "type": "image_url",

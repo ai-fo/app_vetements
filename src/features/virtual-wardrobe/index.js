@@ -14,3 +14,6 @@ export { wardrobeAPI } from './api';
 
 // Types
 export * from './types/wardrobe.types';
+
+// Utils
+export * from './utils/categoryMapping';

@@ -1,7 +1,7 @@
 import { apiClient, API_ENDPOINTS } from '../../../shared/api/client';
 
 class OpenAIService {
-  async analyzeOutfit(imageUri) {
+  async analyzeOutfit(imageUri, itemType = 'outfit') {
     try {
       const formData = new FormData();
       
@@ -12,7 +12,13 @@ class OpenAIService {
         name: 'outfit.jpg',
       });
 
-      const result = await fetch(`${apiClient.baseURL}${API_ENDPOINTS.ANALYZE_OUTFIT}`, {
+      // Ajouter le paramètre item_type pour l'analyse ciblée
+      const url = new URL(`${apiClient.baseURL}${API_ENDPOINTS.ANALYZE_OUTFIT}`);
+      if (itemType === 'clothing') {
+        url.searchParams.append('item_type', 'clothing');
+      }
+
+      const result = await fetch(url.toString(), {
         method: 'POST',
         body: formData,
         headers: {

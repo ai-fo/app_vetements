@@ -13,7 +13,7 @@ export const outfitAnalysisSupabaseAPI = {
       // 2. Analyser l'image avec OpenAI
       let aiAnalysis;
       try {
-        const { data: openaiData, error: openaiError } = await openaiService.analyzeOutfit(imageUri);
+        const { data: openaiData, error: openaiError } = await openaiService.analyzeOutfit(imageUri, itemType);
         
         console.log('OpenAI response:', JSON.stringify(openaiData, null, 2));
         

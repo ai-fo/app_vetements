@@ -8,13 +8,30 @@ export const ItemType = {
   OUTFIT: 'OUTFIT'
 };
 
-// Catégories de vêtements
+// Catégories de vêtements détaillées
 export const ClothingCategory = {
+  // Hauts
   TOP: 'top',
+  TSHIRT: 'tshirt',
+  SHIRT: 'shirt',
+  SWEATER: 'sweater',
+  PULLOVER: 'pullover',
+  
+  // Bas
   BOTTOM: 'bottom',
-  SHOES: 'shoes',
-  DRESS: 'dress',
+  PANTS: 'pants',
+  JEANS: 'jeans',
+  SHORTS: 'shorts',
+  SKIRT: 'skirt',
+  
+  // Vêtements extérieurs
   OUTERWEAR: 'outerwear',
+  JACKET: 'jacket',
+  COAT: 'coat',
+  
+  // Autres
+  DRESS: 'dress',
+  SHOES: 'shoes',
   ACCESSORY: 'accessory',
   FULL_OUTFIT: 'full_outfit'
 };
