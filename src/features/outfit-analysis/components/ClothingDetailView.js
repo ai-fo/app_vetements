@@ -261,26 +261,33 @@ export default function ClothingDetailView({ route, navigation }) {
   };
 
   const renderCompleteLook = () => {
-    const lookMeta = item.look_meta || {};
+    // Gérer les deux formats : depuis l'analyse directe (look_meta) ou depuis la garde-robe (données dans item)
+    const lookMeta = item.look_meta || item;
+    const dominantStyle = lookMeta.dominant_style || item.styleTags;
+    const silhouette = lookMeta.silhouette || item.silhouette;
+    const layeringLevel = lookMeta.layering_level || item.layeringLevel;
+    const patternMix = lookMeta.pattern_mix || item.patternMix;
+    const occasionTags = lookMeta.occasion_tags || item.tags;
+    const seasonality = lookMeta.seasonality || item.seasons;
     
     return (
       <>
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Analyse de la tenue</Text>
           <View style={styles.infoCard}>
-            {lookMeta.dominant_style?.length > 0 && (
+            {dominantStyle?.length > 0 && (
               <View style={styles.infoRow}>
                 <Text style={styles.infoLabel}>Style dominant</Text>
-                <Text style={styles.infoValue}>{translateTerm(lookMeta.dominant_style[0])}</Text>
+                <Text style={styles.infoValue}>{translateTerm(dominantStyle[0])}</Text>
               </View>
             )}
-            {lookMeta.silhouette && (
+            {silhouette && (
               <View style={styles.infoRow}>
                 <Text style={styles.infoLabel}>Silhouette</Text>
-                <Text style={styles.infoValue}>{lookMeta.silhouette}</Text>
+                <Text style={styles.infoValue}>{silhouette}</Text>
               </View>
             )}
-            {lookMeta.layering_level && (
+            {layeringLevel && (
               <View style={styles.infoRow}>
                 <Text style={styles.infoLabel}>Niveau de superposition</Text>
                 <View style={styles.layeringIndicator}>
@@ -289,7 +296,7 @@ export default function ClothingDetailView({ route, navigation }) {
                       key={i}
                       style={[
                         styles.layeringDot,
-                        i < lookMeta.layering_level && styles.layeringDotActive
+                        i < layeringLevel && styles.layeringDotActive
                       ]}
                     />
                   ))}
@@ -299,15 +306,15 @@ export default function ClothingDetailView({ route, navigation }) {
           </View>
         </View>
 
-        {lookMeta.color_palette_global && (
+        {(lookMeta.color_palette_global || item.colors) && (
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>Palette de couleurs</Text>
             <View style={styles.infoCard}>
-              {lookMeta.color_palette_global.primary?.length > 0 && (
+              {(lookMeta.color_palette_global?.primary || item.colors)?.length > 0 && (
                 <View style={styles.colorRow}>
                   <Text style={styles.colorLabel}>Principales:</Text>
                   <View style={styles.colorList}>
-                    {lookMeta.color_palette_global.primary.map((color, index) => (
+                    {(lookMeta.color_palette_global?.primary || item.colors || []).map((color, index) => (
                       <View key={index} style={styles.colorChip}>
                         <Text style={styles.colorText}>{translateTerm(color)}</Text>
                       </View>
@@ -315,7 +322,7 @@ export default function ClothingDetailView({ route, navigation }) {
                   </View>
                 </View>
               )}
-              {lookMeta.color_palette_global.accent?.length > 0 && (
+              {lookMeta.color_palette_global?.accent?.length > 0 && (
                 <View style={styles.colorRow}>
                   <Text style={styles.colorLabel}>Accents:</Text>
                   <View style={styles.colorList}>
@@ -331,11 +338,11 @@ export default function ClothingDetailView({ route, navigation }) {
           </View>
         )}
 
-        {lookMeta.pattern_mix?.length > 0 && (
+        {patternMix?.length > 0 && (
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>Mélange de motifs</Text>
             <View style={styles.tagList}>
-              {lookMeta.pattern_mix.map((pattern, index) => (
+              {patternMix.map((pattern, index) => (
                 <View key={index} style={styles.patternTag}>
                   <Text style={styles.tagText}>{translateTerm(pattern)}</Text>
                 </View>
@@ -375,11 +382,11 @@ export default function ClothingDetailView({ route, navigation }) {
           </View>
         )}
 
-        {(lookMeta.occasion_tags?.length > 0 || item.tags?.length > 0) && (
+        {occasionTags?.length > 0 && (
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>Occasions</Text>
             <View style={styles.tagList}>
-              {(lookMeta.occasion_tags || item.tags || []).map((occasion, index) => (
+              {occasionTags.map((occasion, index) => (
                 <View key={index} style={styles.tag}>
                   <Text style={styles.tagText}>{translateTerm(occasion)}</Text>
                 </View>
@@ -388,11 +395,11 @@ export default function ClothingDetailView({ route, navigation }) {
           </View>
         )}
 
-        {(lookMeta.seasonality?.length > 0 || item.seasons?.length > 0) && (
+        {seasonality?.length > 0 && (
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>Saisonnalité</Text>
             <View style={styles.seasonList}>
-              {(lookMeta.seasonality || item.seasons || []).map((season, index) => (
+              {seasonality.map((season, index) => (
                 <View key={index} style={styles.seasonChip}>
                   <Text style={styles.seasonIcon}>{getSeasonIcon(season)}</Text>
                   <Text style={styles.seasonText}>{translateTerm(season)}</Text>

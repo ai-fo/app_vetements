@@ -79,45 +79,84 @@ export default function WardrobeScreen({ navigation }) {
   );
 
 
-  const renderListItem = (item) => (
-    <TouchableOpacity
-      style={styles.listItem}
-      onPress={() => navigation.navigate('ClothingDetail', { item })}
-    >
-      <Image source={{ uri: item.imageUrl }} style={styles.listItemImage} />
-      
-      <View style={styles.listItemContent}>
-        <View style={styles.listItemHeader}>
-          <Text style={styles.listItemName}>{item.name}</Text>
-          <View style={styles.listItemActions}>
-            <FavoriteButton
-              isFavorite={item.isFavorite}
-              onToggle={() => toggleFavorite(item.id)}
-              size={16}
-            />
-            {deleteMode && (
-              <TouchableOpacity 
-                style={styles.listDeleteButton}
-                onPress={() => handleDeleteItem(item.id, item.name)}
-              >
-                <Ionicons name="trash" size={18} color="#ef4444" />
-              </TouchableOpacity>
-            )}
-          </View>
-        </View>
-        
-        <Text style={styles.listItemBrand}>{item.brand}</Text>
-        
-        <View style={styles.listItemTags}>
-          {item.seasons.map((season, index) => (
-            <View key={index} style={styles.tag}>
-              <Text style={styles.tagText}>{getSeasonLabel(season)}</Text>
+  const renderListItem = (item) => {
+    const isOutfit = item.itemType === 'OUTFIT';
+    
+    return (
+      <TouchableOpacity
+        style={[styles.listItem, isOutfit && styles.outfitItem]}
+        onPress={() => navigation.navigate('ClothingDetail', { item })}
+      >
+        <View style={styles.imageContainer}>
+          <Image source={{ uri: item.imageUrl }} style={styles.listItemImage} />
+          {isOutfit && (
+            <View style={styles.outfitBadge}>
+              <Ionicons name="shirt" size={12} color="#fff" />
+              <Text style={styles.outfitBadgeText}>Tenue</Text>
             </View>
-          ))}
+          )}
         </View>
-      </View>
-    </TouchableOpacity>
-  );
+        
+        <View style={styles.listItemContent}>
+          <View style={styles.listItemHeader}>
+            <Text style={styles.listItemName}>{item.name}</Text>
+            <View style={styles.listItemActions}>
+              <FavoriteButton
+                isFavorite={item.isFavorite}
+                onToggle={() => toggleFavorite(item.id)}
+                size={16}
+              />
+              {deleteMode && (
+                <TouchableOpacity 
+                  style={styles.listDeleteButton}
+                  onPress={() => handleDeleteItem(item.id, item.name)}
+                >
+                  <Ionicons name="trash" size={18} color="#ef4444" />
+                </TouchableOpacity>
+              )}
+            </View>
+          </View>
+          
+          {isOutfit ? (
+            <>
+              <Text style={styles.listItemBrand}>
+                {item.styleTags?.join(', ') || 'Tenue complète'}
+              </Text>
+              {item.silhouette && (
+                <Text style={styles.outfitInfo}>
+                  Silhouette: {item.silhouette}
+                </Text>
+              )}
+              {item.layeringLevel && (
+                <View style={styles.layeringIndicator}>
+                  {[...Array(5)].map((_, i) => (
+                    <View
+                      key={i}
+                      style={[
+                        styles.layeringDot,
+                        i < item.layeringLevel && styles.layeringDotActive
+                      ]}
+                    />
+                  ))}
+                </View>
+              )}
+            </>
+          ) : (
+            <>
+              <Text style={styles.listItemBrand}>{item.brand}</Text>
+              <View style={styles.listItemTags}>
+                {item.seasons.map((season, index) => (
+                  <View key={index} style={styles.tag}>
+                    <Text style={styles.tagText}>{getSeasonLabel(season)}</Text>
+                  </View>
+                ))}
+              </View>
+            </>
+          )}
+        </View>
+      </TouchableOpacity>
+    );
+  };
 
   const getColorHex = (colorName) => {
     const colors = {
@@ -384,6 +423,49 @@ const styles = StyleSheet.create({
   tagText: {
     fontSize: 12,
     color: '#4b5563',
+  },
+  outfitItem: {
+    borderColor: '#667eea',
+    borderWidth: 2,
+  },
+  imageContainer: {
+    position: 'relative',
+  },
+  outfitBadge: {
+    position: 'absolute',
+    top: 5,
+    right: 5,
+    backgroundColor: '#667eea',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  outfitBadgeText: {
+    color: '#fff',
+    fontSize: 10,
+    fontWeight: '600',
+    marginLeft: 4,
+  },
+  outfitInfo: {
+    fontSize: 12,
+    color: '#6b7280',
+    marginTop: 4,
+  },
+  layeringIndicator: {
+    flexDirection: 'row',
+    gap: 4,
+    marginTop: 8,
+  },
+  layeringDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: '#e5e7eb',
+  },
+  layeringDotActive: {
+    backgroundColor: '#667eea',
   },
   floatingButton: {
     position: 'absolute',

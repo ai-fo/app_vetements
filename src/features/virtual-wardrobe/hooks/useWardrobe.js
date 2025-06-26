@@ -85,13 +85,8 @@ export function useWardrobe(userId) {
     try {
       // Trouver l'item pour récupérer l'imagePath
       const item = items.find(i => i.id === itemId);
-      // Si c'est une analyse d'outfit, on doit la supprimer différemment
-      let response;
-      if (item?.itemType === 'OUTFIT') {
-        response = await wardrobeSupabaseAPI.deleteOutfitAnalysis(itemId);
-      } else {
-        response = await wardrobeSupabaseAPI.deleteItem(itemId);
-      }
+      // Utiliser la même méthode pour tous les types d'items
+      const response = await wardrobeSupabaseAPI.deleteItem(itemId);
       
       if (response.error) {
         throw new Error(response.error);
