@@ -50,9 +50,7 @@ const transformClothingItemToFrontend = (dbItem) => {
 /**
  * Transforme un look de la DB vers le format frontend
  */
-const transformOutfitLookToFrontend = (look) => {
-  console.log('Transforming outfit look:', look.id, look.name);
-  return {
+const transformOutfitLookToFrontend = (look) => ({
     id: look.id,
     userId: look.user_id,
     itemType: 'OUTFIT',
@@ -73,8 +71,7 @@ const transformOutfitLookToFrontend = (look) => {
     layeringLevel: look.layering_level,
     rating: look.rating,
     wearCount: look.wear_count || 0
-  };
-};
+});
 
 /**
  * API Supabase pour la garde-robe virtuelle
@@ -242,7 +239,6 @@ export const wardrobeSupabaseAPI = {
    * Supprime un item de la garde-robe
    */
   async deleteItem(itemId) {
-    console.log('deleteItem called with ID:', itemId);
     try {
       // D'abord essayer de supprimer de clothing_items
       const { error: clothingError } = await supabase

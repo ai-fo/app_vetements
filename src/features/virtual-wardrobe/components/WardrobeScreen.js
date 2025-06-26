@@ -81,7 +81,6 @@ export default function WardrobeScreen({ navigation }) {
 
   const renderListItem = (item) => {
     const isOutfit = item.itemType === 'OUTFIT';
-    console.log('Rendering item:', item.id, item.name, item.itemType);
     
     return (
       <TouchableOpacity
