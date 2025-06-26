@@ -8,7 +8,8 @@ import {
   CameraScreen, 
   AnalysisResultScreen, 
   AddItemTypeSelector,
-  RecommendationDetailScreen
+  RecommendationDetailScreen,
+  ClothingDetailView
 } from './src/features/outfit-analysis';
 import { WardrobeScreen, ItemEditor } from './src/features/virtual-wardrobe';
 import { ActivityIndicator, View } from 'react-native';
@@ -64,6 +65,13 @@ function MainStack() {
         component={ItemEditor}
         options={{
           presentation: 'modal',
+        }}
+      />
+      <Stack.Screen 
+        name="ClothingDetail" 
+        component={ClothingDetailView}
+        options={{
+          animation: 'slide_from_right',
         }}
       />
       <Stack.Screen 

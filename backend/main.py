@@ -1,7 +1,7 @@
-from fastapi import FastAPI, HTTPException, UploadFile, File
+from fastapi import FastAPI, HTTPException, UploadFile, File, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
-from typing import List, Dict, Any, Optional
+from typing import List, Dict, Any, Optional, Union
 from openai import OpenAI
 import os
 from dotenv import load_dotenv
@@ -11,6 +11,11 @@ import io
 import json
 import httpx
 from datetime import datetime
+from uuid import UUID
+from services.clothing_analyzer import ClothingAnalyzer
+from schemas.clothing_analysis import SinglePieceResponse, CompleteLookResponse
+from services.wardrobe_service import WardrobeService
+from database.models import Base, ClothingItem
 
 load_dotenv()
 
@@ -25,6 +30,7 @@ app.add_middleware(
 )
 
 client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+clothing_analyzer = ClothingAnalyzer(client)
 
 class OutfitAnalysisRequest(BaseModel):
     image_url: str
@@ -130,144 +136,32 @@ def get_weather_icon(code: int) -> str:
 async def root():
     return {"message": "AI Fashion Assistant API"}
 
-@app.post("/analyze-outfit")
+@app.post("/analyze-outfit", response_model=Union[SinglePieceResponse, CompleteLookResponse])
 async def analyze_outfit(file: UploadFile = File(...), item_type: Optional[str] = None):
     try:
+        # Lire et convertir l'image
         contents = await file.read()
+        image = Image.open(io.BytesIO(contents))
         
-        base64_image = base64.b64encode(contents).decode('utf-8')
+        # Redimensionner si l'image est trop grande
+        max_size = 1024
+        if max(image.size) > max_size:
+            ratio = max_size / max(image.size)
+            new_size = tuple(int(dim * ratio) for dim in image.size)
+            image = image.resize(new_size, Image.Resampling.LANCZOS)
         
-        # Adapter le prompt selon le type d'item
-        system_prompt = "Tu es un expert en mode et styliste professionnel. Analyse les vêtements avec précision. Réponds UNIQUEMENT avec du JSON valide, sans texte avant ou après."
+        # Convertir en base64
+        buffered = io.BytesIO()
+        image.save(buffered, format="JPEG")
+        base64_image = base64.b64encode(buffered.getvalue()).decode()
         
-        if item_type == "clothing":
-            # Pour une pièce unique, se concentrer sur la pièce du milieu
-            user_prompt = """ATTENTION: L'utilisateur veut ajouter UNE SEULE PIÈCE DE VÊTEMENT.
-CONCENTRE-TOI UNIQUEMENT SUR LA PIÈCE PRINCIPALE AU CENTRE DE L'IMAGE.
-Ignore les autres vêtements ou accessoires visibles sur les côtés.
-
-Analyse cette pièce unique et retourne UNIQUEMENT ce JSON:
-{
-  "type": "single_piece",
-  "style": "casual/formel/sportif/streetwear/chic/bohème/minimaliste/etc",
-  "category": "piece_unique",
-  "colors": {"primary": ["couleur1", "couleur2"], "secondary": ["couleur3"]},
-  "material": "coton/laine/denim/cuir/synthétique/etc",
-  "pattern": "uni/rayé/fleuri/à carreaux/imprimé/etc",
-  "occasion": "travail/sport/soirée/weekend/casual/etc",
-  "season": ["spring", "summer", "fall", "winter"],
-  "care_instructions": "laver à 30°/nettoyage à sec/etc",
-  "brand_style": "casual/luxe/sportswear/fast-fashion/designer",
-  "recommendations": ["suggestion1 détaillée", "suggestion2 détaillée"],
-  "confidence": 0.85,
-  "pieces": [
-    {
-      "type": "tshirt/shirt/sweater/pullover/jacket/coat/pants/jeans/shorts/skirt/dress/shoes/accessory",
-      "name": "Nom descriptif précis (ex: T-shirt blanc basique, Pull en maille torsadée, Pantalon cargo)",
-      "color": "couleur principale",
-      "material": "matière",
-      "brand_estimation": null,
-      "price_range": "50-150€",
-      "style": "style de la pièce",
-      "fit": "slim/regular/loose/oversized"
-    }
-  ]
-}
-
-RÈGLES CRITIQUES POUR PIÈCE UNIQUE:
-1. ANALYSER UNIQUEMENT LA PIÈCE AU CENTRE/MILIEU DE L'IMAGE
-2. Le champ "pieces" doit contenir EXACTEMENT 1 élément
-3. Le type dans pieces DOIT être spécifique: tshirt, shirt, sweater, pullover, jacket, coat, pants, jeans, shorts, skirt, dress, shoes, accessory
-4. NE PAS utiliser "top" ou "bottom" - être PRÉCIS sur le type exact
-5. category DOIT être "piece_unique"
-6. type (global) DOIT être "single_piece"
-7. Ignorer complètement les autres vêtements visibles"""
-        else:
-            # Pour une tenue complète
-            user_prompt = """Analyse cette image de tenue complète. Identifie TOUTES les pièces visibles et retourne UNIQUEMENT ce JSON:
-{
-  "type": "outfit",
-  "style": "casual/formel/sportif/streetwear/chic/bohème/minimaliste/etc",
-  "category": "quotidien/soirée/sport/travail/décontracté",
-  "colors": {"primary": ["couleur1", "couleur2"], "secondary": ["couleur3"]},
-  "material": "coton/laine/denim/cuir/synthétique/etc",
-  "pattern": "uni/rayé/fleuri/à carreaux/imprimé/etc",
-  "occasion": "travail/sport/soirée/weekend/casual/etc",
-  "season": ["spring", "summer", "fall", "winter"],
-  "care_instructions": "laver à 30°/nettoyage à sec/etc",
-  "brand_style": "casual/luxe/sportswear/fast-fashion/designer",
-  "recommendations": ["suggestion1 détaillée", "suggestion2 détaillée"],
-  "confidence": 0.85,
-  "pieces": [
-    {
-      "type": "tshirt/shirt/sweater/pullover/jacket/coat/pants/jeans/shorts/skirt/dress/shoes/accessory",
-      "name": "Nom descriptif de la pièce",
-      "color": "couleur principale",
-      "material": "matière",
-      "brand_estimation": null,
-      "price_range": "50-150€",
-      "style": "style de la pièce",
-      "fit": "slim/regular/loose/oversized"
-    }
-  ]
-}
-
-RÈGLES IMPORTANTES POUR TENUE COMPLÈTE:
-1. Le champ "pieces" doit contenir TOUTES les pièces visibles
-2. type = "outfit" car c'est une tenue complète
-3. Lister toutes les pièces: hauts, bas, chaussures, accessoires
-4. Types spécifiques: tshirt, shirt, sweater, pullover, jacket, coat, pants, jeans, shorts, skirt, dress, shoes, accessory
-5. category peut être quotidien/soirée/sport/travail/décontracté"""
+        # Déterminer si c'est une pièce unique ou une tenue complète
+        is_single_piece = (item_type == "clothing")
         
-        response = client.chat.completions.create(
-            model="gpt-4o-mini",
-            messages=[
-                {
-                    "role": "system",
-                    "content": system_prompt
-                },
-                {
-                    "role": "user",
-                    "content": [
-                        {
-                            "type": "text",
-                            "text": user_prompt
-                        },
-                        {
-                            "type": "image_url",
-                            "image_url": {
-                                "url": f"data:image/jpeg;base64,{base64_image}"
-                            }
-                        }
-                    ]
-                }
-            ],
-            max_tokens=800
-        )
+        # Utiliser le nouveau service pour analyser l'image
+        result = clothing_analyzer.analyze_image(base64_image, is_single_piece)
         
-        # Log de la réponse pour debug
-        raw_content = response.choices[0].message.content
-        print(f"Réponse OpenAI: {raw_content}")
-        
-        try:
-            result = json.loads(raw_content)
-        except json.JSONDecodeError:
-            # Si ce n'est pas du JSON, essayer de nettoyer
-            cleaned = raw_content.strip()
-            if cleaned.startswith("```json"):
-                cleaned = cleaned[7:]
-            if cleaned.endswith("```"):
-                cleaned = cleaned[:-3]
-            result = json.loads(cleaned.strip())
-        
-        # S'assurer que pieces existe toujours
-        if "pieces" not in result:
-            result["pieces"] = []
-            
-        # S'assurer que season est toujours un tableau
-        if isinstance(result.get("season"), str):
-            result["season"] = [result["season"]]
-        
+        # Retourner le résultat avec la nouvelle structure
         return result
         
     except Exception as e:
@@ -282,7 +176,7 @@ async def generate_suggestions(preferences: Dict[str, Any]):
         prompt = f"Suggère 5 tenues basées sur ces préférences: {preferences}"
         
         response = client.chat.completions.create(
-            model="gpt-3.5-turbo",
+            model="gpt-4o",
             messages=[
                 {
                     "role": "system",
@@ -310,7 +204,7 @@ async def match_outfit(request: Dict[str, Any]):
         prompt = f"Pour cet article {item}, trouve les meilleures combinaisons parmi: {wardrobe}"
         
         response = client.chat.completions.create(
-            model="gpt-3.5-turbo",
+            model="gpt-4o",
             messages=[
                 {
                     "role": "system",
@@ -441,7 +335,7 @@ IMPORTANT:
 - Maximum 3 recommandations, classées par score décroissant"""
 
         response = client.chat.completions.create(
-            model="gpt-4o-mini",
+            model="gpt-4o",
             messages=[
                 {"role": "system", "content": system_prompt},
                 {"role": "user", "content": user_prompt}
@@ -474,6 +368,214 @@ IMPORTANT:
         import traceback
         traceback.print_exc()
         raise HTTPException(status_code=500, detail=str(e))
+
+
+class SaveClothingRequest(BaseModel):
+    user_id: UUID
+    analysis_result: Union[SinglePieceResponse, CompleteLookResponse]
+    image_urls: Optional[List[str]] = None
+
+
+# Importer la vraie connexion à la base de données
+from database.connection import get_db
+
+
+@app.post("/save-clothing")
+async def save_clothing(
+    request: SaveClothingRequest,
+    db = Depends(get_db)
+):
+    """Sauvegarde les vêtements analysés dans la base de données"""
+    try:
+        wardrobe_service = WardrobeService(db)
+        
+        if request.analysis_result.capture_type == "single_piece":
+            # Sauvegarder une pièce unique
+            result = wardrobe_service.save_single_piece(
+                user_id=request.user_id,
+                piece_data=request.analysis_result,
+                image_url=request.image_urls[0] if request.image_urls else None
+            )
+            return {
+                "success": True,
+                "message": "Pièce sauvegardée avec succès",
+                "piece_id": str(result.id)
+            }
+        else:
+            # Sauvegarder une tenue complète
+            result = wardrobe_service.save_complete_look(
+                user_id=request.user_id,
+                look_data=request.analysis_result,
+                image_url=request.image_urls[0] if request.image_urls else None
+            )
+            return {
+                "success": True,
+                "message": "Tenue sauvegardée avec succès",
+                "look_id": str(result.id)
+            }
+            
+    except Exception as e:
+        print(f"Erreur lors de la sauvegarde: {type(e).__name__}: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/wardrobe/{user_id}/pieces")
+async def get_user_pieces(
+    user_id: UUID,
+    piece_type: Optional[str] = None,
+    db = Depends(get_db)
+):
+    """Récupère les pièces de vêtements d'un utilisateur"""
+    try:
+        wardrobe_service = WardrobeService(db)
+        pieces = wardrobe_service.get_user_pieces(user_id, piece_type)
+        
+        return {
+            "pieces": [
+                {
+                    "piece_id": str(piece.id),
+                    "piece_type": piece.piece_type,
+                    "name": piece.name,
+                    "colors": piece.colors,
+                    "material": piece.material,
+                    "pattern": piece.pattern,
+                    "fit": piece.fit,
+                    "details": piece.details,
+                    "style_tags": piece.style_tags,
+                    "occasion_tags": piece.occasion_tags,
+                    "seasonality": piece.seasonality,
+                    "image_url": piece.image_url,
+                    "is_favorite": piece.is_favorite,
+                    "wear_count": piece.wear_count,
+                    "created_at": piece.created_at.isoformat() if piece.created_at else None
+                }
+                for piece in pieces
+            ]
+        }
+        
+    except Exception as e:
+        print(f"Erreur lors de la récupération des pièces: {type(e).__name__}: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+@app.get("/wardrobe/{user_id}/looks")
+async def get_user_looks(
+    user_id: UUID,
+    db = Depends(get_db)
+):
+    """Récupère les tenues complètes d'un utilisateur"""
+    try:
+        wardrobe_service = WardrobeService(db)
+        looks = wardrobe_service.get_user_looks(user_id)
+        
+        return {
+            "looks": [
+                {
+                    "look_id": str(look.id),
+                    "name": look.name,
+                    "dominant_style": look.dominant_style,
+                    "occasion_tags": look.occasion_tags,
+                    "seasonality": look.seasonality,
+                    "color_palette": look.color_palette,
+                    "pattern_mix": look.pattern_mix,
+                    "silhouette": look.silhouette,
+                    "layering_level": look.layering_level,
+                    "image_url": look.image_url,
+                    "rating": look.rating,
+                    "is_favorite": look.is_favorite,
+                    "wear_count": look.wear_count,
+                    "created_at": look.created_at.isoformat() if look.created_at else None
+                }
+                for look in looks
+            ]
+        }
+        
+    except Exception as e:
+        print(f"Erreur lors de la récupération des tenues: {type(e).__name__}: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+class UpdateClothingItemRequest(BaseModel):
+    name: Optional[str] = None
+    brand: Optional[str] = None
+    colors: Optional[Dict[str, List[str]]] = None
+    material: Optional[str] = None
+    pattern: Optional[str] = None
+    fit: Optional[str] = None
+    details: Optional[List[str]] = None
+    style_tags: Optional[List[str]] = None
+    occasion_tags: Optional[List[str]] = None
+    seasonality: Optional[List[str]] = None
+    is_favorite: Optional[bool] = None
+
+
+@app.put("/wardrobe/items/{item_id}")
+async def update_clothing_item(
+    item_id: UUID,
+    request: UpdateClothingItemRequest,
+    db = Depends(get_db)
+):
+    """Met à jour un vêtement existant"""
+    try:
+        # Récupérer l'item existant
+        item = db.query(ClothingItem).filter_by(id=item_id).first()
+        
+        if not item:
+            raise HTTPException(status_code=404, detail="Vêtement non trouvé")
+        
+        # Mettre à jour les champs fournis
+        if request.name is not None:
+            item.name = request.name
+        if request.brand is not None:
+            item.brand = request.brand
+        if request.colors is not None:
+            item.colors = request.colors
+        if request.material is not None:
+            item.material = request.material
+        if request.pattern is not None:
+            item.pattern = request.pattern
+        if request.fit is not None:
+            item.fit = request.fit
+        if request.details is not None:
+            item.details = request.details
+        if request.style_tags is not None:
+            item.style_tags = request.style_tags
+        if request.occasion_tags is not None:
+            item.occasion_tags = request.occasion_tags
+        if request.seasonality is not None:
+            item.seasonality = request.seasonality
+        if request.is_favorite is not None:
+            item.is_favorite = request.is_favorite
+        
+        db.commit()
+        db.refresh(item)
+        
+        return {
+            "piece_id": str(item.id),
+            "piece_type": item.piece_type,
+            "name": item.name,
+            "colors": item.colors,
+            "material": item.material,
+            "pattern": item.pattern,
+            "fit": item.fit,
+            "details": item.details,
+            "style_tags": item.style_tags,
+            "occasion_tags": item.occasion_tags,
+            "seasonality": item.seasonality,
+            "image_url": item.image_url,
+            "is_favorite": item.is_favorite,
+            "wear_count": item.wear_count,
+            "brand": item.brand,
+            "created_at": item.created_at.isoformat() if item.created_at else None,
+            "updated_at": item.updated_at.isoformat() if item.updated_at else None
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        print(f"Erreur lors de la mise à jour: {type(e).__name__}: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
 
 if __name__ == "__main__":
     import uvicorn
