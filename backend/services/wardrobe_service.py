@@ -16,8 +16,8 @@ class WardrobeService:
         start_time = time.time()
         piece = piece_data.pieces[0]  # Une pièce unique a toujours exactement 1 pièce
         
-        # Créer le nom de la pièce (sans la couleur)
-        piece_name = piece.piece_type
+        # Utiliser le nom généré par l'IA ou fallback sur piece_type
+        piece_name = piece.name if hasattr(piece, 'name') and piece.name else piece.piece_type
         
         # Créer la pièce
         db_piece = ClothingItem(
@@ -94,8 +94,8 @@ class WardrobeService:
             ).first()
             
             if not existing_piece:
-                # Créer le nom de la pièce (sans la couleur)
-                piece_name = piece.piece_type
+                # Utiliser le nom généré par l'IA ou fallback sur piece_type
+                piece_name = piece.name if hasattr(piece, 'name') and piece.name else piece.piece_type
                 
                 # Créer la nouvelle pièce
                 db_piece = ClothingItem(

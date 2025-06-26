@@ -136,11 +136,12 @@ export default function ClothingDetailView({ route, navigation }) {
     return (
       <>
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Type de vêtement</Text>
+          <Text style={styles.sectionTitle}>Description</Text>
           <View style={styles.infoCard}>
-            <Text style={styles.largeText}>{translateTerm(piece.piece_type || item.category || item.name)}</Text>
+            <Text style={styles.largeText}>{piece.name || item.name || translateTerm(piece.piece_type || item.category)}</Text>
+            <Text style={styles.itemType}>Type: {translateTerm(piece.piece_type || item.category)}</Text>
             {item.brand && (
-              <Text style={styles.itemBrand}>{item.brand}</Text>
+              <Text style={styles.itemBrand}>Marque: {item.brand}</Text>
             )}
           </View>
         </View>
@@ -521,6 +522,12 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     marginTop: 4,
     fontStyle: 'italic',
+  },
+  itemType: {
+    fontSize: 16,
+    color: '#6b7280',
+    textAlign: 'center',
+    marginTop: 8,
   },
   infoRow: {
     flexDirection: 'row',
