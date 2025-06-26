@@ -122,24 +122,18 @@ export default function WardrobeScreen({ navigation }) {
               <Text style={styles.listItemBrand}>
                 {item.styleTags?.join(', ') || 'Tenue complète'}
               </Text>
-              {item.silhouette && (
-                <Text style={styles.outfitInfo}>
-                  Silhouette: {item.silhouette}
-                </Text>
-              )}
-              {item.layeringLevel && (
-                <View style={styles.layeringIndicator}>
-                  {[...Array(5)].map((_, i) => (
-                    <View
-                      key={i}
-                      style={[
-                        styles.layeringDot,
-                        i < item.layeringLevel && styles.layeringDotActive
-                      ]}
-                    />
-                  ))}
-                </View>
-              )}
+              <View style={styles.listItemTags}>
+                {item.tags?.map((tag, index) => (
+                  <View key={index} style={styles.tag}>
+                    <Text style={styles.tagText}>{tag}</Text>
+                  </View>
+                ))}
+                {item.seasons?.map((season, index) => (
+                  <View key={index} style={styles.tag}>
+                    <Text style={styles.tagText}>{getSeasonLabel(season)}</Text>
+                  </View>
+                ))}
+              </View>
             </>
           ) : (
             <>
@@ -447,25 +441,6 @@ const styles = StyleSheet.create({
     fontSize: 10,
     fontWeight: '600',
     marginLeft: 4,
-  },
-  outfitInfo: {
-    fontSize: 12,
-    color: '#6b7280',
-    marginTop: 4,
-  },
-  layeringIndicator: {
-    flexDirection: 'row',
-    gap: 4,
-    marginTop: 8,
-  },
-  layeringDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    backgroundColor: '#e5e7eb',
-  },
-  layeringDotActive: {
-    backgroundColor: '#667eea',
   },
   floatingButton: {
     position: 'absolute',

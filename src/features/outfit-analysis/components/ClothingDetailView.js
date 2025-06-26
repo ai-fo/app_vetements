@@ -281,28 +281,6 @@ export default function ClothingDetailView({ route, navigation }) {
                 <Text style={styles.infoValue}>{translateTerm(dominantStyle[0])}</Text>
               </View>
             )}
-            {silhouette && (
-              <View style={styles.infoRow}>
-                <Text style={styles.infoLabel}>Silhouette</Text>
-                <Text style={styles.infoValue}>{silhouette}</Text>
-              </View>
-            )}
-            {layeringLevel && (
-              <View style={styles.infoRow}>
-                <Text style={styles.infoLabel}>Niveau de superposition</Text>
-                <View style={styles.layeringIndicator}>
-                  {[...Array(5)].map((_, i) => (
-                    <View
-                      key={i}
-                      style={[
-                        styles.layeringDot,
-                        i < layeringLevel && styles.layeringDotActive
-                      ]}
-                    />
-                  ))}
-                </View>
-              </View>
-            )}
           </View>
         </View>
 
