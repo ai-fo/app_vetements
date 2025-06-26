@@ -50,28 +50,31 @@ const transformClothingItemToFrontend = (dbItem) => {
 /**
  * Transforme un look de la DB vers le format frontend
  */
-const transformOutfitLookToFrontend = (look) => ({
-  id: look.id,
-  userId: look.user_id,
-  itemType: 'OUTFIT',
-  category: 'full_outfit',
-  imageUrl: look.image_url,
-  thumbnailUrl: look.thumbnail_url,
-  colors: look.color_palette?.primary || [],
-  materials: [],
-  seasons: look.seasonality || ['all_season'],
-  brand: look.dominant_style?.[0] || 'Tenue complète',
-  name: look.name || 'Look',
-  createdAt: look.created_at,
-  tags: look.occasion_tags || [],
-  isFavorite: look.is_favorite || false,
-  styleTags: look.dominant_style || [],
-  patternMix: look.pattern_mix || [],
-  silhouette: look.silhouette,
-  layeringLevel: look.layering_level,
-  rating: look.rating,
-  wearCount: look.wear_count || 0
-});
+const transformOutfitLookToFrontend = (look) => {
+  console.log('Transforming outfit look:', look.id, look.name);
+  return {
+    id: look.id,
+    userId: look.user_id,
+    itemType: 'OUTFIT',
+    category: 'full_outfit',
+    imageUrl: look.image_url,
+    thumbnailUrl: look.thumbnail_url,
+    colors: look.color_palette?.primary || [],
+    materials: [],
+    seasons: look.seasonality || ['all_season'],
+    brand: look.dominant_style?.[0] || 'Tenue complète',
+    name: look.name || 'Look',
+    createdAt: look.created_at,
+    tags: look.occasion_tags || [],
+    isFavorite: look.is_favorite || false,
+    styleTags: look.dominant_style || [],
+    patternMix: look.pattern_mix || [],
+    silhouette: look.silhouette,
+    layeringLevel: look.layering_level,
+    rating: look.rating,
+    wearCount: look.wear_count || 0
+  };
+};
 
 /**
  * API Supabase pour la garde-robe virtuelle
@@ -239,6 +242,7 @@ export const wardrobeSupabaseAPI = {
    * Supprime un item de la garde-robe
    */
   async deleteItem(itemId) {
+    console.log('deleteItem called with ID:', itemId);
     try {
       // D'abord essayer de supprimer de clothing_items
       const { error: clothingError } = await supabase

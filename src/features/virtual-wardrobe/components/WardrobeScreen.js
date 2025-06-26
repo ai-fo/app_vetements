@@ -81,6 +81,7 @@ export default function WardrobeScreen({ navigation }) {
 
   const renderListItem = (item) => {
     const isOutfit = item.itemType === 'OUTFIT';
+    console.log('Rendering item:', item.id, item.name, item.itemType);
     
     return (
       <TouchableOpacity
@@ -228,8 +229,8 @@ export default function WardrobeScreen({ navigation }) {
           renderEmptyState()
         ) : (
           <View style={styles.list}>
-            {items.map((item) => (
-              <React.Fragment key={item.id}>
+            {items.map((item, index) => (
+              <React.Fragment key={item.id || `item-${index}`}>
                 {renderListItem(item)}
               </React.Fragment>
             ))}
