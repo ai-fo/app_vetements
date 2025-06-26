@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   View,
   Text,
@@ -13,6 +13,7 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
+import { useFocusEffect } from '@react-navigation/native';
 import { useAuth } from '../../auth';
 import { useWardrobe } from '../hooks/useWardrobe';
 import { ItemType, ClothingCategory, Season } from '../types/wardrobe.types';
@@ -29,6 +30,15 @@ export default function WardrobeScreen({ navigation }) {
   const [selectedItem, setSelectedItem] = useState(null);
   const [refreshing, setRefreshing] = useState(false);
   const [deleteMode, setDeleteMode] = useState(false);
+
+  // Recharger les données quand l'écran devient actif
+  useFocusEffect(
+    useCallback(() => {
+      if (user?.id) {
+        refreshWardrobe();
+      }
+    }, [user?.id, refreshWardrobe])
+  );
 
   const handleRefresh = async () => {
     setRefreshing(true);
@@ -79,45 +89,78 @@ export default function WardrobeScreen({ navigation }) {
   );
 
 
-  const renderListItem = (item) => (
-    <TouchableOpacity
-      style={styles.listItem}
-      onPress={() => navigation.navigate('ClothingDetail', { item })}
-    >
-      <Image source={{ uri: item.imageUrl }} style={styles.listItemImage} />
-      
-      <View style={styles.listItemContent}>
-        <View style={styles.listItemHeader}>
-          <Text style={styles.listItemName}>{item.name}</Text>
-          <View style={styles.listItemActions}>
-            <FavoriteButton
-              isFavorite={item.isFavorite}
-              onToggle={() => toggleFavorite(item.id)}
-              size={16}
-            />
-            {deleteMode && (
-              <TouchableOpacity 
-                style={styles.listDeleteButton}
-                onPress={() => handleDeleteItem(item.id, item.name)}
-              >
-                <Ionicons name="trash" size={18} color="#ef4444" />
-              </TouchableOpacity>
-            )}
-          </View>
-        </View>
-        
-        <Text style={styles.listItemBrand}>{item.brand}</Text>
-        
-        <View style={styles.listItemTags}>
-          {item.seasons.map((season, index) => (
-            <View key={index} style={styles.tag}>
-              <Text style={styles.tagText}>{getSeasonLabel(season)}</Text>
+  const renderListItem = (item) => {
+    const isOutfit = item.itemType === 'OUTFIT';
+    
+    return (
+      <TouchableOpacity
+        style={[styles.listItem, isOutfit && styles.outfitItem]}
+        onPress={() => navigation.navigate('ClothingDetail', { item })}
+      >
+        <View style={styles.imageContainer}>
+          <Image source={{ uri: item.imageUrl }} style={styles.listItemImage} />
+          {isOutfit && (
+            <View style={styles.outfitBadge}>
+              <Ionicons name="shirt" size={12} color="#fff" />
+              <Text style={styles.outfitBadgeText}>Tenue</Text>
             </View>
-          ))}
+          )}
         </View>
-      </View>
-    </TouchableOpacity>
-  );
+        
+        <View style={styles.listItemContent}>
+          <View style={styles.listItemHeader}>
+            <Text style={styles.listItemName}>{item.name}</Text>
+            <View style={styles.listItemActions}>
+              <FavoriteButton
+                isFavorite={item.isFavorite}
+                onToggle={() => toggleFavorite(item.id)}
+                size={16}
+              />
+              {deleteMode && (
+                <TouchableOpacity 
+                  style={styles.listDeleteButton}
+                  onPress={() => handleDeleteItem(item.id, item.name)}
+                >
+                  <Ionicons name="trash" size={18} color="#ef4444" />
+                </TouchableOpacity>
+              )}
+            </View>
+          </View>
+          
+          {isOutfit ? (
+            <>
+              <Text style={styles.listItemBrand}>
+                {item.styleTags?.join(', ') || 'Tenue complète'}
+              </Text>
+              <View style={styles.listItemTags}>
+                {item.tags?.map((tag, index) => (
+                  <View key={index} style={styles.tag}>
+                    <Text style={styles.tagText}>{tag}</Text>
+                  </View>
+                ))}
+                {item.seasons?.map((season, index) => (
+                  <View key={index} style={styles.tag}>
+                    <Text style={styles.tagText}>{getSeasonLabel(season)}</Text>
+                  </View>
+                ))}
+              </View>
+            </>
+          ) : (
+            <>
+              <Text style={styles.listItemBrand}>{item.brand}</Text>
+              <View style={styles.listItemTags}>
+                {item.seasons.map((season, index) => (
+                  <View key={index} style={styles.tag}>
+                    <Text style={styles.tagText}>{getSeasonLabel(season)}</Text>
+                  </View>
+                ))}
+              </View>
+            </>
+          )}
+        </View>
+      </TouchableOpacity>
+    );
+  };
 
   const getColorHex = (colorName) => {
     const colors = {
@@ -195,8 +238,8 @@ export default function WardrobeScreen({ navigation }) {
           renderEmptyState()
         ) : (
           <View style={styles.list}>
-            {items.map((item) => (
-              <React.Fragment key={item.id}>
+            {items.map((item, index) => (
+              <React.Fragment key={item.id || `item-${index}`}>
                 {renderListItem(item)}
               </React.Fragment>
             ))}
@@ -384,6 +427,30 @@ const styles = StyleSheet.create({
   tagText: {
     fontSize: 12,
     color: '#4b5563',
+  },
+  outfitItem: {
+    borderColor: '#667eea',
+    borderWidth: 2,
+  },
+  imageContainer: {
+    position: 'relative',
+  },
+  outfitBadge: {
+    position: 'absolute',
+    top: 5,
+    right: 5,
+    backgroundColor: '#667eea',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 12,
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  outfitBadgeText: {
+    color: '#fff',
+    fontSize: 10,
+    fontWeight: '600',
+    marginLeft: 4,
   },
   floatingButton: {
     position: 'absolute',

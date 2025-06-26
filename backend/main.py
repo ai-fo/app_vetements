@@ -471,7 +471,8 @@ async def get_user_looks(
         return {
             "looks": [
                 {
-                    "look_id": str(look.id),
+                    "id": str(look.id),
+                    "user_id": str(look.user_id),
                     "name": look.name,
                     "dominant_style": look.dominant_style,
                     "occasion_tags": look.occasion_tags,

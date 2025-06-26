@@ -43,8 +43,8 @@ class LookMeta(BaseModel):
     seasonality: List[Literal["spring", "summer", "fall", "winter"]]
     color_palette_global: ColorPaletteGlobal
     pattern_mix: List[str]
-    silhouette: str
-    layering_level: int = Field(..., ge=1, le=5)
+    silhouette: Optional[str] = None
+    layering_level: Optional[int] = Field(None, ge=1, le=5)
 
 
 class CompleteLookResponse(BaseModel):

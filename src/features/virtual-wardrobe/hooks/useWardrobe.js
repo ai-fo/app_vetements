@@ -83,42 +83,55 @@ export function useWardrobe(userId) {
    */
   const deleteItem = async (itemId) => {
     try {
-      // Trouver l'item pour récupérer l'imagePath
+      // Trouver l'item pour récupérer l'imagePath et le type
       const item = items.find(i => i.id === itemId);
-      // Si c'est une analyse d'outfit, on doit la supprimer différemment
-      let response;
-      if (item?.itemType === 'OUTFIT') {
-        response = await wardrobeSupabaseAPI.deleteOutfitAnalysis(itemId);
-      } else {
-        response = await wardrobeSupabaseAPI.deleteItem(itemId);
+      
+      if (!item) {
+        console.error('Item non trouvé dans l\'état local:', itemId);
+        throw new Error('Item non trouvé');
       }
       
+      console.log(`Suppression de l'item ${itemId}, type: ${item.itemType}`);
+      
+      // Utiliser la même méthode pour tous les types d'items
+      const response = await wardrobeSupabaseAPI.deleteItem(itemId);
+      
       if (response.error) {
+        console.error('Erreur API lors de la suppression:', response.error);
         throw new Error(response.error);
       }
       
       if (!response.success) {
-        throw new Error('Deletion failed without error message');
+        console.error('Échec de la suppression sans message d\'erreur');
+        throw new Error('La suppression a échoué');
       }
       
       // Supprimer l'image du storage si elle existe
       if (item?.imagePath) {
         try {
           await storageService.deletePhoto(item.imagePath);
+          console.log('Image supprimée du storage:', item.imagePath);
         } catch (error) {
+          console.warn('Échec de la suppression de l\'image:', error);
           // Continue même si la suppression de l'image échoue
         }
       }
       
-      // Mettre à jour l'état local
+      // Mettre à jour l'état local immédiatement
       setItems(prevItems => {
         const newItems = prevItems.filter(item => item.id !== itemId);
+        console.log(`État mis à jour, ${prevItems.length} -> ${newItems.length} items`);
         return newItems;
       });
       
+      // Optionnel : recharger depuis le serveur pour s'assurer de la synchronisation
+      // Commenté pour l'instant pour éviter un rechargement inutile
+      // await loadWardrobeItems();
+      
       return true;
     } catch (error) {
-      setError('Impossible de supprimer l\'article');
+      console.error('Erreur complète lors de la suppression:', error);
+      setError(error.message || 'Impossible de supprimer l\'article');
       return false;
     }
   };

@@ -181,9 +181,7 @@ Retourne ce JSON EXACT :
       "primary": ["couleur1", "couleur2"],
       "accent": ["couleur_accent"]
     },
-    "pattern_mix": ["pattern1", "pattern2"],
-    "silhouette": "slim_top_loose_bottom",
-    "layering_level": 1
+    "pattern_mix": ["pattern1", "pattern2"]
   }
 }"""
     
@@ -233,8 +231,8 @@ Retourne ce JSON EXACT :
             seasonality=look_meta_data["seasonality"],
             color_palette_global=ColorPaletteGlobal(**look_meta_data["color_palette_global"]),
             pattern_mix=look_meta_data["pattern_mix"],
-            silhouette=look_meta_data["silhouette"],
-            layering_level=look_meta_data["layering_level"]
+            silhouette=look_meta_data.get("silhouette"),
+            layering_level=look_meta_data.get("layering_level")
         )
         
         return CompleteLookResponse(
