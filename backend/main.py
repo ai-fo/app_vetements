@@ -403,7 +403,7 @@ async def save_clothing(
             }
         else:
             # Sauvegarder une tenue complète
-            result = wardrobe_service.save_complete_look(
+            result = await wardrobe_service.save_complete_look(
                 user_id=request.user_id,
                 look_data=request.analysis_result,
                 image_url=request.image_urls[0] if request.image_urls else None
@@ -468,6 +468,14 @@ async def get_user_looks(
         wardrobe_service = WardrobeService(db)
         looks = wardrobe_service.get_user_looks(user_id)
         
+        # Debug log pour voir les looks avec leurs pièces
+        for look in looks:
+            if hasattr(look, 'items') and look.items:
+                print(f"🔍 Look {look.id} contient {len(look.items)} pièces:")
+                for item in look.items:
+                    if hasattr(item, 'item') and item.item:
+                        print(f"  - Pièce {item.item_id}: {item.item.piece_type} | Image: {item.item.image_url}")
+        
         return {
             "looks": [
                 {
@@ -485,7 +493,19 @@ async def get_user_looks(
                     "rating": look.rating,
                     "is_favorite": look.is_favorite,
                     "wear_count": look.wear_count,
-                    "created_at": look.created_at.isoformat() if look.created_at else None
+                    "created_at": look.created_at.isoformat() if look.created_at else None,
+                    "pieces": [
+                        {
+                            "id": str(item.item_id),
+                            "position": item.position,
+                            "bounding_box": item.bounding_box,
+                            "piece_type": item.item.piece_type if hasattr(item, 'item') and item.item else None,
+                            "name": item.item.name if hasattr(item, 'item') and item.item else None,
+                            "colors": item.item.colors if hasattr(item, 'item') and item.item else None,
+                            "image_url": item.item.image_url if hasattr(item, 'item') and item.item else None
+                        }
+                        for item in look.items
+                    ] if hasattr(look, 'items') and look.items else []
                 }
                 for look in looks
             ]

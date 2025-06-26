@@ -50,7 +50,21 @@ const transformClothingItemToFrontend = (dbItem) => {
 /**
  * Transforme un look de la DB vers le format frontend
  */
-const transformOutfitLookToFrontend = (look) => ({
+const transformOutfitLookToFrontend = (look) => {
+  console.log('🔄 Transforming outfit look:', {
+    id: look.id,
+    name: look.name,
+    pieces: look.pieces,
+    piecesCount: look.pieces?.length || 0,
+    pieces_with_images: look.pieces?.map(p => ({
+      id: p.id,
+      name: p.name,
+      image_url: p.image_url,
+      bounding_box: p.bounding_box
+    })) || []
+  });
+  
+  return {
     id: look.id,
     userId: look.user_id,
     itemType: 'OUTFIT',
@@ -70,8 +84,14 @@ const transformOutfitLookToFrontend = (look) => ({
     silhouette: look.silhouette,
     layeringLevel: look.layering_level,
     rating: look.rating,
-    wearCount: look.wear_count || 0
-});
+    wearCount: look.wear_count || 0,
+    pieces: (look.pieces || []).map(piece => ({
+      ...piece,
+      // S'assurer que l'image_url de la pièce est bien incluse
+      image_url: piece.image_url || null
+    }))
+  };
+};
 
 /**
  * API Supabase pour la garde-robe virtuelle

@@ -94,6 +94,9 @@ class LookItem(Base):
     item_id = Column(UUID(as_uuid=True), ForeignKey('clothing_items.id', ondelete='CASCADE'), primary_key=True)
     position = Column(Integer, default=0)
     
+    # Coordonnées de la pièce dans l'image de la tenue complète (format normalisé 0-1)
+    bounding_box = Column(JSON, default=None)  # {"x": 0.1, "y": 0.2, "width": 0.6, "height": 0.4}
+    
     # Relations
     look = relationship("OutfitLook", back_populates="items")
     item = relationship("ClothingItem", back_populates="looks")

@@ -9,7 +9,8 @@ import {
   AnalysisResultScreen, 
   AddItemTypeSelector,
   RecommendationDetailScreen,
-  ClothingDetailView
+  ClothingDetailView,
+  ClothingZoomView
 } from './src/features/outfit-analysis';
 import { WardrobeScreen, ItemEditor } from './src/features/virtual-wardrobe';
 import { ActivityIndicator, View } from 'react-native';
@@ -70,6 +71,13 @@ function MainStack() {
       <Stack.Screen 
         name="ClothingDetail" 
         component={ClothingDetailView}
+        options={{
+          animation: 'slide_from_right',
+        }}
+      />
+      <Stack.Screen 
+        name="ClothingZoomView" 
+        component={ClothingZoomView}
         options={{
           animation: 'slide_from_right',
         }}

@@ -8,6 +8,14 @@ class PieceColors(BaseModel):
     secondary: Optional[List[str]] = []
 
 
+class BoundingBox(BaseModel):
+    """Coordonnées de délimitation d'un vêtement dans l'image (format normalisé 0-1)"""
+    x: float = Field(..., ge=0, le=1, description="Position X du coin supérieur gauche (0-1)")
+    y: float = Field(..., ge=0, le=1, description="Position Y du coin supérieur gauche (0-1)")
+    width: float = Field(..., ge=0, le=1, description="Largeur de la zone (0-1)")
+    height: float = Field(..., ge=0, le=1, description="Hauteur de la zone (0-1)")
+
+
 class PieceAttributes(BaseModel):
     colors: PieceColors
     material: str
@@ -24,6 +32,7 @@ class ClothingPiece(BaseModel):
     style_tags: List[str]
     occasion_tags: List[str]
     seasonality: List[Literal["spring", "summer", "fall", "winter"]]
+    bounding_box: Optional[BoundingBox] = None  # Coordonnées dans l'image (seulement pour tenues complètes)
 
 
 class SinglePieceResponse(BaseModel):

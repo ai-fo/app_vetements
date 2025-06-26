@@ -5,6 +5,7 @@ export { default as DailyRecommendation } from './components/DailyRecommendation
 export { default as RecommendationDetailScreen } from './components/RecommendationDetailScreen';
 export { default as AddItemTypeSelector } from './components/AddItemTypeSelector';
 export { default as ClothingDetailView } from './components/ClothingDetailView';
+export { default as ClothingZoomView } from './components/ClothingZoomView';
 export { useOutfitAnalysis } from './hooks/useOutfitAnalysis';
 export { useClothingAnalysis } from './hooks/useClothingAnalysis';
 export { useRecommendations } from './hooks/useRecommendations';

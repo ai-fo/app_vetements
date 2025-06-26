@@ -407,7 +407,16 @@ export default function ClothingDetailView({ route, navigation }) {
             <Ionicons name="create-outline" size={24} color="#fff" />
           </TouchableOpacity>
         )}
-        {!isSinglePiece && <View style={{ width: 28 }} />}
+        {!isSinglePiece && (
+          <TouchableOpacity 
+            onPress={() => navigation.navigate('ClothingZoomView', { 
+              item: item, 
+              pieces: item.pieces || [] 
+            })}
+          >
+            <Ionicons name="search" size={24} color="#fff" />
+          </TouchableOpacity>
+        )}
       </LinearGradient>
 
       <ScrollView showsVerticalScrollIndicator={false}>

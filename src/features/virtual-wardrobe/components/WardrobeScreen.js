@@ -20,6 +20,9 @@ import { ItemType, ClothingCategory, Season } from '../types/wardrobe.types';
 import ItemDetailsModal from './ItemDetailsModal';
 import FilterBar from './FilterBar';
 import FavoriteButton from './FavoriteButton';
+import OutfitWithCoordinates from './OutfitWithCoordinates';
+import GridClothingItem from './GridClothingItem';
+import OutfitPiecesCropped from './OutfitPiecesCropped';
 
 const { width } = Dimensions.get('window');
 const ITEM_WIDTH = (width - 60) / 2;
@@ -66,6 +69,23 @@ export default function WardrobeScreen({ navigation }) {
     );
   };
 
+  const handlePiecePress = (piece, bbox) => {
+    // Navigation vers les détails de la pièce spécifique
+    navigation.navigate('ClothingDetail', { 
+      item: {
+        id: piece.id,
+        name: piece.name || piece.piece_type,
+        itemType: 'SINGLE_PIECE',
+        category: piece.piece_type,
+        colors: piece.colors?.primary || [],
+        materials: piece.material ? [piece.material] : [],
+        brand: '',
+        // Inclure les données de la pièce pour l'affichage détaillé
+        rawData: piece
+      }
+    });
+  };
+
   const renderEmptyState = () => (
     <View style={styles.emptyState}>
       <Ionicons name="shirt-outline" size={80} color="#667eea" />
@@ -92,73 +112,39 @@ export default function WardrobeScreen({ navigation }) {
   const renderListItem = (item) => {
     const isOutfit = item.itemType === 'OUTFIT';
     
+    // Debug: log pour voir les données
+    if (isOutfit) {
+      console.log('Outfit item:', {
+        id: item.id,
+        name: item.name,
+        pieces: item.pieces,
+        piecesLength: item.pieces?.length || 0,
+        hasBoundingBox: item.pieces?.some(p => p.bounding_box) || false
+      });
+    }
+    
+    // Pour les tenues avec coordonnées, afficher les pièces découpées
+    if (isOutfit && item.pieces && item.pieces.length > 0) {
+      return (
+        <OutfitPiecesCropped
+          outfit={item}
+          onPiecePress={handlePiecePress}
+          onToggleFavorite={(pieceId) => toggleFavorite(pieceId)}
+          onDelete={(pieceId, pieceName) => handleDeleteItem(pieceId, pieceName)}
+          deleteMode={deleteMode}
+        />
+      );
+    }
+    
+    // Pour les pièces individuelles et tenues sans coordonnées
     return (
-      <TouchableOpacity
-        style={[styles.listItem, isOutfit && styles.outfitItem]}
+      <GridClothingItem
+        item={item}
         onPress={() => navigation.navigate('ClothingDetail', { item })}
-      >
-        <View style={styles.imageContainer}>
-          <Image source={{ uri: item.imageUrl }} style={styles.listItemImage} />
-          {isOutfit && (
-            <View style={styles.outfitBadge}>
-              <Ionicons name="shirt" size={12} color="#fff" />
-              <Text style={styles.outfitBadgeText}>Tenue</Text>
-            </View>
-          )}
-        </View>
-        
-        <View style={styles.listItemContent}>
-          <View style={styles.listItemHeader}>
-            <Text style={styles.listItemName}>{item.name}</Text>
-            <View style={styles.listItemActions}>
-              <FavoriteButton
-                isFavorite={item.isFavorite}
-                onToggle={() => toggleFavorite(item.id)}
-                size={16}
-              />
-              {deleteMode && (
-                <TouchableOpacity 
-                  style={styles.listDeleteButton}
-                  onPress={() => handleDeleteItem(item.id, item.name)}
-                >
-                  <Ionicons name="trash" size={18} color="#ef4444" />
-                </TouchableOpacity>
-              )}
-            </View>
-          </View>
-          
-          {isOutfit ? (
-            <>
-              <Text style={styles.listItemBrand}>
-                {item.styleTags?.join(', ') || 'Tenue complète'}
-              </Text>
-              <View style={styles.listItemTags}>
-                {item.tags?.map((tag, index) => (
-                  <View key={index} style={styles.tag}>
-                    <Text style={styles.tagText}>{tag}</Text>
-                  </View>
-                ))}
-                {item.seasons?.map((season, index) => (
-                  <View key={index} style={styles.tag}>
-                    <Text style={styles.tagText}>{getSeasonLabel(season)}</Text>
-                  </View>
-                ))}
-              </View>
-            </>
-          ) : (
-            <>
-              <Text style={styles.listItemBrand}>{item.brand}</Text>
-              <View style={styles.listItemTags}>
-                {item.seasons.map((season, index) => (
-                  <View key={index} style={styles.tag}>
-                    <Text style={styles.tagText}>{getSeasonLabel(season)}</Text>
-                  </View>
-                ))}
-              </View>
-            </>
-          )}
-        </View>
-      </TouchableOpacity>
+        onToggleFavorite={() => toggleFavorite(item.id)}
+        onDelete={() => handleDeleteItem(item.id, item.name)}
+        deleteMode={deleteMode}
+      />
     );
   };
 
@@ -237,12 +223,22 @@ export default function WardrobeScreen({ navigation }) {
         {items.length === 0 ? (
           renderEmptyState()
         ) : (
-          <View style={styles.list}>
-            {items.map((item, index) => (
-              <React.Fragment key={item.id || `item-${index}`}>
-                {renderListItem(item)}
-              </React.Fragment>
-            ))}
+          <View style={styles.gridContainer}>
+            {items.map((item, index) => {
+              const isOutfit = item.itemType === 'OUTFIT';
+              
+              // Ne jamais afficher les tenues (qu'elles aient des pièces ou non)
+              if (isOutfit) {
+                return null; // On garde seulement les pièces individuelles
+              }
+              
+              // Pour les items normaux (pièces individuelles avec toutes leurs caractéristiques)
+              return (
+                <React.Fragment key={item.id || `item-${index}`}>
+                  {renderListItem(item)}
+                </React.Fragment>
+              );
+            })}
           </View>
         )}
       </ScrollView>
@@ -364,6 +360,14 @@ const styles = StyleSheet.create({
   list: {
     paddingHorizontal: 20,
     paddingTop: 20,
+  },
+  gridContainer: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'space-between',
+    paddingHorizontal: 20,
+    paddingTop: 20,
+    gap: 10,
   },
   listItem: {
     flexDirection: 'row',

@@ -9,7 +9,8 @@ from schemas.clothing_analysis import (
     PieceAttributes,
     PieceColors,
     LookMeta,
-    ColorPaletteGlobal
+    ColorPaletteGlobal,
+    BoundingBox
 )
 
 
@@ -132,7 +133,11 @@ Retourne ce JSON EXACT :
 }"""
         else:
             return base_instructions + """
-CONSIGNE : Analyse la TENUE COMPLÈTE visible dans l'image. Identifie TOUTES les pièces.
+CONSIGNE : Analyse la TENUE COMPLÈTE visible dans l'image. Identifie TOUTES les pièces ET leur position dans l'image.
+
+IMPORTANT : Pour chaque pièce, détermine sa position dans l'image avec des coordonnées normalisées (0-1) :
+- x, y : coin supérieur gauche de la zone contenant la pièce
+- width, height : dimensions de la zone
 
 Retourne ce JSON EXACT :
 {
@@ -153,7 +158,13 @@ Retourne ce JSON EXACT :
       },
       "style_tags": ["style1"],
       "occasion_tags": ["occasion1"],
-      "seasonality": ["season1", "season2"]
+      "seasonality": ["season1", "season2"],
+      "bounding_box": {
+        "x": 0.1,
+        "y": 0.2,
+        "width": 0.6,
+        "height": 0.4
+      }
     },
     {
       "piece_type": "[type exact de la pièce 2]",
@@ -170,7 +181,13 @@ Retourne ce JSON EXACT :
       },
       "style_tags": ["style1"],
       "occasion_tags": ["occasion1"],
-      "seasonality": ["season1", "season2"]
+      "seasonality": ["season1", "season2"],
+      "bounding_box": {
+        "x": 0.0,
+        "y": 0.6,
+        "width": 1.0,
+        "height": 0.4
+      }
     }
   ],
   "look_meta": {
@@ -183,7 +200,21 @@ Retourne ce JSON EXACT :
     },
     "pattern_mix": ["pattern1", "pattern2"]
   }
-}"""
+}
+
+INSTRUCTIONS POUR BOUNDING_BOX :
+- Analyser visuellement la position de chaque vêtement dans l'image
+- Utiliser des coordonnées normalisées entre 0 et 1
+- x=0, y=0 correspond au coin supérieur gauche de l'image
+- x=1, y=1 correspond au coin inférieur droit de l'image
+- Être précis pour permettre un zoom correct sur chaque pièce
+- Inclure toute la pièce dans la zone délimitée
+
+EXEMPLES DE POSITIONS TYPIQUES :
+- Haut (chemise, t-shirt) : généralement x≈0.1-0.9, y≈0.0-0.6
+- Bas (pantalon, jupe) : généralement x≈0.1-0.9, y≈0.4-1.0
+- Chaussures : généralement x≈0.2-0.8, y≈0.8-1.0
+- Veste : peut couvrir une grande partie du torse x≈0.0-1.0, y≈0.0-0.7"""
     
     def _build_single_piece_response(self, data: Dict) -> SinglePieceResponse:
         """Construit la réponse pour une pièce unique avec UUID généré"""
@@ -211,6 +242,11 @@ Retourne ce JSON EXACT :
         
         pieces = []
         for piece_data in data.get("pieces", []):
+            # Construire le bounding_box si présent
+            bounding_box = None
+            if "bounding_box" in piece_data:
+                bounding_box = BoundingBox(**piece_data["bounding_box"])
+            
             piece = ClothingPiece(
                 piece_id=uuid.uuid4(),  # UUID généré côté serveur
                 piece_type=piece_data["piece_type"],
@@ -218,7 +254,8 @@ Retourne ce JSON EXACT :
                 attributes=PieceAttributes(**piece_data["attributes"]),
                 style_tags=piece_data["style_tags"],
                 occasion_tags=piece_data["occasion_tags"],
-                seasonality=piece_data["seasonality"]
+                seasonality=piece_data["seasonality"],
+                bounding_box=bounding_box
             )
             pieces.append(piece)
         
