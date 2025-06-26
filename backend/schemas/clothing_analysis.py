@@ -19,6 +19,7 @@ class PieceAttributes(BaseModel):
 class ClothingPiece(BaseModel):
     piece_id: UUID
     piece_type: str  # tshirt, shirt, blazer, pants, etc.
+    name: str  # Nom descriptif généré par l'IA (ex: "Chemise blanche à col italien")
     attributes: PieceAttributes
     style_tags: List[str]
     occasion_tags: List[str]

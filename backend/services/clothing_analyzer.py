@@ -113,6 +113,7 @@ Retourne ce JSON EXACT :
   "pieces": [
     {
       "piece_type": "[type exact de la pièce]",
+      "name": "[nom descriptif et accrocheur en français, ex: 'Chemise blanche élégante à col italien', 'T-shirt graphique oversize tendance']",
       "attributes": {
         "colors": {
           "primary": ["couleur1"],
@@ -139,6 +140,7 @@ Retourne ce JSON EXACT :
   "pieces": [
     {
       "piece_type": "[type exact de la pièce 1]",
+      "name": "[nom descriptif et accrocheur en français]",
       "attributes": {
         "colors": {
           "primary": ["couleur1"],
@@ -155,6 +157,7 @@ Retourne ce JSON EXACT :
     },
     {
       "piece_type": "[type exact de la pièce 2]",
+      "name": "[nom descriptif et accrocheur en français]",
       "attributes": {
         "colors": {
           "primary": ["couleur1"],
@@ -192,6 +195,7 @@ Retourne ce JSON EXACT :
             piece = ClothingPiece(
                 piece_id=uuid.uuid4(),  # UUID généré côté serveur
                 piece_type=piece_data["piece_type"],
+                name=piece_data.get("name", piece_data["piece_type"]),  # Utilise le type si pas de nom
                 attributes=PieceAttributes(**piece_data["attributes"]),
                 style_tags=piece_data["style_tags"],
                 occasion_tags=piece_data["occasion_tags"],
@@ -212,6 +216,7 @@ Retourne ce JSON EXACT :
             piece = ClothingPiece(
                 piece_id=uuid.uuid4(),  # UUID généré côté serveur
                 piece_type=piece_data["piece_type"],
+                name=piece_data.get("name", piece_data["piece_type"]),  # Utilise le type si pas de nom
                 attributes=PieceAttributes(**piece_data["attributes"]),
                 style_tags=piece_data["style_tags"],
                 occasion_tags=piece_data["occasion_tags"],
