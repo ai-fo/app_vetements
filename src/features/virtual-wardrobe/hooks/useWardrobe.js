@@ -117,12 +117,16 @@ export function useWardrobe(userId) {
         }
       }
       
-      // Mettre à jour l'état local
+      // Mettre à jour l'état local immédiatement
       setItems(prevItems => {
         const newItems = prevItems.filter(item => item.id !== itemId);
         console.log(`État mis à jour, ${prevItems.length} -> ${newItems.length} items`);
         return newItems;
       });
+      
+      // Optionnel : recharger depuis le serveur pour s'assurer de la synchronisation
+      // Commenté pour l'instant pour éviter un rechargement inutile
+      // await loadWardrobeItems();
       
       return true;
     } catch (error) {

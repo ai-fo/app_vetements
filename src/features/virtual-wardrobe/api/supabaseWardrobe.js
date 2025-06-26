@@ -240,28 +240,40 @@ export const wardrobeSupabaseAPI = {
    */
   async deleteItem(itemId) {
     try {
+      console.log('Tentative de suppression de l\'item:', itemId);
+      
       // D'abord essayer de supprimer de clothing_items
-      const { error: clothingError } = await supabase
+      const { data: clothingData, error: clothingError, count: clothingCount } = await supabase
         .from('clothing_items')
         .delete()
-        .eq('id', itemId);
+        .eq('id', itemId)
+        .select();
 
-      if (!clothingError) {
+      console.log('Résultat clothing_items:', { data: clothingData, error: clothingError, count: clothingCount });
+
+      if (!clothingError && clothingData && clothingData.length > 0) {
+        console.log('✅ Item supprimé de clothing_items');
         return { success: true, error: null };
       }
 
       // Si pas trouvé, essayer outfit_looks
-      const { error: lookError } = await supabase
+      const { data: lookData, error: lookError, count: lookCount } = await supabase
         .from('outfit_looks')
         .delete()
-        .eq('id', itemId);
+        .eq('id', itemId)
+        .select();
 
-      if (!lookError) {
+      console.log('Résultat outfit_looks:', { data: lookData, error: lookError, count: lookCount });
+
+      if (!lookError && lookData && lookData.length > 0) {
+        console.log('✅ Look supprimé de outfit_looks');
         return { success: true, error: null };
       }
 
+      console.log('❌ Aucun item trouvé avec cet ID');
       throw new Error('Item non trouvé');
     } catch (error) {
+      console.error('Erreur lors de la suppression:', error);
       return {
         success: false,
         error: error.message || 'Erreur lors de la suppression'

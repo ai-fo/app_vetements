@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   View,
   Text,
@@ -13,6 +13,7 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
+import { useFocusEffect } from '@react-navigation/native';
 import { useAuth } from '../../auth';
 import { useWardrobe } from '../hooks/useWardrobe';
 import { ItemType, ClothingCategory, Season } from '../types/wardrobe.types';
@@ -29,6 +30,15 @@ export default function WardrobeScreen({ navigation }) {
   const [selectedItem, setSelectedItem] = useState(null);
   const [refreshing, setRefreshing] = useState(false);
   const [deleteMode, setDeleteMode] = useState(false);
+
+  // Recharger les données quand l'écran devient actif
+  useFocusEffect(
+    useCallback(() => {
+      if (user?.id) {
+        refreshWardrobe();
+      }
+    }, [user?.id, refreshWardrobe])
+  );
 
   const handleRefresh = async () => {
     setRefreshing(true);
