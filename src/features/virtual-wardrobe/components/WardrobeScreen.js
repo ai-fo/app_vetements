@@ -82,7 +82,7 @@ export default function WardrobeScreen({ navigation }) {
   const renderListItem = (item) => (
     <TouchableOpacity
       style={styles.listItem}
-      onPress={() => setSelectedItem(item)}
+      onPress={() => navigation.navigate('ClothingDetail', { item })}
     >
       <Image source={{ uri: item.imageUrl }} style={styles.listItemImage} />
       

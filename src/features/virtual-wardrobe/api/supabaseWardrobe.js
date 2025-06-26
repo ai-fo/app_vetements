@@ -1,52 +1,76 @@
 import { supabase } from '../../../shared/api/supabase';
+import apiClient from '../../../shared/api/client';
 
 /**
  * Transforme un item de la DB vers le format frontend
  */
-const transformClothingItemToFrontend = (dbItem) => ({
-  id: dbItem.id,
-  userId: dbItem.user_id,
-  itemType: 'SINGLE_PIECE',
-  category: dbItem.type,
-  imageUrl: dbItem.image_url,
-  imagePath: dbItem.image_path,
-  colors: dbItem.color ? [dbItem.color] : [],
-  materials: dbItem.materials || [],
-  seasons: dbItem.seasons || ['all_season'],
-  brand: dbItem.brand || '',
-  name: dbItem.name || '',
-  createdAt: dbItem.created_at,
-  updatedAt: dbItem.updated_at,
-  tags: dbItem.tags || [],
-  isFavorite: dbItem.is_favorite || false
-});
+const transformClothingItemToFrontend = (dbItem) => {
+  // Si les données viennent de l'API backend (avec piece_id au lieu de id)
+  const itemId = dbItem.piece_id || dbItem.id;
+  
+  return {
+    id: itemId,
+    userId: dbItem.user_id,
+    itemType: 'SINGLE_PIECE',
+    category: dbItem.piece_type,
+    imageUrl: dbItem.image_url,
+    imagePath: dbItem.image_path,
+    colors: dbItem.colors?.primary || [],
+    secondaryColors: dbItem.colors?.secondary || [],
+    materials: dbItem.material ? [dbItem.material] : [],
+    seasons: dbItem.seasonality || ['all_season'],
+    brand: dbItem.brand || '',
+    name: dbItem.name || '',
+    createdAt: dbItem.created_at,
+    updatedAt: dbItem.updated_at,
+    tags: dbItem.occasion_tags || [],
+    isFavorite: dbItem.is_favorite || false,
+    styleTags: dbItem.style_tags || [],
+    pattern: dbItem.pattern,
+    fit: dbItem.fit,
+    details: dbItem.details || [],
+    wearCount: dbItem.wear_count || 0,
+    // Données brutes pour le nouveau composant de détails
+    rawData: {
+      piece_type: dbItem.piece_type,
+      attributes: {
+        colors: dbItem.colors || { primary: [], secondary: [] },
+        material: dbItem.material,
+        pattern: dbItem.pattern,
+        fit: dbItem.fit,
+        details: dbItem.details || []
+      },
+      style_tags: dbItem.style_tags || [],
+      occasion_tags: dbItem.occasion_tags || [],
+      seasonality: dbItem.seasonality || []
+    }
+  };
+};
 
 /**
- * Transforme une analyse d'outfit vers le format frontend
+ * Transforme un look de la DB vers le format frontend
  */
-const transformOutfitAnalysisToFrontend = (analysis) => ({
-  id: analysis.id,
-  userId: analysis.user_id,
+const transformOutfitLookToFrontend = (look) => ({
+  id: look.id,
+  userId: look.user_id,
   itemType: 'OUTFIT',
   category: 'full_outfit',
-  imageUrl: analysis.image_url,
-  thumbnailUrl: analysis.thumbnail_url,
-  colors: analysis.colors?.primary || [],
-  materials: analysis.materials || [],
-  seasons: analysis.seasons || ['all_season'],
-  brand: analysis.style || 'Tenue complète',
-  name: `${analysis.style || 'Tenue'} - ${analysis.category || 'analysée'}`,
-  createdAt: analysis.created_at,
-  tags: analysis.occasions || [],
-  isFavorite: false,
-  analysisData: {
-    formality: analysis.formality,
-    versatility: analysis.versatility,
-    comfort: analysis.comfort,
-    weather: analysis.weather,
-    matchingSuggestions: analysis.matching_suggestions,
-    improvements: analysis.improvements
-  }
+  imageUrl: look.image_url,
+  thumbnailUrl: look.thumbnail_url,
+  colors: look.color_palette?.primary || [],
+  materials: [],
+  seasons: look.seasonality || ['all_season'],
+  brand: look.dominant_style?.[0] || 'Tenue complète',
+  name: look.name || 'Look',
+  createdAt: look.created_at,
+  tags: look.occasion_tags || [],
+  isFavorite: look.is_favorite || false,
+  styleTags: look.dominant_style || [],
+  patternMix: look.pattern_mix || [],
+  silhouette: look.silhouette,
+  layeringLevel: look.layering_level,
+  rating: look.rating,
+  wearCount: look.wear_count || 0
 });
 
 /**
@@ -58,49 +82,47 @@ export const wardrobeSupabaseAPI = {
    */
   async getItems(userId, filters = {}) {
     try {
-      // Maintenant on récupère tout depuis outfit_analyses
-      // Les pièces simples auront category != 'full_outfit'
-      let query = supabase
-        .from('outfit_analyses')
-        .select('*')
-        .eq('user_id', userId)
-        .eq('processing_status', 'completed')
-        .order('created_at', { ascending: false });
-
-      const { data, error } = await query;
-
-      if (error) throw error;
-
-      // Transformer toutes les analyses en items de garde-robe
-      const items = (data || []).map(analysis => {
-        // Si c'est explicitement une pièce unique
-        if (analysis.category === 'piece_unique') {
-          return {
-            id: analysis.id,
-            userId: analysis.user_id,
-            itemType: 'SINGLE_PIECE',
-            category: analysis.items?.[0]?.type || 'top',
-            imageUrl: analysis.image_url,
-            colors: analysis.colors?.primary || [],
-            materials: analysis.materials || [],
-            seasons: analysis.seasons || ['all_season'],
-            brand: analysis.items?.[0]?.brand || analysis.style || '',
-            name: analysis.items?.[0]?.name || analysis.style || 'Article',
-            createdAt: analysis.created_at,
-            tags: analysis.occasions || [],
-            isFavorite: false
-          };
-        } else {
-          // Sinon c'est une tenue complète (toutes les autres catégories)
-          return transformOutfitAnalysisToFrontend(analysis);
-        }
+      // Utiliser l'API backend Python pour récupérer les données
+      const response = await fetch(`${apiClient.baseURL}/wardrobe/${userId}/pieces`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        },
       });
+
+      if (!response.ok) {
+        throw new Error(`Erreur API: ${response.status}`);
+      }
+
+      const data = await response.json();
+      
+      // Transformer les données du backend
+      const clothingItems = (data.pieces || []).map(transformClothingItemToFrontend);
+
+      // Récupérer aussi les tenues complètes
+      const looksResponse = await fetch(`${apiClient.baseURL}/wardrobe/${userId}/looks`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+
+      let outfitLooks = [];
+      if (looksResponse.ok) {
+        const looksData = await looksResponse.json();
+        outfitLooks = (looksData.looks || []).map(transformOutfitLookToFrontend);
+      }
+
+      // Combiner et trier les données
+      const items = [...clothingItems, ...outfitLooks];
+      items.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
 
       return {
         data: items,
         error: null
       };
     } catch (error) {
+      console.error('Erreur lors de la récupération des items:', error);
       return {
         data: [],
         error: error.message || 'Erreur lors de la récupération des articles'
@@ -110,41 +132,34 @@ export const wardrobeSupabaseAPI = {
 
   /**
    * Crée un nouvel item dans la garde-robe
+   * Note: Cette fonction devrait utiliser le backend Python pour l'analyse
+   * mais on garde une version basique pour la création manuelle
    */
   async createItem(itemData) {
     try {
-      // Créer dans outfit_analyses au lieu de clothing_items
+      // Créer directement dans clothing_items pour une pièce ajoutée manuellement
       const insertData = {
         user_id: itemData.userId,
-        image_url: itemData.imageUrl,
-        processing_status: 'completed',
-        style: itemData.name || itemData.brand || 'Article',
-        category: 'piece_unique',
-        formality: 5,
-        versatility: 7,
+        piece_type: itemData.category || 'top',
+        name: itemData.name || 'Article',
         colors: {
           primary: itemData.colors || [],
           secondary: []
         },
-        seasons: itemData.seasons || ['all_season'],
-        occasions: itemData.tags || [],
-        materials: itemData.materials || [],
-        items: [{
-          type: itemData.category || 'top',
-          name: itemData.name || 'Article',
-          description: `${itemData.name || 'Article'} - ${itemData.colors?.[0] || 'couleur'}`,
-          color: itemData.colors?.[0] || null,
-          material: itemData.materials?.[0] || null,
-          price_range: null,
-          style: itemData.brand || '',
-          fit: 'regular'
-        }],
-        analysis_confidence: 90,
-        analyzed_at: new Date().toISOString()
+        material: itemData.materials?.[0] || null,
+        pattern: 'uni',
+        fit: 'regular',
+        details: [],
+        style_tags: [],
+        occasion_tags: itemData.tags || [],
+        seasonality: itemData.seasons || ['all_season'],
+        image_url: itemData.imageUrl,
+        brand: itemData.brand || null,
+        is_active: true
       };
       
       const { data, error } = await supabase
-        .from('outfit_analyses')
+        .from('clothing_items')
         .insert(insertData)
         .select()
         .single();
@@ -152,21 +167,7 @@ export const wardrobeSupabaseAPI = {
       if (error) throw error;
 
       return {
-        data: {
-          id: data.id,
-          userId: data.user_id,
-          itemType: 'SINGLE_PIECE',
-          category: itemData.category || 'top',
-          imageUrl: data.image_url,
-          colors: itemData.colors || [],
-          materials: itemData.materials || [],
-          seasons: itemData.seasons || ['all_season'],
-          brand: itemData.brand || '',
-          name: itemData.name || 'Article',
-          createdAt: data.created_at,
-          tags: itemData.tags || [],
-          isFavorite: false
-        },
+        data: transformClothingItemToFrontend(data),
         error: null
       };
     } catch (error) {
@@ -182,70 +183,51 @@ export const wardrobeSupabaseAPI = {
    */
   async updateItem(itemId, updates) {
     try {
-      // Récupérer l'item actuel
-      const { data: currentItem, error: fetchError } = await supabase
-        .from('outfit_analyses')
-        .select('*')
-        .eq('id', itemId)
-        .single();
-
-      if (fetchError) throw fetchError;
-
+      // Préparer les données pour l'API backend
       const updateData = {
-        updated_at: new Date().toISOString()
-      };
-      
-      // Mapper les updates
-      if (updates.name !== undefined) {
-        updateData.style = updates.name;
-        if (currentItem.items?.length > 0) {
-          updateData.items = currentItem.items;
-          updateData.items[0].name = updates.name;
-        }
-      }
-      if (updates.colors?.length > 0) {
-        updateData.colors = {
-          primary: updates.colors,
-          secondary: currentItem.colors?.secondary || []
-        };
-        if (currentItem.items?.length > 0) {
-          updateData.items = currentItem.items;
-          updateData.items[0].color = updates.colors[0];
-        }
-      }
-      if (updates.tags !== undefined) {
-        updateData.occasions = updates.tags;
-      }
-      
-      const { data, error } = await supabase
-        .from('outfit_analyses')
-        .update(updateData)
-        .eq('id', itemId)
-        .select()
-        .single();
-
-      if (error) throw error;
-
-      // Retourner dans le format attendu
-      return {
-        data: {
-          id: data.id,
-          userId: data.user_id,
-          itemType: data.category === 'piece_unique' ? 'SINGLE_PIECE' : 'OUTFIT',
-          category: data.items?.[0]?.type || 'top',
-          imageUrl: data.image_url,
-          colors: data.colors?.primary || [],
-          materials: data.materials || [],
-          seasons: data.seasons || ['all_season'],
-          brand: updates.brand || data.style || '',
-          name: data.style || 'Article',
-          createdAt: data.created_at,
-          tags: data.occasions || [],
-          isFavorite: false
+        name: updates.name,
+        brand: updates.brand,
+        colors: {
+          primary: updates.colors || [],
+          secondary: updates.secondaryColors || []
         },
+        material: updates.materials?.[0] || updates.material,
+        pattern: updates.pattern,
+        fit: updates.fit,
+        details: updates.details || [],
+        style_tags: updates.styleTags || [],
+        occasion_tags: updates.tags || updates.occasion_tags || [],
+        seasonality: updates.seasons || updates.seasonality || [],
+        is_favorite: updates.isFavorite
+      };
+
+      // Nettoyer les undefined
+      Object.keys(updateData).forEach(key => {
+        if (updateData[key] === undefined) {
+          delete updateData[key];
+        }
+      });
+
+      const response = await fetch(`${apiClient.baseURL}/wardrobe/items/${itemId}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(updateData),
+      });
+
+      if (!response.ok) {
+        throw new Error(`Erreur API: ${response.status}`);
+      }
+
+      const data = await response.json();
+      
+      return {
+        data: transformClothingItemToFrontend(data),
         error: null
       };
     } catch (error) {
+      console.error('Erreur lors de la mise à jour:', error);
       return {
         data: null,
         error: error.message || 'Erreur lors de la mise à jour'
@@ -257,25 +239,50 @@ export const wardrobeSupabaseAPI = {
    * Supprime un item de la garde-robe
    */
   async deleteItem(itemId) {
-    // Maintenant on utilise deleteOutfitAnalysis pour tout
-    return this.deleteOutfitAnalysis(itemId);
+    try {
+      // D'abord essayer de supprimer de clothing_items
+      const { error: clothingError } = await supabase
+        .from('clothing_items')
+        .delete()
+        .eq('id', itemId);
+
+      if (!clothingError) {
+        return { success: true, error: null };
+      }
+
+      // Si pas trouvé, essayer outfit_looks
+      const { error: lookError } = await supabase
+        .from('outfit_looks')
+        .delete()
+        .eq('id', itemId);
+
+      if (!lookError) {
+        return { success: true, error: null };
+      }
+
+      throw new Error('Item non trouvé');
+    } catch (error) {
+      return {
+        success: false,
+        error: error.message || 'Erreur lors de la suppression'
+      };
+    }
   },
 
   /**
-   * Récupère les analyses d'outfit pour un utilisateur
+   * Récupère les tenues complètes pour un utilisateur
    */
-  async getOutfitAnalyses(userId) {
+  async getOutfitLooks(userId) {
     try {
       const { data, error } = await supabase
-        .from('outfit_analyses')
+        .from('outfit_looks')
         .select('*')
         .eq('user_id', userId)
-        .eq('processing_status', 'completed')
         .order('created_at', { ascending: false });
 
       if (error) throw error;
 
-      return (data || []).map(transformOutfitAnalysisToFrontend);
+      return (data || []).map(transformOutfitLookToFrontend);
     } catch (error) {
       throw error;
     }
@@ -286,12 +293,37 @@ export const wardrobeSupabaseAPI = {
    */
   async toggleFavorite(itemId, isFavorite) {
     try {
-      // Pour l'instant, on ne gère pas les favoris dans outfit_analyses
-      // On pourrait ajouter un champ is_favorite dans outfit_analyses si nécessaire
-      return {
-        data: { isFavorite },
-        error: null
-      };
+      // D'abord essayer clothing_items
+      let { data: clothingItem, error: clothingError } = await supabase
+        .from('clothing_items')
+        .update({ is_favorite: isFavorite })
+        .eq('id', itemId)
+        .select()
+        .single();
+
+      if (!clothingError && clothingItem) {
+        return {
+          data: { isFavorite: clothingItem.is_favorite },
+          error: null
+        };
+      }
+
+      // Si pas trouvé, essayer outfit_looks
+      let { data: outfitLook, error: lookError } = await supabase
+        .from('outfit_looks')
+        .update({ is_favorite: isFavorite })
+        .eq('id', itemId)
+        .select()
+        .single();
+
+      if (!lookError && outfitLook) {
+        return {
+          data: { isFavorite: outfitLook.is_favorite },
+          error: null
+        };
+      }
+
+      throw new Error('Item non trouvé');
     } catch (error) {
       return {
         data: null,
@@ -300,28 +332,4 @@ export const wardrobeSupabaseAPI = {
     }
   },
 
-  /**
-   * Supprime une analyse d'outfit
-   */
-  async deleteOutfitAnalysis(analysisId) {
-    try {
-      const { data, error } = await supabase
-        .from('outfit_analyses')
-        .delete()
-        .eq('id', analysisId)
-        .select();
-
-      if (error) throw error;
-
-      return {
-        success: true,
-        error: null
-      };
-    } catch (error) {
-      return {
-        success: false,
-        error: error.message || 'Erreur lors de la suppression de l\'analyse'
-      };
-    }
-  }
 };

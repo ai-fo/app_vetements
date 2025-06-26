@@ -5,6 +5,7 @@
 export { default as WardrobeScreen } from './components/WardrobeScreen';
 export { default as ItemDetailsModal } from './components/ItemDetailsModal';
 export { default as ItemEditor } from './components/ItemEditor';
+export { default as ItemCard } from './components/ItemCard';
 
 // Hooks
 export { useWardrobe } from './hooks/useWardrobe';

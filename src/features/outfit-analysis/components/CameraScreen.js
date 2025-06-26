@@ -14,7 +14,7 @@ import * as ImagePicker from 'expo-image-picker';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useAuth } from '../../auth';
-import { useOutfitAnalysis } from '../hooks/useOutfitAnalysis';
+import { useClothingAnalysis } from '../hooks/useClothingAnalysis';
 import { storageService } from '../../../shared/api/storage';
 import { wardrobeAPI, ItemType } from '../../virtual-wardrobe';
 
@@ -35,7 +35,7 @@ export default function CameraScreen({ navigation, route }) {
   const [showCamera, setShowCamera] = useState(false);
   const cameraRef = useRef(null);
   const { user } = useAuth();
-  const { analyzeOutfit } = useOutfitAnalysis();
+  const { analyzeClothing } = useClothingAnalysis();
 
   useEffect(() => {
     (async () => {
@@ -78,8 +78,8 @@ export default function CameraScreen({ navigation, route }) {
 
     setIsAnalyzing(true);
     try {
-      // Utiliser l'analyse OpenAI pour les deux types (outfit et clothing)
-      const result = await analyzeOutfit(capturedImage.uri, user.id, itemType);
+      // Utiliser la nouvelle analyse pour les deux types (outfit et clothing)
+      const result = await analyzeClothing(capturedImage.uri, user.id, itemType);
       
       // Pour tous les types, aller directement à la garde-robe
       navigation.reset({
