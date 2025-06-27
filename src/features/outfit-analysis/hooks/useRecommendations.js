@@ -8,6 +8,19 @@ import * as Location from 'expo-location';
 // Cache local pour les recommandations en cours de tracking
 const pendingRecommendations = new Set();
 
+// Fonction pour normaliser les IDs de combo (trier les UUIDs)
+const normalizeComboId = (comboId) => {
+  if (!comboId || !comboId.startsWith('combo-')) return comboId;
+  
+  const comboString = comboId.replace('combo-', '');
+  const uuidRegex = /[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/g;
+  const ids = comboString.match(uuidRegex) || [];
+  
+  // Trier les IDs pour avoir toujours le même ordre
+  const sortedIds = ids.sort();
+  return `combo-${sortedIds.join('-')}`;
+};
+
 export const useRecommendations = (userId) => {
   const { items = [], loading: wardrobeLoading } = useWardrobe(userId);
   const [recommendations, setRecommendations] = useState([]);
@@ -81,9 +94,12 @@ export const useRecommendations = (userId) => {
       const todayRecs = await recommendationHistoryService.getTodayRecommendations(userId);
       const todayData = todayRecs.data || { originalIds: [], itemIds: [] };
       
+      // Normaliser les IDs des combos déjà recommandés
+      const normalizedTodayIds = todayData.originalIds.map(id => normalizeComboId(id));
+      
       // Ajouter les recommandations en cours de tracking au cache
       const allRecommendedCombos = [
-        ...todayData.originalIds,
+        ...normalizedTodayIds,
         ...Array.from(pendingRecommendations)
       ];
       
@@ -163,10 +179,16 @@ export const useRecommendations = (userId) => {
         // Mettre à jour la météo
         setWeather(data.weather);
         
-        // Traiter les recommandations de l'IA sans filtrage
+        // Traiter les recommandations de l'IA en filtrant les doublons
         const processedRecommendations = [];
         
         for (const rec of data.recommendations) {
+          // Vérifier si ce combo est déjà dans le cache normalisé
+          const normalizedRecId = normalizeComboId(rec.id);
+          if (allRecommendedCombos.includes(normalizedRecId)) {
+            console.log('Skipping already recommended combo:', normalizedRecId);
+            continue; // Ignorer cette recommandation
+          }
           if (rec.id.startsWith('combo-')) {
             // C'est une combinaison de pièces
             const comboString = rec.id.replace('combo-', '');
@@ -215,21 +237,22 @@ export const useRecommendations = (userId) => {
         // Tracker IMMÉDIATEMENT la première recommandation AVANT de l'afficher
         if (userId && processedRecommendations.length > 0) {
           const firstRec = processedRecommendations[0];
+          const normalizedId = normalizeComboId(firstRec.id);
           
-          // Ajouter immédiatement au cache local
-          pendingRecommendations.add(firstRec.id);
+          // Ajouter immédiatement au cache local avec l'ID normalisé
+          pendingRecommendations.add(normalizedId);
           
           // Tracker de manière asynchrone
           recommendationHistoryService.trackRecommendation(userId, firstRec)
             .then(() => {
-              console.log('Recommendation tracked');
+              console.log('Recommendation tracked:', normalizedId);
               // Retirer du cache après un délai (au cas où)
-              setTimeout(() => pendingRecommendations.delete(firstRec.id), 5000);
+              setTimeout(() => pendingRecommendations.delete(normalizedId), 5000);
             })
             .catch(err => {
               console.error('Error tracking recommendation:', err);
               // En cas d'erreur, retirer du cache
-              pendingRecommendations.delete(firstRec.id);
+              pendingRecommendations.delete(normalizedId);
             });
         }
         

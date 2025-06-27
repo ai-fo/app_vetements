@@ -37,6 +37,17 @@ class RecommendationHistoryService {
         }
       }
 
+      // Normaliser l'ID du combo pour le stockage cohérent
+      let normalizedOriginalId = recommendation.id;
+      if (recommendation.id && recommendation.id.startsWith('combo-')) {
+        const comboString = recommendation.id.replace('combo-', '');
+        const uuidRegex = /[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/g;
+        const ids = comboString.match(uuidRegex) || [];
+        if (ids.length > 0) {
+          normalizedOriginalId = `combo-${ids.sort().join('-')}`;
+        }
+      }
+      
       const record = {
         user_id: userId,
         recommendation_id: uniqueRecommendationId, // Utiliser l'ID unique
@@ -44,7 +55,7 @@ class RecommendationHistoryService {
         item_ids: itemIds,
         weather_data: recommendation.weatherContext || null,
         reason: recommendation.reason || null,
-        original_recommendation_id: recommendation.id // Garder l'ID original pour référence
+        original_recommendation_id: normalizedOriginalId // ID normalisé pour comparaison
       };
 
       const { data, error } = await supabase
