@@ -20,12 +20,8 @@ import { ItemType, ClothingCategory, Season } from '../types/wardrobe.types';
 import ItemDetailsModal from './ItemDetailsModal';
 import FilterBar from './FilterBar';
 import FavoriteButton from './FavoriteButton';
-import OutfitWithCoordinates from './OutfitWithCoordinates';
-import GridClothingItem from './GridClothingItem';
-import OutfitPiecesCropped from './OutfitPiecesCropped';
 
 const { width } = Dimensions.get('window');
-const ITEM_WIDTH = (width - 60) / 2;
 
 export default function WardrobeScreen({ navigation }) {
   const { user } = useAuth();
@@ -112,44 +108,84 @@ export default function WardrobeScreen({ navigation }) {
   const renderListItem = (item) => {
     const isOutfit = item.itemType === 'OUTFIT';
     
-    // Debug: log pour voir les données
-    if (isOutfit) {
-      console.log('Outfit item:', {
-        id: item.id,
-        name: item.name,
-        pieces: item.pieces,
-        piecesLength: item.pieces?.length || 0,
-        hasBoundingBox: item.pieces?.some(p => p.bounding_box) || false
-      });
-    }
-    
-    // Pour les tenues avec coordonnées, afficher les pièces découpées
-    if (isOutfit && item.pieces && item.pieces.length > 0) {
-      return (
-        <OutfitPiecesCropped
-          outfit={item}
-          onPiecePress={handlePiecePress}
-          onToggleFavorite={(pieceId) => toggleFavorite(pieceId)}
-          onDelete={(pieceId, pieceName) => handleDeleteItem(pieceId, pieceName)}
-          deleteMode={deleteMode}
-        />
-      );
-    }
-    
-    // Pour les pièces individuelles et tenues sans coordonnées
     return (
-      <GridClothingItem
-        item={item}
+      <TouchableOpacity 
+        style={[styles.listItem, isOutfit && styles.outfitItem]}
         onPress={() => navigation.navigate('ClothingDetail', { item })}
-        onToggleFavorite={() => toggleFavorite(item.id)}
-        onDelete={() => handleDeleteItem(item.id, item.name)}
-        deleteMode={deleteMode}
-      />
+      >
+        <View style={styles.imageContainer}>
+          <Image source={{ uri: item.imageUrl }} style={styles.listItemImage} />
+          {isOutfit && (
+            <View style={styles.outfitBadge}>
+              <Ionicons name="shirt" size={10} color="#fff" />
+              <Text style={styles.outfitBadgeText}>Tenue</Text>
+            </View>
+          )}
+        </View>
+        
+        <View style={styles.listItemContent}>
+          <View style={styles.listItemHeader}>
+            <Text style={styles.listItemName} numberOfLines={1}>{item.name}</Text>
+            <View style={styles.listItemActions}>
+              <FavoriteButton
+                isFavorite={item.isFavorite}
+                onToggle={() => toggleFavorite(item.id)}
+                size={18}
+              />
+              {deleteMode && (
+                <TouchableOpacity 
+                  style={styles.listDeleteButton}
+                  onPress={() => handleDeleteItem(item.id, item.name)}
+                >
+                  <Ionicons name="trash" size={18} color="#ef4444" />
+                </TouchableOpacity>
+              )}
+            </View>
+          </View>
+          
+          {item.brand && (
+            <Text style={styles.listItemBrand}>{item.brand}</Text>
+          )}
+          
+          <View style={styles.listItemTags}>
+            {/* Couleurs */}
+            {item.colors && item.colors.length > 0 && (
+              <View style={[styles.colorRow, { marginBottom: 4 }]}>
+                {item.colors.slice(0, 4).map((color, index) => (
+                  <View key={index} style={[styles.colorDot, { backgroundColor: getColorHex(color) }]} />
+                ))}
+                {item.colors.length > 4 && (
+                  <Text style={styles.moreColors}>+{item.colors.length - 4}</Text>
+                )}
+              </View>
+            )}
+            
+            {/* Saisons */}
+            {item.seasons && item.seasons.length > 0 && (
+              item.seasons.map((season, index) => (
+                <View key={`season-${index}`} style={styles.tag}>
+                  <Text style={styles.tagText}>{getSeasonLabel(season)}</Text>
+                </View>
+              ))
+            )}
+            
+            {/* Occasions */}
+            {item.tags && item.tags.length > 0 && (
+              item.tags.slice(0, 2).map((tag, index) => (
+                <View key={`tag-${index}`} style={styles.tag}>
+                  <Text style={styles.tagText}>{tag}</Text>
+                </View>
+              ))
+            )}
+          </View>
+        </View>
+      </TouchableOpacity>
     );
   };
 
   const getColorHex = (colorName) => {
     const colors = {
+      // Français
       'noir': '#000000',
       'blanc': '#FFFFFF',
       'bleu': '#3B82F6',
@@ -159,9 +195,26 @@ export default function WardrobeScreen({ navigation }) {
       'gris': '#6B7280',
       'rose': '#EC4899',
       'marron': '#92400E',
-      'beige': '#D4A574'
+      'beige': '#D4A574',
+      'orange': '#FB923C',
+      'violet': '#A78BFA',
+      'turquoise': '#06B6D4',
+      // Anglais (au cas où)
+      'black': '#000000',
+      'white': '#FFFFFF',
+      'blue': '#3B82F6',
+      'red': '#EF4444',
+      'green': '#10B981',
+      'yellow': '#F59E0B',
+      'gray': '#6B7280',
+      'grey': '#6B7280',
+      'pink': '#EC4899',
+      'brown': '#92400E',
+      'purple': '#A78BFA',
+      'navy': '#1E3A8A',
+      'cream': '#FEF3C7'
     };
-    return colors[colorName.toLowerCase()] || '#9CA3AF';
+    return colors[colorName?.toLowerCase()] || '#9CA3AF';
   };
 
   const getSeasonLabel = (season) => {
@@ -223,7 +276,7 @@ export default function WardrobeScreen({ navigation }) {
         {items.length === 0 ? (
           renderEmptyState()
         ) : (
-          <View style={styles.gridContainer}>
+          <View style={styles.list}>
             {items.map((item, index) => {
               const isOutfit = item.itemType === 'OUTFIT';
               
@@ -361,14 +414,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
     paddingTop: 20,
   },
-  gridContainer: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    justifyContent: 'space-between',
-    paddingHorizontal: 20,
-    paddingTop: 20,
-    gap: 10,
-  },
   listItem: {
     flexDirection: 'row',
     backgroundColor: '#fff',
@@ -472,5 +517,23 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.3,
     shadowRadius: 6,
     elevation: 8,
+  },
+  colorRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    marginRight: 8,
+  },
+  colorDot: {
+    width: 12,
+    height: 12,
+    borderRadius: 6,
+    borderWidth: 1,
+    borderColor: '#e5e7eb',
+  },
+  moreColors: {
+    fontSize: 10,
+    color: '#6b7280',
+    marginLeft: 2,
   },
 });
