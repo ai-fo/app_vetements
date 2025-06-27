@@ -196,27 +196,53 @@ export default function WardrobeScreen({ navigation }) {
           <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />
         }
       >
-        {items.length === 0 ? (
-          renderEmptyState()
-        ) : (
-          <View style={styles.list}>
-            {items.map((item, index) => {
-              const isOutfit = item.itemType === 'OUTFIT';
-              
-              // Ne jamais afficher les tenues (qu'elles aient des pièces ou non)
-              if (isOutfit) {
-                return null; // On garde seulement les pièces individuelles
-              }
-              
-              // Pour les items normaux (pièces individuelles avec toutes leurs caractéristiques)
-              return (
+        {(() => {
+          // Filtrer les items visibles (sans les tenues)
+          const visibleItems = items.filter(item => item.itemType !== 'OUTFIT');
+          
+          // Si aucun item après tous les chargements
+          if (items.length === 0 && !loading) {
+            return renderEmptyState();
+          }
+          
+          // Si des filtres sont actifs mais aucun résultat
+          const hasActiveFilters = Object.values(filters).some(v => v !== null && v !== false);
+          if (visibleItems.length === 0 && hasActiveFilters) {
+            return (
+              <View style={styles.noResultsContainer}>
+                <Ionicons name="search-outline" size={60} color="#9ca3af" />
+                <Text style={styles.noResultsTitle}>Aucun article trouvé</Text>
+                <Text style={styles.noResultsText}>
+                  Essayez de modifier vos filtres pour voir plus de résultats
+                </Text>
+                <TouchableOpacity 
+                  style={styles.clearFiltersButton}
+                  onPress={() => applyFilters({
+                    itemType: null,
+                    category: null,
+                    season: null,
+                    color: null,
+                    brand: null,
+                    isFavorite: false
+                  })}
+                >
+                  <Text style={styles.clearFiltersButtonText}>Effacer les filtres</Text>
+                </TouchableOpacity>
+              </View>
+            );
+          }
+          
+          // Afficher la liste normale
+          return (
+            <View style={styles.list}>
+              {visibleItems.map((item, index) => (
                 <React.Fragment key={item.id || `item-${index}`}>
                   {renderListItem(item)}
                 </React.Fragment>
-              );
-            })}
-          </View>
-        )}
+              ))}
+            </View>
+          );
+        })()}
       </ScrollView>
 
       {selectedItem && (
@@ -394,5 +420,36 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.3,
     shadowRadius: 6,
     elevation: 8,
+  },
+  noResultsContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingVertical: 100,
+    paddingHorizontal: 40,
+  },
+  noResultsTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: '#1f2937',
+    marginTop: 16,
+    marginBottom: 8,
+  },
+  noResultsText: {
+    fontSize: 16,
+    color: '#6b7280',
+    textAlign: 'center',
+    marginBottom: 24,
+  },
+  clearFiltersButton: {
+    backgroundColor: '#667eea',
+    paddingVertical: 12,
+    paddingHorizontal: 24,
+    borderRadius: 25,
+  },
+  clearFiltersButtonText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: '600',
   },
 });
