@@ -183,21 +183,30 @@ export default function DailyRecommendation({ analyses, navigation }) {
         {/* Image de la tenue */}
         <View style={styles.imageContainer}>
           {isMultiplePieces ? (
-            <View style={styles.piecesGrid}>
-              {recommendedOutfit.pieces.map((piece, index) => (
-                <View key={piece.id} style={styles.pieceContainer}>
-                  <Image 
-                    source={{ uri: piece.imageUrl }} 
-                    style={styles.pieceImage}
-                  />
-                  {index < recommendedOutfit.pieces.length - 1 && (
-                    <View style={styles.plusIcon}>
-                      <Text style={styles.plusText}>+</Text>
-                    </View>
-                  )}
-                </View>
-              ))}
-            </View>
+            <ScrollView 
+              horizontal 
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.piecesScrollContainer}
+            >
+              <View style={styles.piecesGrid}>
+                {recommendedOutfit.pieces.map((piece, index) => (
+                  <View key={piece.id} style={styles.pieceContainer}>
+                    <Image 
+                      source={{ uri: piece.imageUrl }} 
+                      style={[
+                        styles.pieceImage,
+                        recommendedOutfit.pieces.length > 3 && styles.smallerPieceImage
+                      ]}
+                    />
+                    {index < recommendedOutfit.pieces.length - 1 && (
+                      <View style={styles.plusIcon}>
+                        <Text style={styles.plusText}>+</Text>
+                      </View>
+                    )}
+                  </View>
+                ))}
+              </View>
+            </ScrollView>
           ) : (
             <Image 
               source={{ uri: recommendedOutfit.imageUrl }} 
@@ -225,6 +234,16 @@ export default function DailyRecommendation({ analyses, navigation }) {
                 <Text style={styles.reasonTitle}>Pourquoi cette tenue ?</Text>
               </View>
               <Text style={styles.reasonText}>{recommendedOutfit.reason}</Text>
+              
+              {/* Badge si récemment recommandé */}
+              {recommendedOutfit.wasRecentlyRecommended && (
+                <View style={styles.recentBadge}>
+                  <Ionicons name="time-outline" size={12} color={theme.colors.textSecondary} />
+                  <Text style={styles.recentBadgeText}>
+                    Recommandé il y a {recommendedOutfit.lastRecommendedDays || 'quelques'} jour{recommendedOutfit.lastRecommendedDays > 1 ? 's' : ''}
+                  </Text>
+                </View>
+              )}
             </View>
           )}
 
@@ -348,11 +367,13 @@ const styles = StyleSheet.create({
     height: '100%',
     resizeMode: 'cover',
   },
+  piecesScrollContainer: {
+    paddingHorizontal: 20,
+  },
   piecesGrid: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    paddingHorizontal: 20,
     height: '100%',
   },
   pieceContainer: {
@@ -364,6 +385,10 @@ const styles = StyleSheet.create({
     height: 110,
     borderRadius: theme.borderRadius.md,
     backgroundColor: theme.colors.surface,
+  },
+  smallerPieceImage: {
+    width: 65,
+    height: 90,
   },
   plusIcon: {
     position: 'absolute',
@@ -544,5 +569,21 @@ const styles = StyleSheet.create({
     fontFamily: theme.typography.fonts.medium,
     color: theme.colors.primary,
     textAlign: 'center',
+  },
+  recentBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 8,
+    backgroundColor: theme.colors.surface,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: theme.borderRadius.full,
+    alignSelf: 'flex-start',
+    gap: 4,
+  },
+  recentBadgeText: {
+    fontSize: theme.typography.sizes.xs,
+    fontFamily: theme.typography.fonts.regular,
+    color: theme.colors.textSecondary,
   },
 });

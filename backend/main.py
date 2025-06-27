@@ -43,6 +43,8 @@ class DailyRecommendationRequest(BaseModel):
     user_needs: Optional[str] = None
     current_season: Optional[str] = None
     recently_worn_ids: List[str] = []  # IDs des vêtements portés récemment
+    recently_recommended_ids: List[str] = []  # IDs des items déjà recommandés
+    recently_recommended_combos: List[str] = []  # IDs des combos déjà recommandés
 
 async def get_weather_data(city: str, country_code: str = "FR"):
     """Récupère les données météo pour une ville donnée"""
@@ -275,8 +277,9 @@ SAISON: {request.current_season or 'all_season'}
 
 {f"BESOINS SPÉCIFIQUES: {request.user_needs}" if request.user_needs else ""}
 
-VÊTEMENTS RÉCEMMENT PORTÉS (à éviter):
-{json.dumps(request.recently_worn_ids) if request.recently_worn_ids else "Aucun"}
+VÊTEMENTS ET COMBOS RÉCEMMENT RECOMMANDÉS (à éviter absolument):
+Items: {json.dumps(request.recently_recommended_ids) if request.recently_recommended_ids else "Aucun"}
+Combos: {json.dumps(request.recently_recommended_combos) if request.recently_recommended_combos else "Aucun"}
 
 GARDE-ROBE DISPONIBLE:
 {json.dumps(request.wardrobe_items, ensure_ascii=False)}
@@ -300,10 +303,16 @@ RÈGLES IMPORTANTES ET OBLIGATOIRES:
    - Froid (<15°C): laine, cachemire, polyester, matières chaudes
 4. NE JAMAIS recommander un pull/sweat/veste chaude si température > 25°C
 
-Génère 1 à 3 recommandations pertinentes. Priorise:
-1. Les tenues complètes (itemType: OUTFIT) adaptées à la météo ET non récemment portées
-2. Les combinaisons de pièces individuelles si aucune tenue complète ne convient
-3. Les pièces uniques exceptionnelles si particulièrement adaptées
+Génère EXACTEMENT 1 SEULE recommandation de TENUE COMPLÈTE. 
+
+RÈGLES OBLIGATOIRES pour les recommandations:
+1. Si c'est une tenue complète (itemType: OUTFIT) : recommande-la directement
+2. Si c'est une combinaison : elle DOIT contenir AU MINIMUM :
+   - 1 haut (t-shirt, chemise, top, etc.)
+   - 1 bas (pantalon, short, jupe, etc.)
+   - Optionnel : veste/cardigan, chaussures, accessoires
+3. JAMAIS recommander seulement des hauts ou seulement des bas
+4. Les combinaisons peuvent inclure 2-5 pièces (ex: t-shirt + chemise + pantalon + chaussures)
 
 Retourne UNIQUEMENT ce JSON:
 {{
@@ -330,9 +339,11 @@ Retourne UNIQUEMENT ce JSON:
 
 IMPORTANT: 
 - L'id doit correspondre à un id existant dans la garde-robe
-- Pour une combinaison, créer un id unique comme "combo-[id1]-[id2]"
+- Pour une combinaison, créer un id unique comme "combo-[id1]-[id2]-[id3]..." avec TOUS les IDs triés alphabétiquement
+- Une combinaison DOIT inclure au minimum un haut ET un bas
 - Le score doit refléter la pertinence (0-100)
-- Maximum 3 recommandations, classées par score décroissant"""
+- EXACTEMENT 1 recommandation dans le tableau recommendations, pas plus
+- Si tu recommandes plusieurs hauts (ex: t-shirt + chemise), assure-toi qu'ils se complètent (layering)"""
 
         response = client.chat.completions.create(
             model="gpt-4o",
@@ -358,6 +369,11 @@ IMPORTANT:
             if cleaned.endswith("```"):
                 cleaned = cleaned[:-3]
             result = json.loads(cleaned.strip())
+        
+        # Forcer une seule recommandation
+        if len(result.get("recommendations", [])) > 1:
+            result["recommendations"] = result["recommendations"][:1]
+            print("Avertissement: Plus d'une recommandation générée, limité à 1")
         
         return result
         

@@ -15,7 +15,9 @@ class DailyRecommendationService {
           wardrobe_items: params.wardrobeItems || [],
           user_needs: params.userNeeds || null,
           current_season: params.currentSeason || null,
-          recently_worn_ids: params.recentlyWornIds || []
+          recently_recommended_ids: params.recentlyRecommendedIds || [],
+          recently_recommended_combos: params.recentlyRecommendedCombos || [],
+          include_recommendation_history: params.includeRecommendationHistory || false
         }),
       });
 
