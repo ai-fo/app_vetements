@@ -303,10 +303,16 @@ RÈGLES IMPORTANTES ET OBLIGATOIRES:
    - Froid (<15°C): laine, cachemire, polyester, matières chaudes
 4. NE JAMAIS recommander un pull/sweat/veste chaude si température > 25°C
 
-Génère EXACTEMENT 1 SEULE recommandation. Priorise dans cet ordre:
-1. Les tenues complètes (itemType: OUTFIT) adaptées à la météo ET non récemment portées
-2. Les combinaisons de pièces individuelles si aucune tenue complète ne convient
-3. Les pièces uniques exceptionnelles si particulièrement adaptées
+Génère EXACTEMENT 1 SEULE recommandation de TENUE COMPLÈTE. 
+
+RÈGLES OBLIGATOIRES pour les recommandations:
+1. Si c'est une tenue complète (itemType: OUTFIT) : recommande-la directement
+2. Si c'est une combinaison : elle DOIT contenir AU MINIMUM :
+   - 1 haut (t-shirt, chemise, top, etc.)
+   - 1 bas (pantalon, short, jupe, etc.)
+   - Optionnel : veste/cardigan, chaussures, accessoires
+3. JAMAIS recommander seulement des hauts ou seulement des bas
+4. Les combinaisons peuvent inclure 2-5 pièces (ex: t-shirt + chemise + pantalon + chaussures)
 
 Retourne UNIQUEMENT ce JSON:
 {{
@@ -333,9 +339,11 @@ Retourne UNIQUEMENT ce JSON:
 
 IMPORTANT: 
 - L'id doit correspondre à un id existant dans la garde-robe
-- Pour une combinaison, créer un id unique comme "combo-[id1]-[id2]"
+- Pour une combinaison, créer un id unique comme "combo-[id1]-[id2]-[id3]..." avec TOUS les IDs triés alphabétiquement
+- Une combinaison DOIT inclure au minimum un haut ET un bas
 - Le score doit refléter la pertinence (0-100)
-- EXACTEMENT 1 recommandation dans le tableau recommendations, pas plus"""
+- EXACTEMENT 1 recommandation dans le tableau recommendations, pas plus
+- Si tu recommandes plusieurs hauts (ex: t-shirt + chemise), assure-toi qu'ils se complètent (layering)"""
 
         response = client.chat.completions.create(
             model="gpt-4o",

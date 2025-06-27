@@ -183,21 +183,30 @@ export default function DailyRecommendation({ analyses, navigation }) {
         {/* Image de la tenue */}
         <View style={styles.imageContainer}>
           {isMultiplePieces ? (
-            <View style={styles.piecesGrid}>
-              {recommendedOutfit.pieces.map((piece, index) => (
-                <View key={piece.id} style={styles.pieceContainer}>
-                  <Image 
-                    source={{ uri: piece.imageUrl }} 
-                    style={styles.pieceImage}
-                  />
-                  {index < recommendedOutfit.pieces.length - 1 && (
-                    <View style={styles.plusIcon}>
-                      <Text style={styles.plusText}>+</Text>
-                    </View>
-                  )}
-                </View>
-              ))}
-            </View>
+            <ScrollView 
+              horizontal 
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.piecesScrollContainer}
+            >
+              <View style={styles.piecesGrid}>
+                {recommendedOutfit.pieces.map((piece, index) => (
+                  <View key={piece.id} style={styles.pieceContainer}>
+                    <Image 
+                      source={{ uri: piece.imageUrl }} 
+                      style={[
+                        styles.pieceImage,
+                        recommendedOutfit.pieces.length > 3 && styles.smallerPieceImage
+                      ]}
+                    />
+                    {index < recommendedOutfit.pieces.length - 1 && (
+                      <View style={styles.plusIcon}>
+                        <Text style={styles.plusText}>+</Text>
+                      </View>
+                    )}
+                  </View>
+                ))}
+              </View>
+            </ScrollView>
           ) : (
             <Image 
               source={{ uri: recommendedOutfit.imageUrl }} 
@@ -358,11 +367,13 @@ const styles = StyleSheet.create({
     height: '100%',
     resizeMode: 'cover',
   },
+  piecesScrollContainer: {
+    paddingHorizontal: 20,
+  },
   piecesGrid: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    paddingHorizontal: 20,
     height: '100%',
   },
   pieceContainer: {
@@ -374,6 +385,10 @@ const styles = StyleSheet.create({
     height: 110,
     borderRadius: theme.borderRadius.md,
     backgroundColor: theme.colors.surface,
+  },
+  smallerPieceImage: {
+    width: 65,
+    height: 90,
   },
   plusIcon: {
     position: 'absolute',
