@@ -117,18 +117,6 @@ export default function WardrobeScreen({ navigation }) {
         
         <View style={styles.listItemContent}>
           <Text style={styles.listItemName} numberOfLines={2}>{item.name}</Text>
-          
-          {/* Couleurs */}
-          {item.colors && item.colors.length > 0 && (
-            <View style={styles.colorRow}>
-              {item.colors.slice(0, 5).map((color, index) => (
-                <View key={index} style={[styles.colorDot, { backgroundColor: getColorHex(color) }]} />
-              ))}
-              {item.colors.length > 5 && (
-                <Text style={styles.moreColors}>+{item.colors.length - 5}</Text>
-              )}
-            </View>
-          )}
         </View>
         
         {/* Actions à droite */}
@@ -151,39 +139,6 @@ export default function WardrobeScreen({ navigation }) {
     );
   };
 
-  const getColorHex = (colorName) => {
-    const colors = {
-      // Français
-      'noir': '#000000',
-      'blanc': '#FFFFFF',
-      'bleu': '#3B82F6',
-      'rouge': '#EF4444',
-      'vert': '#10B981',
-      'jaune': '#F59E0B',
-      'gris': '#6B7280',
-      'rose': '#EC4899',
-      'marron': '#92400E',
-      'beige': '#D4A574',
-      'orange': '#FB923C',
-      'violet': '#A78BFA',
-      'turquoise': '#06B6D4',
-      // Anglais (au cas où)
-      'black': '#000000',
-      'white': '#FFFFFF',
-      'blue': '#3B82F6',
-      'red': '#EF4444',
-      'green': '#10B981',
-      'yellow': '#F59E0B',
-      'gray': '#6B7280',
-      'grey': '#6B7280',
-      'pink': '#EC4899',
-      'brown': '#92400E',
-      'purple': '#A78BFA',
-      'navy': '#1E3A8A',
-      'cream': '#FEF3C7'
-    };
-    return colors[colorName?.toLowerCase()] || '#9CA3AF';
-  };
 
   const getSeasonLabel = (season) => {
     const labels = {
@@ -418,7 +373,6 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
     color: '#1f2937',
-    marginBottom: 8,
   },
   outfitItem: {
     borderColor: '#667eea',
@@ -440,22 +394,5 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.3,
     shadowRadius: 6,
     elevation: 8,
-  },
-  colorRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-  },
-  colorDot: {
-    width: 16,
-    height: 16,
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: '#e5e7eb',
-  },
-  moreColors: {
-    fontSize: 10,
-    color: '#6b7280',
-    marginLeft: 2,
   },
 });
