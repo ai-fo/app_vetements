@@ -9,7 +9,8 @@ import {
   ActivityIndicator,
   Dimensions,
   RefreshControl,
-  Alert
+  Alert,
+  Animated
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -29,6 +30,7 @@ export default function WardrobeScreen({ navigation }) {
   const [selectedItem, setSelectedItem] = useState(null);
   const [refreshing, setRefreshing] = useState(false);
   const [deleteMode, setDeleteMode] = useState(false);
+  const [fadeAnim] = useState(new Animated.Value(1));
 
   // Recharger les données quand l'écran devient actif
   useFocusEffect(
@@ -196,21 +198,13 @@ export default function WardrobeScreen({ navigation }) {
           <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />
         }
       >
+        <Animated.View style={{ opacity: fadeAnim, flex: 1 }}>
         {(() => {
           // Filtrer les items visibles (sans les tenues)
           const visibleItems = items.filter(item => item.itemType !== 'OUTFIT');
           
           // Vérifier si des filtres sont actifs
           const hasActiveFilters = Object.values(filters).some(v => v !== null && v !== false);
-          
-          // Debug
-          console.log('Wardrobe display debug:', {
-            totalItems: items.length,
-            visibleItems: visibleItems.length,
-            hasActiveFilters,
-            filters,
-            loading
-          });
           
           // Si des filtres sont actifs mais aucun résultat
           if (hasActiveFilters && items.length === 0) {
@@ -265,6 +259,7 @@ export default function WardrobeScreen({ navigation }) {
             </View>
           );
         })()}
+        </Animated.View>
       </ScrollView>
 
       {selectedItem && (

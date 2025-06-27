@@ -20,12 +20,12 @@ export function useWardrobe(userId) {
     isFavorite: false
   });
 
-  // Charger les items au montage
+  // Charger les items au montage (une seule fois)
   useEffect(() => {
     if (userId) {
       loadWardrobeItems();
     }
-  }, [userId]);
+  }, [userId]); // Retirer 'filters' de la dépendance
 
   /**
    * Charge tous les items de la garde-robe
@@ -37,8 +37,8 @@ export function useWardrobe(userId) {
     setError(null);
     
     try {
-      // Maintenant getItems retourne déjà tout (pièces simples + tenues)
-      const clothingResponse = await wardrobeSupabaseAPI.getItems(userId, filters);
+      // Charger TOUS les items sans filtres (on filtrera côté client)
+      const clothingResponse = await wardrobeSupabaseAPI.getItems(userId, {});
       
       if (clothingResponse.error) {
         throw new Error(clothingResponse.error);
@@ -51,7 +51,7 @@ export function useWardrobe(userId) {
     } finally {
       setLoading(false);
     }
-  }, [userId, filters]);
+  }, [userId]); // Retirer 'filters' des dépendances
 
   /**
    * Met à jour un item existant
