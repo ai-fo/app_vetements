@@ -28,10 +28,12 @@ export default function FilterBar({ filters, onFiltersChange }) {
 
   const quickFilters = [
     { key: 'isFavorite', value: true, label: '✨ Favoris', special: true },
-    { key: 'itemType', value: ItemType.OUTFIT, label: '👔 Tenues' },
-    { key: 'itemType', value: ItemType.SINGLE_PIECE, label: '👕 Pièces' },
-    { key: 'season', value: Season.SUMMER, label: '☀️ Été' },
-    { key: 'season', value: Season.WINTER, label: '❄️ Hiver' },
+    { key: 'category', value: 'top', label: '👕 Hauts' },
+    { key: 'category', value: 'bottom', label: '👖 Bas' },
+    { key: 'category', value: 'dress', label: '👗 Robes' },
+    { key: 'category', value: 'outerwear', label: '🧥 Vestes' },
+    { key: 'category', value: 'shoes', label: '👟 Chaussures' },
+    { key: 'category', value: 'accessory', label: '👜 Accessoires' },
   ];
 
   return (
@@ -252,12 +254,51 @@ export default function FilterBar({ filters, onFiltersChange }) {
 
 const getCategoryLabel = (category) => {
   const labels = {
+    // Hauts
     'top': 'Hauts',
+    't-shirt': 'T-shirts',
+    'shirt': 'Chemises',
+    'blouse': 'Blouses',
+    'sweater': 'Pulls',
+    'hoodie': 'Sweats',
+    'tank_top': 'Débardeurs',
+    
+    // Bas
     'bottom': 'Bas',
+    'pants': 'Pantalons',
+    'jeans': 'Jeans',
+    'shorts': 'Shorts',
+    'skirt': 'Jupes',
+    'leggings': 'Leggings',
+    
+    // Pièces complètes
     'dress': 'Robes',
+    'jumpsuit': 'Combinaisons',
+    'overall': 'Salopettes',
+    
+    // Vêtements d'extérieur
     'outerwear': 'Vestes',
+    'jacket': 'Vestes',
+    'coat': 'Manteaux',
+    'vest': 'Gilets',
+    'blazer': 'Blazers',
+    
+    // Chaussures
     'shoes': 'Chaussures',
+    'sneakers': 'Baskets',
+    'boots': 'Bottes',
+    'sandals': 'Sandales',
+    'heels': 'Talons',
+    
+    // Accessoires
     'accessory': 'Accessoires',
+    'bag': 'Sacs',
+    'hat': 'Chapeaux',
+    'scarf': 'Écharpes',
+    'belt': 'Ceintures',
+    'jewelry': 'Bijoux',
+    'sunglasses': 'Lunettes',
+    
     'full_outfit': 'Tenue complète'
   };
   return labels[category] || category;
@@ -307,17 +348,17 @@ const styles = StyleSheet.create({
   },
   quickFilter: {
     backgroundColor: '#f3f4f6',
-    paddingHorizontal: 16,
+    paddingHorizontal: 14,
     paddingVertical: 8,
     borderRadius: 20,
-    marginRight: 10,
+    marginRight: 8,
   },
   quickFilterActive: {
     backgroundColor: '#667eea',
   },
   quickFilterText: {
     color: '#4b5563',
-    fontSize: 14,
+    fontSize: 13,
     fontWeight: '500',
   },
   quickFilterTextActive: {
