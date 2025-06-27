@@ -113,71 +113,39 @@ export default function WardrobeScreen({ navigation }) {
         style={[styles.listItem, isOutfit && styles.outfitItem]}
         onPress={() => navigation.navigate('ClothingDetail', { item })}
       >
-        <View style={styles.imageContainer}>
-          <Image source={{ uri: item.imageUrl }} style={styles.listItemImage} />
-          {isOutfit && (
-            <View style={styles.outfitBadge}>
-              <Ionicons name="shirt" size={10} color="#fff" />
-              <Text style={styles.outfitBadgeText}>Tenue</Text>
+        <Image source={{ uri: item.imageUrl }} style={styles.listItemImage} />
+        
+        <View style={styles.listItemContent}>
+          <Text style={styles.listItemName} numberOfLines={2}>{item.name}</Text>
+          
+          {/* Couleurs */}
+          {item.colors && item.colors.length > 0 && (
+            <View style={styles.colorRow}>
+              {item.colors.slice(0, 5).map((color, index) => (
+                <View key={index} style={[styles.colorDot, { backgroundColor: getColorHex(color) }]} />
+              ))}
+              {item.colors.length > 5 && (
+                <Text style={styles.moreColors}>+{item.colors.length - 5}</Text>
+              )}
             </View>
           )}
         </View>
         
-        <View style={styles.listItemContent}>
-          <View style={styles.listItemHeader}>
-            <Text style={styles.listItemName} numberOfLines={1}>{item.name}</Text>
-            <View style={styles.listItemActions}>
-              <FavoriteButton
-                isFavorite={item.isFavorite}
-                onToggle={() => toggleFavorite(item.id)}
-                size={18}
-              />
-              {deleteMode && (
-                <TouchableOpacity 
-                  style={styles.listDeleteButton}
-                  onPress={() => handleDeleteItem(item.id, item.name)}
-                >
-                  <Ionicons name="trash" size={18} color="#ef4444" />
-                </TouchableOpacity>
-              )}
-            </View>
-          </View>
-          
-          {item.brand && (
-            <Text style={styles.listItemBrand}>{item.brand}</Text>
+        {/* Actions à droite */}
+        <View style={styles.listItemActions}>
+          <FavoriteButton
+            isFavorite={item.isFavorite}
+            onToggle={() => toggleFavorite(item.id)}
+            size={20}
+          />
+          {deleteMode && (
+            <TouchableOpacity 
+              style={styles.listDeleteButton}
+              onPress={() => handleDeleteItem(item.id, item.name)}
+            >
+              <Ionicons name="trash" size={20} color="#ef4444" />
+            </TouchableOpacity>
           )}
-          
-          <View style={styles.listItemTags}>
-            {/* Couleurs */}
-            {item.colors && item.colors.length > 0 && (
-              <View style={[styles.colorRow, { marginBottom: 4 }]}>
-                {item.colors.slice(0, 4).map((color, index) => (
-                  <View key={index} style={[styles.colorDot, { backgroundColor: getColorHex(color) }]} />
-                ))}
-                {item.colors.length > 4 && (
-                  <Text style={styles.moreColors}>+{item.colors.length - 4}</Text>
-                )}
-              </View>
-            )}
-            
-            {/* Saisons */}
-            {item.seasons && item.seasons.length > 0 && (
-              item.seasons.map((season, index) => (
-                <View key={`season-${index}`} style={styles.tag}>
-                  <Text style={styles.tagText}>{getSeasonLabel(season)}</Text>
-                </View>
-              ))
-            )}
-            
-            {/* Occasions */}
-            {item.tags && item.tags.length > 0 && (
-              item.tags.slice(0, 2).map((tag, index) => (
-                <View key={`tag-${index}`} style={styles.tag}>
-                  <Text style={styles.tagText}>{tag}</Text>
-                </View>
-              ))
-            )}
-          </View>
         </View>
       </TouchableOpacity>
     );
@@ -428,23 +396,19 @@ const styles = StyleSheet.create({
     elevation: 2,
   },
   listItemImage: {
-    width: 60,
-    height: 80,
+    width: 70,
+    height: 90,
     borderRadius: 8,
     marginRight: 12,
   },
   listItemContent: {
     flex: 1,
-  },
-  listItemHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    marginBottom: 4,
+    justifyContent: 'center',
   },
   listItemActions: {
     flexDirection: 'row',
     alignItems: 'center',
+    marginLeft: 8,
   },
   listDeleteButton: {
     marginLeft: 12,
@@ -454,52 +418,11 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
     color: '#1f2937',
-    flex: 1,
-  },
-  listItemBrand: {
-    fontSize: 14,
-    color: '#6b7280',
     marginBottom: 8,
-  },
-  listItemTags: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-  },
-  tag: {
-    backgroundColor: '#e5e7eb',
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 4,
-    marginRight: 6,
-    marginBottom: 4,
-  },
-  tagText: {
-    fontSize: 12,
-    color: '#4b5563',
   },
   outfitItem: {
     borderColor: '#667eea',
     borderWidth: 2,
-  },
-  imageContainer: {
-    position: 'relative',
-  },
-  outfitBadge: {
-    position: 'absolute',
-    top: 5,
-    right: 5,
-    backgroundColor: '#667eea',
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 12,
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  outfitBadgeText: {
-    color: '#fff',
-    fontSize: 10,
-    fontWeight: '600',
-    marginLeft: 4,
   },
   floatingButton: {
     position: 'absolute',
@@ -521,13 +444,12 @@ const styles = StyleSheet.create({
   colorRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 4,
-    marginRight: 8,
+    gap: 6,
   },
   colorDot: {
-    width: 12,
-    height: 12,
-    borderRadius: 6,
+    width: 16,
+    height: 16,
+    borderRadius: 8,
     borderWidth: 1,
     borderColor: '#e5e7eb',
   },
