@@ -14,7 +14,10 @@ import { ItemType, ClothingCategory, Season } from '../types/wardrobe.types';
 export default function FilterBar({ filters, onFiltersChange }) {
   const [showFilterModal, setShowFilterModal] = useState(false);
   
-  const activeFiltersCount = Object.values(filters).filter(v => v !== null).length;
+  const activeFiltersCount = Object.entries(filters).filter(([key, value]) => {
+    if (key === 'isFavorite') return value === true;
+    return value !== null;
+  }).length;
 
   const clearFilters = () => {
     onFiltersChange({
