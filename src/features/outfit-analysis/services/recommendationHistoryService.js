@@ -6,22 +6,10 @@ class RecommendationHistoryService {
    */
   async trackRecommendation(userId, recommendation) {
     try {
-      // Vérifier si cette recommandation a déjà été trackée aujourd'hui
-      const today = new Date();
-      today.setHours(0, 0, 0, 0);
+      // Générer un ID unique pour cette instance de recommandation
+      const uniqueRecommendationId = `${recommendation.id}-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
       
-      const { data: existing } = await supabase
-        .from('recommendation_tracking')
-        .select('id')
-        .eq('user_id', userId)
-        .eq('recommendation_id', recommendation.id)
-        .gte('recommended_at', today.toISOString())
-        .limit(1);
-      
-      if (existing && existing.length > 0) {
-        console.log('Recommendation already tracked today:', recommendation.id);
-        return { data: existing[0], error: null };
-      }
+      // Note: on ne vérifie plus les doublons car chaque recommandation a maintenant un ID unique
       
       // Déterminer le type de recommandation
       let recommendationType = 'single_item';
@@ -51,11 +39,12 @@ class RecommendationHistoryService {
 
       const record = {
         user_id: userId,
-        recommendation_id: recommendationId,
+        recommendation_id: uniqueRecommendationId, // Utiliser l'ID unique
         recommendation_type: recommendationType,
         item_ids: itemIds,
         weather_data: recommendation.weatherContext || null,
-        reason: recommendation.reason || null
+        reason: recommendation.reason || null,
+        original_recommendation_id: recommendation.id // Garder l'ID original pour référence
       };
 
       const { data, error } = await supabase
@@ -230,7 +219,8 @@ class RecommendationHistoryService {
    */
   async findRecommendationById(userId, recommendationId) {
     try {
-      const { data, error } = await supabase
+      // D'abord essayer avec l'ID exact (cas des nouveaux IDs uniques)
+      let { data, error } = await supabase
         .from('recommendation_tracking')
         .select('*')
         .eq('user_id', userId)
@@ -238,6 +228,21 @@ class RecommendationHistoryService {
         .order('recommended_at', { ascending: false })
         .limit(1)
         .single();
+
+      // Si pas trouvé, essayer avec l'ID original (pour la compatibilité)
+      if (!data || error?.code === 'PGRST116') {
+        const result = await supabase
+          .from('recommendation_tracking')
+          .select('*')
+          .eq('user_id', userId)
+          .eq('original_recommendation_id', recommendationId)
+          .order('recommended_at', { ascending: false })
+          .limit(1)
+          .single();
+        
+        data = result.data;
+        error = result.error;
+      }
 
       if (error && error.code !== 'PGRST116') throw error; // PGRST116 = no rows returned
       return { data, error: null };
