@@ -5,6 +5,9 @@ import { dailyRecommendationService } from '../services/dailyRecommendationServi
 import { recommendationHistoryService } from '../services/recommendationHistoryService';
 import * as Location from 'expo-location';
 
+// Cache local pour les recommandations en cours de tracking
+const pendingRecommendations = new Set();
+
 export const useRecommendations = (userId) => {
   const { items = [], loading: wardrobeLoading } = useWardrobe(userId);
   const [recommendations, setRecommendations] = useState([]);
@@ -78,6 +81,12 @@ export const useRecommendations = (userId) => {
       const todayRecs = await recommendationHistoryService.getTodayRecommendations(userId);
       const todayData = todayRecs.data || { originalIds: [], itemIds: [] };
       
+      // Ajouter les recommandations en cours de tracking au cache
+      const allRecommendedCombos = [
+        ...todayData.originalIds,
+        ...Array.from(pendingRecommendations)
+      ];
+      
       // Charger aussi l'historique récent pour l'affichage
       const recent = await loadRecentRecommendations();
       
@@ -127,7 +136,7 @@ export const useRecommendations = (userId) => {
         wardrobeItems: wardrobeData,
         currentSeason: currentSeason,
         recentlyRecommendedIds: todayData.itemIds, // IDs des items déjà recommandés aujourd'hui
-        recentlyRecommendedCombos: todayData.originalIds, // IDs des combos déjà recommandés aujourd'hui
+        recentlyRecommendedCombos: allRecommendedCombos, // IDs des combos déjà recommandés + en cours
         includeRecommendationHistory: true  // Demander à l'IA d'inclure l'info de récence
       });
 
@@ -203,13 +212,29 @@ export const useRecommendations = (userId) => {
           }
         }
         
-        // Prendre toutes les recommandations de l'IA (pas de limite arbitraire)
-        setRecommendations(processedRecommendations);
-        
-        // Tracker SEULEMENT la première recommandation affichée (pas toutes)
+        // Tracker IMMÉDIATEMENT la première recommandation AVANT de l'afficher
         if (userId && processedRecommendations.length > 0) {
-          recommendationHistoryService.trackRecommendation(userId, processedRecommendations[0]);
+          const firstRec = processedRecommendations[0];
+          
+          // Ajouter immédiatement au cache local
+          pendingRecommendations.add(firstRec.id);
+          
+          // Tracker de manière asynchrone
+          recommendationHistoryService.trackRecommendation(userId, firstRec)
+            .then(() => {
+              console.log('Recommendation tracked');
+              // Retirer du cache après un délai (au cas où)
+              setTimeout(() => pendingRecommendations.delete(firstRec.id), 5000);
+            })
+            .catch(err => {
+              console.error('Error tracking recommendation:', err);
+              // En cas d'erreur, retirer du cache
+              pendingRecommendations.delete(firstRec.id);
+            });
         }
+        
+        // Ensuite seulement, afficher les recommandations
+        setRecommendations(processedRecommendations);
       }
     } catch (error) {
       console.error('Error generating recommendations:', error);
