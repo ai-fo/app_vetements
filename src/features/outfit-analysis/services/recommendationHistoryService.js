@@ -82,6 +82,36 @@ class RecommendationHistoryService {
   }
 
   /**
+   * Récupère les recommandations d'aujourd'hui pour éviter les doublons
+   */
+  async getTodayRecommendations(userId) {
+    try {
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      
+      const { data, error } = await supabase
+        .from('recommendation_tracking')
+        .select('original_recommendation_id, item_ids')
+        .eq('user_id', userId)
+        .gte('recommended_at', today.toISOString())
+        .order('recommended_at', { ascending: false });
+
+      if (error) throw error;
+      
+      // Extraire les IDs originaux et les item_ids
+      const recommendedToday = {
+        originalIds: data.map(r => r.original_recommendation_id).filter(Boolean),
+        itemIds: [...new Set(data.flatMap(r => r.item_ids || []))]
+      };
+      
+      return { data: recommendedToday, error: null };
+    } catch (error) {
+      console.error('Error fetching today recommendations:', error);
+      return { data: { originalIds: [], itemIds: [] }, error };
+    }
+  }
+
+  /**
    * Marque une recommandation comme portée
    */
   async markAsWorn(recommendationId) {

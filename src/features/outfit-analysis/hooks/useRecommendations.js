@@ -74,9 +74,12 @@ export const useRecommendations = (userId) => {
       const userCity = await getUserLocation();
       const currentSeason = getCurrentSeason();
       
-      // Charger les recommandations récentes
+      // Charger les recommandations d'aujourd'hui pour éviter les doublons
+      const todayRecs = await recommendationHistoryService.getTodayRecommendations(userId);
+      const todayData = todayRecs.data || { originalIds: [], itemIds: [] };
+      
+      // Charger aussi l'historique récent pour l'affichage
       const recent = await loadRecentRecommendations();
-      const recentIds = recent.flatMap(r => r.item_ids || []);
       
       // Préparer les données de la garde-robe enrichies pour l'API
       const wardrobeData = items.map(item => ({
@@ -113,7 +116,8 @@ export const useRecommendations = (userId) => {
       // Appeler l'API pour obtenir les recommandations
       console.log('Sending wardrobe data to API:', {
         itemCount: wardrobeData.length,
-        recentlyRecommendedCount: recentIds.length,
+        todayRecommendedCount: todayData.originalIds.length,
+        todayItemsCount: todayData.itemIds.length,
         city: userCity,
         season: currentSeason
       });
@@ -122,7 +126,8 @@ export const useRecommendations = (userId) => {
         city: userCity,
         wardrobeItems: wardrobeData,
         currentSeason: currentSeason,
-        recentlyRecommendedIds: recentIds, // Envoyer les IDs récents à l'API
+        recentlyRecommendedIds: todayData.itemIds, // IDs des items déjà recommandés aujourd'hui
+        recentlyRecommendedCombos: todayData.originalIds, // IDs des combos déjà recommandés aujourd'hui
         includeRecommendationHistory: true  // Demander à l'IA d'inclure l'info de récence
       });
 
