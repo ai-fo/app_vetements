@@ -8,9 +8,10 @@ import {
   TouchableOpacity,
   SafeAreaView,
 } from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
+import { BlurView } from 'expo-blur';
 import ItemAttributesEditor from '../../virtual-wardrobe/components/ItemAttributesEditor';
+import { theme } from '../../../shared/styles/theme';
 
 export default function ClothingDetailView({ route, navigation }) {
   const { item: initialItem } = route.params;
@@ -23,11 +24,11 @@ export default function ClothingDetailView({ route, navigation }) {
   // Fonction pour obtenir l'icône de saison
   const getSeasonIcon = (season) => {
     switch(season) {
-      case 'spring': return '🌸';
-      case 'summer': return '☀️';
-      case 'fall': return '🍂';
-      case 'winter': return '❄️';
-      default: return '📅';
+      case 'spring': return 'flower';
+      case 'summer': return 'sunny';
+      case 'fall': return 'leaf';
+      case 'winter': return 'snow';
+      default: return 'calendar';
     }
   };
 
@@ -221,7 +222,7 @@ export default function ClothingDetailView({ route, navigation }) {
             <View style={styles.tagList}>
               {(piece.style_tags || item.styleTags || []).map((style, index) => (
                 <View key={index} style={styles.styleTag}>
-                  <Ionicons name="pricetag" size={14} color="#8b5cf6" style={styles.tagIcon} />
+                  <Ionicons name="pricetag-outline" size={14} color={theme.colors.categories.bottoms} style={styles.tagIcon} />
                   <Text style={styles.styleTagText}>{translateTerm(style)}</Text>
                 </View>
               ))}
@@ -235,7 +236,7 @@ export default function ClothingDetailView({ route, navigation }) {
             <View style={styles.tagList}>
               {(piece.occasion_tags || item.tags || []).map((occasion, index) => (
                 <View key={index} style={styles.tag}>
-                  <Ionicons name="calendar-outline" size={14} color="#667eea" style={styles.tagIcon} />
+                  <Ionicons name="calendar-outline" size={14} color={theme.colors.primary} style={styles.tagIcon} />
                   <Text style={styles.tagText}>{translateTerm(occasion)}</Text>
                 </View>
               ))}
@@ -249,7 +250,7 @@ export default function ClothingDetailView({ route, navigation }) {
             <View style={styles.seasonList}>
               {(piece.seasonality || item.seasons || []).map((season, index) => (
                 <View key={index} style={styles.seasonChip}>
-                  <Text style={styles.seasonIcon}>{getSeasonIcon(season)}</Text>
+                  <Ionicons name={getSeasonIcon(season)} size={18} color={theme.colors.primary} />
                   <Text style={styles.seasonText}>{translateTerm(season)}</Text>
                 </View>
               ))}
@@ -379,7 +380,7 @@ export default function ClothingDetailView({ route, navigation }) {
             <View style={styles.seasonList}>
               {seasonality.map((season, index) => (
                 <View key={index} style={styles.seasonChip}>
-                  <Text style={styles.seasonIcon}>{getSeasonIcon(season)}</Text>
+                  <Ionicons name={getSeasonIcon(season)} size={18} color={theme.colors.primary} />
                   <Text style={styles.seasonText}>{translateTerm(season)}</Text>
                 </View>
               ))}
@@ -391,38 +392,48 @@ export default function ClothingDetailView({ route, navigation }) {
   };
 
   return (
-    <SafeAreaView style={styles.container}>
-      <LinearGradient
-        colors={['#667eea', '#764ba2']}
-        style={styles.header}
-      >
-        <TouchableOpacity onPress={() => navigation.goBack()}>
-          <Ionicons name="arrow-back" size={28} color="#fff" />
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>
-          {isSinglePiece ? 'Détails du vêtement' : 'Détails de la tenue'}
-        </Text>
-        {isSinglePiece && (
-          <TouchableOpacity onPress={() => setShowEditor(true)}>
-            <Ionicons name="create-outline" size={24} color="#fff" />
-          </TouchableOpacity>
-        )}
-        {!isSinglePiece && (
-          <TouchableOpacity 
-            onPress={() => navigation.navigate('ClothingZoomView', { 
-              item: item, 
-              pieces: item.pieces || [] 
-            })}
-          >
-            <Ionicons name="search" size={24} color="#fff" />
-          </TouchableOpacity>
-        )}
-      </LinearGradient>
-
+    <View style={styles.container}>
       <ScrollView showsVerticalScrollIndicator={false}>
-        {item.imageUrl && (
-          <Image source={{ uri: item.imageUrl }} style={styles.image} />
-        )}
+        {/* Header flottant */}
+        <View style={styles.floatingHeader}>
+          <BlurView intensity={80} tint="light" style={styles.blurContainer}>
+            <SafeAreaView>
+              <View style={styles.headerContent}>
+                <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
+                  <Ionicons name="chevron-back" size={22} color={theme.colors.primaryDark} />
+                </TouchableOpacity>
+                <Text style={styles.headerTitle}>
+                  {isSinglePiece ? 'Détails du vêtement' : 'Détails de la tenue'}
+                </Text>
+                <View style={styles.headerActions}>
+                  {isSinglePiece && (
+                    <TouchableOpacity onPress={() => setShowEditor(true)} style={styles.actionButton}>
+                      <Ionicons name="create-outline" size={20} color={theme.colors.primary} />
+                    </TouchableOpacity>
+                  )}
+                  {!isSinglePiece && (
+                    <TouchableOpacity 
+                      onPress={() => navigation.navigate('ClothingZoomView', { 
+                        item: item, 
+                        pieces: item.pieces || [] 
+                      })}
+                      style={styles.actionButton}
+                    >
+                      <Ionicons name="search-outline" size={20} color={theme.colors.primary} />
+                    </TouchableOpacity>
+                  )}
+                </View>
+              </View>
+            </SafeAreaView>
+          </BlurView>
+        </View>
+
+        {/* Image */}
+        <View style={styles.imageSection}>
+          {item.imageUrl && (
+            <Image source={{ uri: item.imageUrl }} style={styles.image} />
+          )}
+        </View>
 
         <View style={styles.content}>
           {isSinglePiece ? renderSinglePiece() : renderCompleteLook()}
@@ -452,74 +463,109 @@ export default function ClothingDetailView({ route, navigation }) {
           setShowEditor(false);
         }}
       />
-    </SafeAreaView>
+    </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f9fafb',
+    backgroundColor: theme.colors.background,
   },
-  header: {
+  floatingHeader: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    zIndex: 100,
+  },
+  blurContainer: {
+    paddingBottom: 16,
+    borderBottomWidth: 0.5,
+    borderBottomColor: theme.colors.borderLight,
+  },
+  headerContent: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
-    paddingTop: 50,
-    paddingHorizontal: 20,
-    paddingBottom: 20,
+    justifyContent: 'space-between',
+    paddingTop: theme.spacing.md,
+    paddingHorizontal: theme.spacing.lg,
+  },
+  backButton: {
+    width: 40,
+    height: 40,
+    justifyContent: 'center',
+    alignItems: 'flex-start',
   },
   headerTitle: {
-    color: '#fff',
-    fontSize: 18,
-    fontWeight: '600',
+    fontSize: theme.typography.sizes.lg,
+    fontFamily: theme.typography.fonts.semiBold,
+    color: theme.colors.primaryDark,
+    letterSpacing: theme.typography.letterSpacing.tight,
+  },
+  headerActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: theme.spacing.sm,
+  },
+  actionButton: {
+    width: 36,
+    height: 36,
+    borderRadius: 18,
+    backgroundColor: theme.colors.surface,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 1.5,
+    borderColor: theme.colors.border,
+  },
+  imageSection: {
+    marginTop: 100,
   },
   image: {
     width: '100%',
     aspectRatio: 3/4,
     resizeMode: 'cover',
+    backgroundColor: theme.colors.surface,
   },
   content: {
-    padding: 20,
+    padding: theme.spacing.lg,
   },
   section: {
-    marginBottom: 25,
+    marginBottom: theme.spacing.xl,
   },
   sectionTitle: {
-    fontSize: 18,
-    fontWeight: '700',
-    color: '#1f2937',
-    marginBottom: 12,
-    letterSpacing: 0.5,
+    fontSize: theme.typography.sizes.lg,
+    fontFamily: theme.typography.fonts.semiBold,
+    color: theme.colors.primaryDark,
+    marginBottom: theme.spacing.md,
+    letterSpacing: theme.typography.letterSpacing.tight,
   },
   infoCard: {
-    backgroundColor: '#fff',
-    borderRadius: 15,
-    padding: 20,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.08,
-    shadowRadius: 8,
-    elevation: 3,
+    backgroundColor: theme.colors.surface,
+    borderRadius: theme.borderRadius.lg,
+    padding: theme.spacing.lg,
+    ...theme.shadows.sm,
   },
   largeText: {
-    fontSize: 24,
-    fontWeight: '700',
-    color: '#1f2937',
+    fontSize: theme.typography.sizes.xl,
+    fontFamily: theme.typography.fonts.semiBold,
+    color: theme.colors.text,
     textAlign: 'center',
     textTransform: 'capitalize',
     marginBottom: 4,
   },
   itemBrand: {
-    fontSize: 16,
-    color: '#6b7280',
+    fontSize: theme.typography.sizes.base,
+    fontFamily: theme.typography.fonts.regular,
+    color: theme.colors.textSecondary,
     textAlign: 'center',
     marginTop: 4,
     fontStyle: 'italic',
   },
   itemType: {
-    fontSize: 16,
-    color: '#6b7280',
+    fontSize: theme.typography.sizes.base,
+    fontFamily: theme.typography.fonts.regular,
+    color: theme.colors.textSecondary,
     textAlign: 'center',
     marginTop: 8,
   },
@@ -529,27 +575,27 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     paddingVertical: 12,
     borderBottomWidth: 1,
-    borderBottomColor: '#f3f4f6',
+    borderBottomColor: theme.colors.border,
   },
   infoLabel: {
-    fontSize: 15,
-    color: '#6b7280',
-    fontWeight: '500',
+    fontSize: theme.typography.sizes.base,
+    fontFamily: theme.typography.fonts.medium,
+    color: theme.colors.textSecondary,
   },
   infoValue: {
-    fontSize: 15,
-    fontWeight: '600',
-    color: '#1f2937',
+    fontSize: theme.typography.sizes.base,
+    fontFamily: theme.typography.fonts.medium,
+    color: theme.colors.text,
     textTransform: 'capitalize',
   },
   colorRow: {
     marginBottom: 16,
   },
   colorLabel: {
-    fontSize: 14,
-    color: '#6b7280',
+    fontSize: theme.typography.sizes.sm,
+    fontFamily: theme.typography.fonts.medium,
+    color: theme.colors.textSecondary,
     marginBottom: 10,
-    fontWeight: '500',
   },
   colorList: {
     flexDirection: 'row',
@@ -557,23 +603,23 @@ const styles = StyleSheet.create({
     gap: 10,
   },
   colorChip: {
-    backgroundColor: '#667eea',
+    backgroundColor: theme.colors.primary,
     paddingHorizontal: 16,
     paddingVertical: 10,
-    borderRadius: 22,
+    borderRadius: theme.borderRadius.full,
     minWidth: 80,
     alignItems: 'center',
   },
   secondaryColor: {
-    backgroundColor: '#9ca3af',
+    backgroundColor: theme.colors.textMuted,
   },
   accentColor: {
-    backgroundColor: '#f59e0b',
+    backgroundColor: theme.colors.accent,
   },
   colorText: {
-    fontSize: 14,
+    fontSize: theme.typography.sizes.sm,
+    fontFamily: theme.typography.fonts.medium,
     color: '#ffffff',
-    fontWeight: '600',
     textAlign: 'center',
   },
   tagList: {
@@ -582,36 +628,44 @@ const styles = StyleSheet.create({
     gap: 10,
   },
   tag: {
-    backgroundColor: 'rgba(102,126,234,0.1)',
+    backgroundColor: `${theme.colors.primary}15`,
     paddingHorizontal: 16,
     paddingVertical: 10,
-    borderRadius: 22,
+    borderRadius: theme.borderRadius.full,
     flexDirection: 'row',
     alignItems: 'center',
   },
   styleTag: {
-    backgroundColor: 'rgba(139,92,246,0.1)',
+    backgroundColor: `${theme.colors.categories.bottoms}15`,
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: theme.borderRadius.full,
     flexDirection: 'row',
     alignItems: 'center',
   },
   detailTag: {
-    backgroundColor: '#e5e7eb',
+    backgroundColor: theme.colors.surface,
     paddingHorizontal: 16,
     paddingVertical: 10,
-    borderRadius: 22,
+    borderRadius: theme.borderRadius.full,
+    borderWidth: 1.5,
+    borderColor: theme.colors.border,
   },
   patternTag: {
-    backgroundColor: 'rgba(245,158,11,0.1)',
+    backgroundColor: `${theme.colors.accent}15`,
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderRadius: theme.borderRadius.full,
   },
   tagText: {
-    fontSize: 14,
-    color: '#667eea',
-    fontWeight: '600',
+    fontSize: theme.typography.sizes.sm,
+    fontFamily: theme.typography.fonts.medium,
+    color: theme.colors.primary,
   },
   styleTagText: {
-    fontSize: 14,
-    color: '#8b5cf6',
-    fontWeight: '600',
+    fontSize: theme.typography.sizes.sm,
+    fontFamily: theme.typography.fonts.medium,
+    color: theme.colors.categories.bottoms,
   },
   tagIcon: {
     marginRight: 6,
@@ -624,47 +678,27 @@ const styles = StyleSheet.create({
   seasonChip: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#fff',
+    backgroundColor: theme.colors.surface,
     paddingHorizontal: 18,
     paddingVertical: 12,
-    borderRadius: 25,
-    borderWidth: 2,
-    borderColor: '#e5e7eb',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 2,
-    elevation: 1,
-  },
-  seasonIcon: {
-    fontSize: 22,
-    marginRight: 8,
+    borderRadius: theme.borderRadius.full,
+    borderWidth: 1.5,
+    borderColor: theme.colors.border,
+    gap: 8,
+    ...theme.shadows.sm,
   },
   seasonText: {
-    fontSize: 14,
-    color: '#1f2937',
-    fontWeight: '600',
-  },
-  layeringIndicator: {
-    flexDirection: 'row',
-    gap: 6,
-  },
-  layeringDot: {
-    width: 12,
-    height: 12,
-    borderRadius: 6,
-    backgroundColor: '#e5e7eb',
-  },
-  layeringDotActive: {
-    backgroundColor: '#667eea',
+    fontSize: theme.typography.sizes.sm,
+    fontFamily: theme.typography.fonts.medium,
+    color: theme.colors.text,
   },
   pieceCard: {
-    backgroundColor: '#f9fafb',
-    borderRadius: 12,
-    padding: 15,
+    backgroundColor: theme.colors.surface,
+    borderRadius: theme.borderRadius.md,
+    padding: theme.spacing.md,
     marginBottom: 10,
     borderWidth: 1,
-    borderColor: '#e5e7eb',
+    borderColor: theme.colors.border,
   },
   pieceHeader: {
     flexDirection: 'row',
@@ -673,9 +707,9 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   pieceTitle: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#1f2937',
+    fontSize: theme.typography.sizes.base,
+    fontFamily: theme.typography.fonts.semiBold,
+    color: theme.colors.text,
     textTransform: 'capitalize',
   },
   pieceColors: {
@@ -683,14 +717,15 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   miniColorChip: {
-    backgroundColor: '#e5e7eb',
+    backgroundColor: theme.colors.background,
     paddingHorizontal: 10,
     paddingVertical: 4,
     borderRadius: 12,
   },
   miniColorText: {
-    fontSize: 12,
-    color: '#1f2937',
+    fontSize: theme.typography.sizes.xs,
+    fontFamily: theme.typography.fonts.regular,
+    color: theme.colors.text,
   },
   pieceDetails: {
     flexDirection: 'row',
@@ -698,23 +733,26 @@ const styles = StyleSheet.create({
     gap: 10,
   },
   pieceDetail: {
-    fontSize: 14,
-    color: '#6b7280',
+    fontSize: theme.typography.sizes.sm,
+    fontFamily: theme.typography.fonts.regular,
+    color: theme.colors.textSecondary,
   },
   dateInfo: {
     marginTop: 30,
     paddingTop: 20,
     borderTopWidth: 1,
-    borderTopColor: '#e5e7eb',
+    borderTopColor: theme.colors.border,
     alignItems: 'center',
   },
   dateText: {
-    fontSize: 14,
-    color: '#6b7280',
+    fontSize: theme.typography.sizes.sm,
+    fontFamily: theme.typography.fonts.regular,
+    color: theme.colors.textSecondary,
   },
   wearText: {
-    fontSize: 14,
-    color: '#6b7280',
+    fontSize: theme.typography.sizes.sm,
+    fontFamily: theme.typography.fonts.regular,
+    color: theme.colors.textSecondary,
     marginTop: 4,
   },
 });

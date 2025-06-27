@@ -14,6 +14,7 @@ import {
 } from './src/features/outfit-analysis';
 import { WardrobeScreen, ItemEditor } from './src/features/virtual-wardrobe';
 import { ActivityIndicator, View } from 'react-native';
+import useLoadFonts from './src/shared/hooks/useFonts';
 
 const Stack = createStackNavigator();
 
@@ -109,6 +110,16 @@ function RootNavigator() {
 }
 
 export default function App() {
+  const fontsLoaded = useLoadFonts();
+
+  if (!fontsLoaded) {
+    return (
+      <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+        <ActivityIndicator size="large" color="#667eea" />
+      </View>
+    );
+  }
+
   return (
     <NavigationContainer>
       <AuthProvider>
