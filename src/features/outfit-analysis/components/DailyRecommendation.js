@@ -225,6 +225,16 @@ export default function DailyRecommendation({ analyses, navigation }) {
                 <Text style={styles.reasonTitle}>Pourquoi cette tenue ?</Text>
               </View>
               <Text style={styles.reasonText}>{recommendedOutfit.reason}</Text>
+              
+              {/* Badge si récemment recommandé */}
+              {recommendedOutfit.wasRecentlyRecommended && (
+                <View style={styles.recentBadge}>
+                  <Ionicons name="time-outline" size={12} color={theme.colors.textSecondary} />
+                  <Text style={styles.recentBadgeText}>
+                    Recommandé il y a {recommendedOutfit.lastRecommendedDays || 'quelques'} jour{recommendedOutfit.lastRecommendedDays > 1 ? 's' : ''}
+                  </Text>
+                </View>
+              )}
             </View>
           )}
 
@@ -544,5 +554,21 @@ const styles = StyleSheet.create({
     fontFamily: theme.typography.fonts.medium,
     color: theme.colors.primary,
     textAlign: 'center',
+  },
+  recentBadge: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 8,
+    backgroundColor: theme.colors.surface,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: theme.borderRadius.full,
+    alignSelf: 'flex-start',
+    gap: 4,
+  },
+  recentBadgeText: {
+    fontSize: theme.typography.sizes.xs,
+    fontFamily: theme.typography.fonts.regular,
+    color: theme.colors.textSecondary,
   },
 });
