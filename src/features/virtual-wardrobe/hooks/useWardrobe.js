@@ -174,12 +174,72 @@ export function useWardrobe(userId) {
   };
 
   /**
+   * Mappe les types spécifiques vers des catégories générales
+   */
+  const getCategoryGroup = (pieceType) => {
+    const categoryMap = {
+      // Hauts
+      't-shirt': 'top',
+      'shirt': 'top',
+      'blouse': 'top',
+      'sweater': 'top',
+      'hoodie': 'top',
+      'tank_top': 'top',
+      'top': 'top',
+      
+      // Bas
+      'pants': 'bottom',
+      'jeans': 'bottom',
+      'shorts': 'bottom',
+      'skirt': 'bottom',
+      'leggings': 'bottom',
+      'bottom': 'bottom',
+      
+      // Robes
+      'dress': 'dress',
+      'jumpsuit': 'dress',
+      'overall': 'dress',
+      
+      // Vêtements d'extérieur
+      'jacket': 'outerwear',
+      'coat': 'outerwear',
+      'vest': 'outerwear',
+      'blazer': 'outerwear',
+      'outerwear': 'outerwear',
+      
+      // Chaussures
+      'sneakers': 'shoes',
+      'boots': 'shoes',
+      'sandals': 'shoes',
+      'heels': 'shoes',
+      'shoes': 'shoes',
+      
+      // Accessoires
+      'bag': 'accessory',
+      'hat': 'accessory',
+      'scarf': 'accessory',
+      'belt': 'accessory',
+      'jewelry': 'accessory',
+      'sunglasses': 'accessory',
+      'accessory': 'accessory',
+    };
+    
+    return categoryMap[pieceType?.toLowerCase()] || pieceType;
+  };
+
+  /**
    * Filtre les items selon les critères
    */
   const getFilteredItems = useCallback(() => {
     return items.filter(item => {
       if (filters.itemType && item.itemType !== filters.itemType) return false;
-      if (filters.category && item.category !== filters.category) return false;
+      
+      // Pour la catégorie, on compare avec le groupe de catégorie
+      if (filters.category) {
+        const itemCategoryGroup = getCategoryGroup(item.category);
+        if (itemCategoryGroup !== filters.category) return false;
+      }
+      
       if (filters.season && !item.seasons.includes(filters.season)) return false;
       if (filters.color && !item.colors.includes(filters.color)) return false;
       if (filters.brand && item.brand.toLowerCase() !== filters.brand.toLowerCase()) return false;
