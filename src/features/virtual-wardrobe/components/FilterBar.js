@@ -75,7 +75,7 @@ export default function FilterBar({ filters, onFiltersChange }) {
                   }}
                 >
                   <LinearGradient
-                    colors={['#f59e0b', '#ec4899']}
+                    colors={['#667eea', '#764ba2']}
                     style={styles.quickFilterSpecialGradient}
                     start={{ x: 0, y: 0 }}
                     end={{ x: 1, y: 1 }}

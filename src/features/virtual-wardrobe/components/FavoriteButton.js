@@ -17,7 +17,7 @@ export default function FavoriteButton({ isFavorite, onToggle, size = 24, style 
       <View style={styles.iconContainer}>
         {isFavorite ? (
           <LinearGradient
-            colors={['#f59e0b', '#f97316']}
+            colors={['#667eea', '#764ba2']}
             style={styles.gradientBackground}
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 1 }}
