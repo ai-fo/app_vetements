@@ -200,14 +200,20 @@ export default function WardrobeScreen({ navigation }) {
           // Filtrer les items visibles (sans les tenues)
           const visibleItems = items.filter(item => item.itemType !== 'OUTFIT');
           
-          // Si aucun item après tous les chargements
-          if (items.length === 0 && !loading) {
-            return renderEmptyState();
-          }
+          // Vérifier si des filtres sont actifs
+          const hasActiveFilters = Object.values(filters).some(v => v !== null && v !== false);
+          
+          // Debug
+          console.log('Wardrobe display debug:', {
+            totalItems: items.length,
+            visibleItems: visibleItems.length,
+            hasActiveFilters,
+            filters,
+            loading
+          });
           
           // Si des filtres sont actifs mais aucun résultat
-          const hasActiveFilters = Object.values(filters).some(v => v !== null && v !== false);
-          if (visibleItems.length === 0 && hasActiveFilters) {
+          if (hasActiveFilters && items.length === 0) {
             return (
               <View style={styles.noResultsContainer}>
                 <Ionicons name="search-outline" size={60} color="#9ca3af" />
@@ -228,6 +234,22 @@ export default function WardrobeScreen({ navigation }) {
                 >
                   <Text style={styles.clearFiltersButtonText}>Effacer les filtres</Text>
                 </TouchableOpacity>
+              </View>
+            );
+          }
+          
+          // Si aucun item et aucun filtre (garde-robe vraiment vide)
+          if (items.length === 0 && !loading) {
+            return renderEmptyState();
+          }
+          
+          // Si on a des items mais tous sont des tenues (donc rien à afficher)
+          if (visibleItems.length === 0 && items.length > 0) {
+            return (
+              <View style={styles.noResultsContainer}>
+                <Text style={styles.noResultsText}>
+                  Aucune pièce individuelle à afficher
+                </Text>
               </View>
             );
           }
