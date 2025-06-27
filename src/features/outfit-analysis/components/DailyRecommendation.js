@@ -9,21 +9,19 @@ import {
   Animated,
   ScrollView,
 } from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
 import { useWardrobe, ItemType } from '../../virtual-wardrobe';
 import { useAuth } from '../../auth';
 import { useMood } from '../hooks/useMood';
 import { useWeather } from '../hooks/useWeather';
 import { useRecommendations } from '../hooks/useRecommendations';
-import NeedsInputPortal from './NeedsInputPortal';
+import { theme } from '../../../shared/styles/theme';
 
 export default function DailyRecommendation({ analyses, navigation }) {
   const { user } = useAuth();
   const { mood } = useMood();
   const { 
     recommendations, 
-    generateNeedsBasedRecommendation,
     refreshRecommendations: refreshRecs,
     loading: recsLoading,
     markAsWorn
@@ -33,51 +31,24 @@ export default function DailyRecommendation({ analyses, navigation }) {
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [isWaitingForNewRecs, setIsWaitingForNewRecs] = useState(false);
-  const [showNeedsInput, setShowNeedsInput] = useState(false);
-  const [userNeeds, setUserNeeds] = useState(null);
   const { weather, loading: weatherLoading, error: weatherError, refreshWeather } = useWeather();
   const fadeAnim = useRef(new Animated.Value(0)).current;
   const slideAnim = useRef(new Animated.Value(50)).current;
-  const rotateAnim = useRef(new Animated.Value(0)).current;
-  const cardFlipAnim = useRef(new Animated.Value(0)).current;
-  const slideXAnim = useRef(new Animated.Value(0)).current;
-
-  const getSeasonLabel = (season) => {
-    const labels = {
-      'spring': 'Printemps',
-      'summer': 'Été',
-      'fall': 'Automne',
-      'winter': 'Hiver',
-      'all_season': 'Toutes saisons'
-    };
-    return labels[season] || season;
-  };
-
-
-  // Debug effect pour surveiller refreshing
-  useEffect(() => {
-    console.log('Refreshing state changed to:', refreshing);
-  }, [refreshing]);
 
   useEffect(() => {
     if (!recsLoading && !weatherLoading && recommendations && recommendations.length > 0) {
-      // Utiliser la première recommandation
       const firstRec = recommendations[0];
       setRecommendedOutfit(firstRec);
       setIsMultiplePieces(!!firstRec.pieces);
       setLoading(false);
       
-      // Si on attendait de nouvelles recommandations et qu'on est en train de rafraîchir
       if (isWaitingForNewRecs && refreshing) {
-        console.log('New recommendations loaded, but keeping loading state for UX');
-        // On désactivera le loading dans handleRefresh après le délai
         setTimeout(() => {
           setRefreshing(false);
           setIsWaitingForNewRecs(false);
         }, 500);
       }
       
-      // Animations d'entrée
       Animated.parallel([
         Animated.timing(fadeAnim, {
           toValue: 1,
@@ -97,117 +68,49 @@ export default function DailyRecommendation({ analyses, navigation }) {
   }, [recommendations, recsLoading, weatherLoading]);
 
   const handlePress = async (outfit) => {
-    // Marquer comme portée quand l'utilisateur clique pour voir les détails
     if (outfit && outfit.id) {
       await markAsWorn(outfit.id);
-      }
+    }
     
-    // Passer les informations nécessaires à la page de détail
     navigation.navigate('RecommendationDetail', { 
       outfitId: outfit.id,
-      outfit: outfit, // Passer l'objet complet pour les combinaisons
+      outfit: outfit,
       isMultiplePieces: isMultiplePieces,
       weather: weather,
       mood: mood,
-      events: [], // TODO: Intégrer avec le calendrier
+      events: [],
       weatherAdaptation: outfit.weatherAdaptation,
       styleTips: outfit.styleTips
     });
   };
 
-
   const handleRefresh = async () => {
-    console.log('handleRefresh called, setting refreshing to true');
-    
-    // Sauvegarder l'ID actuel pour détecter le changement
     const currentOutfitId = recommendedOutfit?.id;
     
-    // Marquer la tenue actuelle comme portée AVANT de demander une nouvelle
     if (recommendedOutfit && recommendedOutfit.id) {
       await markAsWorn(recommendedOutfit.id);
     }
     
-    // Activer le loading et marquer qu'on attend de nouvelles recommandations
     setRefreshing(true);
     setIsWaitingForNewRecs(true);
 
     try {
-      // Rafraîchir les recommandations et la météo
       await refreshRecs();
       refreshWeather();
-      
-      // Réinitialiser les besoins utilisateur
-      setUserNeeds(null);
-      
-      // Garder le loading actif minimum 2 secondes pour une bonne UX
       await new Promise(resolve => setTimeout(resolve, 2000));
-      
     } catch (error) {
       console.error('Error refreshing:', error);
-      // En cas d'erreur, désactiver le loading
       setRefreshing(false);
       setIsWaitingForNewRecs(false);
     }
   };
 
-  const handleNeedsSubmit = async (needs) => {
-    setUserNeeds(needs);
-    setShowNeedsInput(false);
-    
-    // Afficher un état de chargement
-    setLoading(true);
-    
-    // Animation de transition
-    Animated.timing(fadeAnim, {
-      toValue: 0.5,
-      duration: 200,
-      useNativeDriver: true,
-    }).start();
-    
-    try {
-      // Générer une recommandation basée sur les besoins
-      const recommendation = await generateNeedsBasedRecommendation(needs);
-      
-      if (recommendation) {
-        // Vérifier si c'est une combinaison de pièces
-        setIsMultiplePieces(!!recommendation.isMultiplePieces);
-        setRecommendedOutfit(recommendation);
-        
-        // Animation d'apparition
-        Animated.sequence([
-          Animated.timing(fadeAnim, {
-            toValue: 0,
-            duration: 100,
-            useNativeDriver: true,
-          }),
-          Animated.parallel([
-            Animated.timing(fadeAnim, {
-              toValue: 1,
-              duration: 600,
-              useNativeDriver: true,
-            }),
-            Animated.spring(slideAnim, {
-              toValue: 0,
-              friction: 8,
-              tension: 40,
-              useNativeDriver: true,
-            }),
-          ]),
-        ]).start();
-      }
-    } catch (error) {
-      // Fallback sur une recommandation normale
-      handleRefresh();
-    } finally {
-      setLoading(false);
-    }
-  };
 
   if (loading) {
     return (
       <View style={styles.container}>
         <View style={styles.loadingCard}>
-          <ActivityIndicator size="large" color="#667eea" />
+          <ActivityIndicator size="large" color={theme.colors.primary} />
           <Text style={styles.loadingText}>Analyse de votre style...</Text>
         </View>
       </View>
@@ -221,17 +124,9 @@ export default function DailyRecommendation({ analyses, navigation }) {
         onPress={() => navigation.navigate('AddOutfit')}
         activeOpacity={0.9}
       >
-        <LinearGradient
-          colors={['rgba(102,126,234,0.05)', 'rgba(118,75,162,0.05)']}
-          style={styles.emptyCard}
-        >
+        <View style={styles.emptyCard}>
           <View style={styles.emptyIconContainer}>
-            <LinearGradient
-              colors={['#667eea', '#764ba2']}
-              style={styles.emptyIconGradient}
-            >
-              <Ionicons name="add" size={32} color="#fff" />
-            </LinearGradient>
+            <Ionicons name="add" size={32} color={theme.colors.primary} />
           </View>
           
           <Text style={styles.emptyTitle}>Créez votre première tenue</Text>
@@ -241,9 +136,9 @@ export default function DailyRecommendation({ analyses, navigation }) {
           
           <View style={styles.emptyAction}>
             <Text style={styles.emptyActionText}>Commencer</Text>
-            <Ionicons name="arrow-forward" size={20} color="#667eea" />
+            <Ionicons name="arrow-forward" size={20} color={theme.colors.primary} />
           </View>
-        </LinearGradient>
+        </View>
       </TouchableOpacity>
     );
   }
@@ -258,29 +153,16 @@ export default function DailyRecommendation({ analyses, navigation }) {
         }
       ]}
     >
-      {/* En-tête avec météo simplifiée */}
+      {/* Header avec météo */}
       <View style={styles.header}>
         <View style={styles.titleRow}>
           <View style={styles.titleSection}>
             <Text style={styles.title}>Tenue du jour</Text>
-            {userNeeds && (
-              <View style={styles.needsBadge}>
-                <Ionicons name="chatbubble" size={12} color="#667eea" />
-                <Text style={styles.needsText} numberOfLines={1}>{userNeeds}</Text>
-              </View>
-            )}
           </View>
           <View style={styles.headerActions}>
-            <TouchableOpacity 
-              style={styles.needsButton}
-              onPress={() => setShowNeedsInput(true)}
-              activeOpacity={0.7}
-            >
-              <Ionicons name="chatbubble-ellipses" size={20} color="#fff" />
-            </TouchableOpacity>
             {weather && (
               <View style={styles.weatherSimple}>
-                <Ionicons name={weather.icon} size={20} color="#fff" />
+                <Ionicons name={weather.icon} size={18} color={theme.colors.primary} />
                 <Text style={styles.weatherTemp}>{weather.temp}°</Text>
               </View>
             )}
@@ -288,135 +170,110 @@ export default function DailyRecommendation({ analyses, navigation }) {
         </View>
       </View>
 
-      {/* Carte de recommandation unique */}
-      <View>
-        <View style={styles.recommendationCard}>
-          <LinearGradient
-            colors={['#667eea', '#764ba2']}
-            style={styles.cardGradient}
-          >
-            {/* Badge de recommandation */}
-            <View style={styles.recommendationBadge}>
-              <View style={styles.badgeBlur}>
-                <Ionicons name="sparkles" size={16} color="#fff" />
-                <Text style={styles.badgeText}>Recommandé pour vous</Text>
-              </View>
-            </View>
-
-            {/* Image de la tenue */}
-            <View style={styles.imageContainer}>
-              {isMultiplePieces ? (
-                <View style={styles.piecesGrid}>
-                  {recommendedOutfit.pieces.map((piece, index) => (
-                    <View key={piece.id} style={styles.pieceContainer}>
-                      <Image 
-                        source={{ uri: piece.imageUrl }} 
-                        style={styles.pieceImage}
-                      />
-                      {index < recommendedOutfit.pieces.length - 1 && (
-                        <View style={styles.plusIcon}>
-                          <Text style={styles.plusText}>+</Text>
-                        </View>
-                      )}
-                    </View>
-                  ))}
-                </View>
-              ) : (
-                <Image 
-                  source={{ uri: recommendedOutfit.imageUrl }} 
-                  style={styles.outfitImage}
-                />
-              )}
-              <LinearGradient
-                colors={['transparent', 'rgba(0,0,0,0.8)']}
-                style={styles.imageOverlay}
-              />
-            </View>
-
-            {/* Détails de la tenue */}
-            <View style={styles.outfitDetails}>
-              <Text style={styles.outfitName} numberOfLines={2}>
-                {isMultiplePieces ? 'Ensemble recommandé' : (recommendedOutfit.name || 'Tenue recommandée')}
-              </Text>
-              {isMultiplePieces && (
-                <Text style={styles.piecesDescription}>
-                  {recommendedOutfit.pieces.map(p => p.name).join(' • ')}
-                </Text>
-              )}
-              
-              {/* Raison de la recommandation */}
-              {recommendedOutfit.reason && (
-                <View style={styles.reasonSection}>
-                  <View style={styles.reasonHeader}>
-                    <Ionicons name="bulb-outline" size={16} color="#fbbf24" />
-                    <Text style={styles.reasonTitle}>Pourquoi cette tenue ?</Text>
-                  </View>
-                  <Text style={styles.reasonText}>{recommendedOutfit.reason}</Text>
-                </View>
-              )}
-
-              {/* Actions */}
-              <View style={styles.actions}>
-                <TouchableOpacity 
-                  style={[styles.secondaryActionButton, refreshing && styles.disabledButton]}
-                  onPress={() => {
-                    console.log('Button pressed!');
-                    handleRefresh();
-                  }}
-                  disabled={refreshing}
-                >
-                  {refreshing ? (
-                    <ActivityIndicator size="small" color="#fff" />
-                  ) : (
-                    <Ionicons name="sparkles" size={18} color="#fff" />
-                  )}
-                  <Text style={styles.secondaryActionText}>
-                    {refreshing ? "Chargement..." : "Nouvelle suggestion"}
-                  </Text>
-                </TouchableOpacity>
-                <TouchableOpacity 
-                  style={[styles.actionButton, styles.primaryAction]}
-                  onPress={() => handlePress(recommendedOutfit)}
-                >
-                  <Text style={styles.primaryActionText}>Voir détails</Text>
-                  <Ionicons name="arrow-forward" size={16} color="#667eea" />
-                </TouchableOpacity>
-              </View>
-            </View>
-            
-            {/* Overlay de loading */}
-            {refreshing && (
-              <View style={styles.loadingOverlay}>
-                <View style={styles.loadingContainer}>
-                  <ActivityIndicator size="large" color="#fff" />
-                  <Text style={styles.loadingText}>Recherche d'une nouvelle tenue...</Text>
-                </View>
-              </View>
-            )}
-            
-            {/* Debug - À retirer */}
-            {console.log('Refreshing state:', refreshing)}
-          </LinearGradient>
+      {/* Carte de recommandation */}
+      <View style={styles.recommendationCard}>
+        {/* Badge de recommandation */}
+        <View style={styles.recommendationBadge}>
+          <View style={styles.badgeContent}>
+            <Ionicons name="sparkles" size={14} color={theme.colors.accent} />
+            <Text style={styles.badgeText}>Recommandé pour vous</Text>
+          </View>
         </View>
+
+        {/* Image de la tenue */}
+        <View style={styles.imageContainer}>
+          {isMultiplePieces ? (
+            <View style={styles.piecesGrid}>
+              {recommendedOutfit.pieces.map((piece, index) => (
+                <View key={piece.id} style={styles.pieceContainer}>
+                  <Image 
+                    source={{ uri: piece.imageUrl }} 
+                    style={styles.pieceImage}
+                  />
+                  {index < recommendedOutfit.pieces.length - 1 && (
+                    <View style={styles.plusIcon}>
+                      <Text style={styles.plusText}>+</Text>
+                    </View>
+                  )}
+                </View>
+              ))}
+            </View>
+          ) : (
+            <Image 
+              source={{ uri: recommendedOutfit.imageUrl }} 
+              style={styles.outfitImage}
+            />
+          )}
+        </View>
+
+        {/* Détails de la tenue */}
+        <View style={styles.outfitDetails}>
+          <Text style={styles.outfitName} numberOfLines={2}>
+            {isMultiplePieces ? 'Ensemble recommandé' : (recommendedOutfit.name || 'Tenue recommandée')}
+          </Text>
+          {isMultiplePieces && (
+            <Text style={styles.piecesDescription}>
+              {recommendedOutfit.pieces.map(p => p.name).join(' • ')}
+            </Text>
+          )}
+          
+          {/* Raison de la recommandation */}
+          {recommendedOutfit.reason && (
+            <View style={styles.reasonSection}>
+              <View style={styles.reasonHeader}>
+                <Ionicons name="bulb-outline" size={14} color={theme.colors.accent} />
+                <Text style={styles.reasonTitle}>Pourquoi cette tenue ?</Text>
+              </View>
+              <Text style={styles.reasonText}>{recommendedOutfit.reason}</Text>
+            </View>
+          )}
+
+          {/* Actions */}
+          <View style={styles.actions}>
+            <TouchableOpacity 
+              style={[styles.secondaryActionButton, refreshing && styles.disabledButton]}
+              onPress={handleRefresh}
+              disabled={refreshing}
+            >
+              {refreshing ? (
+                <ActivityIndicator size="small" color={theme.colors.primary} />
+              ) : (
+                <Ionicons name="refresh" size={16} color={theme.colors.primary} />
+              )}
+              <Text style={styles.secondaryActionText}>
+                {refreshing ? "Chargement..." : "Autre suggestion"}
+              </Text>
+            </TouchableOpacity>
+            <TouchableOpacity 
+              style={styles.primaryActionButton}
+              onPress={() => handlePress(recommendedOutfit)}
+            >
+              <Text style={styles.primaryActionText}>Voir détails</Text>
+              <Ionicons name="arrow-forward" size={14} color="#fff" />
+            </TouchableOpacity>
+          </View>
+        </View>
+        
+        {/* Overlay de loading */}
+        {refreshing && (
+          <View style={styles.loadingOverlay}>
+            <View style={styles.loadingContainer}>
+              <ActivityIndicator size="large" color={theme.colors.primary} />
+              <Text style={styles.overlayLoadingText}>Recherche d'une nouvelle tenue...</Text>
+            </View>
+          </View>
+        )}
       </View>
-      
-      {/* Composant de saisie des besoins */}
-      <NeedsInputPortal 
-        isVisible={showNeedsInput}
-        onSubmit={handleNeedsSubmit}
-        onClose={() => setShowNeedsInput(false)}
-      />
     </Animated.View>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
-    marginBottom: 10,
-    marginTop: 20,
+    marginBottom: 20,
   },
   header: {
-    marginBottom: 15,
+    marginBottom: 16,
   },
   titleRow: {
     flexDirection: 'row',
@@ -427,112 +284,69 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   title: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: '#fff',
-  },
-  needsBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: 'rgba(255,255,255,0.95)',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 14,
-    marginTop: 8,
-    gap: 6,
-    maxWidth: '85%',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 3,
-    elevation: 3,
-  },
-  needsText: {
-    fontSize: 13,
-    color: '#667eea',
-    fontWeight: '600',
+    fontSize: theme.typography.sizes.lg,
+    fontFamily: theme.typography.fonts.semiBold,
+    color: theme.colors.primaryDark,
+    letterSpacing: theme.typography.letterSpacing.tight,
   },
   headerActions: {
     flexDirection: 'row',
     alignItems: 'center',
     gap: 10,
   },
-  needsButton: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: 'rgba(255,255,255,0.2)',
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.3)',
-  },
   weatherSimple: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'rgba(255,255,255,0.15)',
+    backgroundColor: theme.colors.surface,
     paddingHorizontal: 12,
     paddingVertical: 6,
-    borderRadius: 20,
+    borderRadius: theme.borderRadius.full,
     gap: 6,
+    borderWidth: 1.5,
+    borderColor: theme.colors.border,
   },
   weatherTemp: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#fff',
+    fontSize: theme.typography.sizes.sm,
+    fontFamily: theme.typography.fonts.semiBold,
+    color: theme.colors.primaryDark,
   },
   recommendationCard: {
-    width: '100%',
-  },
-  cardGradient: {
-    borderRadius: 24,
+    backgroundColor: theme.colors.surface,
+    borderRadius: theme.borderRadius.xl,
     overflow: 'hidden',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.3,
-    shadowRadius: 12,
-    elevation: 10,
+    ...theme.shadows.lg,
   },
   recommendationBadge: {
     position: 'absolute',
-    top: 15,
-    left: 15,
+    top: 12,
+    left: 12,
     zIndex: 10,
   },
-  badgeBlur: {
+  badgeContent: {
     flexDirection: 'row',
     alignItems: 'center',
+    backgroundColor: 'rgba(251, 191, 36, 0.1)',
     paddingHorizontal: 12,
     paddingVertical: 6,
-    borderRadius: 20,
+    borderRadius: theme.borderRadius.full,
     gap: 5,
-    overflow: 'hidden',
-    backgroundColor: 'rgba(0,0,0,0.5)',
+    borderWidth: 1,
+    borderColor: 'rgba(251, 191, 36, 0.2)',
   },
   badgeText: {
-    fontSize: 12,
-    fontWeight: '600',
-    color: '#fff',
-  },
-  scoreContainer: {
-    backgroundColor: 'rgba(255,255,255,0.2)',
-    borderRadius: 12,
-    paddingHorizontal: 8,
-    paddingVertical: 2,
-    marginLeft: 8,
-  },
-  scoreText: {
-    fontSize: 11,
-    fontWeight: '700',
-    color: '#fff',
+    fontSize: theme.typography.sizes.xs,
+    fontFamily: theme.typography.fonts.medium,
+    color: theme.colors.accent,
   },
   imageContainer: {
-    height: 280,
+    height: 240,
+    backgroundColor: theme.colors.background,
     position: 'relative',
   },
   outfitImage: {
     width: '100%',
     height: '100%',
+    resizeMode: 'cover',
   },
   piecesGrid: {
     flexDirection: 'row',
@@ -546,56 +360,52 @@ const styles = StyleSheet.create({
     marginHorizontal: 5,
   },
   pieceImage: {
-    width: 90,
-    height: 120,
-    borderRadius: 12,
-    backgroundColor: 'rgba(255,255,255,0.1)',
+    width: 80,
+    height: 110,
+    borderRadius: theme.borderRadius.md,
+    backgroundColor: theme.colors.surface,
   },
   plusIcon: {
     position: 'absolute',
     right: -15,
     top: '45%',
-    backgroundColor: 'rgba(255,255,255,0.9)',
+    backgroundColor: theme.colors.surface,
     borderRadius: 15,
     width: 30,
     height: 30,
     alignItems: 'center',
     justifyContent: 'center',
     zIndex: 1,
+    ...theme.shadows.sm,
   },
   plusText: {
-    fontSize: 18,
-    fontWeight: '600',
-    color: '#667eea',
-  },
-  imageOverlay: {
-    position: 'absolute',
-    bottom: 0,
-    left: 0,
-    right: 0,
-    height: 100,
+    fontSize: theme.typography.sizes.md,
+    fontFamily: theme.typography.fonts.semiBold,
+    color: theme.colors.primary,
   },
   outfitDetails: {
-    padding: 20,
-    paddingTop: 15,
+    padding: theme.spacing.lg,
   },
   outfitName: {
-    fontSize: 20,
-    fontWeight: '600',
-    color: '#fff',
+    fontSize: theme.typography.sizes.lg,
+    fontFamily: theme.typography.fonts.semiBold,
+    color: theme.colors.text,
     marginBottom: 8,
-    lineHeight: 26,
+    letterSpacing: theme.typography.letterSpacing.tight,
   },
   piecesDescription: {
-    fontSize: 14,
-    color: 'rgba(255,255,255,0.8)',
+    fontSize: theme.typography.sizes.sm,
+    fontFamily: theme.typography.fonts.regular,
+    color: theme.colors.textSecondary,
     marginBottom: 16,
   },
   reasonSection: {
-    backgroundColor: 'rgba(251, 191, 36, 0.15)',
-    borderRadius: 12,
+    backgroundColor: 'rgba(251, 191, 36, 0.08)',
+    borderRadius: theme.borderRadius.md,
     padding: 12,
-    marginBottom: 10,
+    marginBottom: 16,
+    borderWidth: 1,
+    borderColor: 'rgba(251, 191, 36, 0.15)',
   },
   reasonHeader: {
     flexDirection: 'row',
@@ -604,145 +414,101 @@ const styles = StyleSheet.create({
     marginBottom: 6,
   },
   reasonTitle: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: '#fbbf24',
+    fontSize: theme.typography.sizes.xs,
+    fontFamily: theme.typography.fonts.semiBold,
+    color: theme.colors.accent,
   },
   reasonText: {
-    fontSize: 13,
-    color: 'rgba(255,255,255,0.9)',
+    fontSize: theme.typography.sizes.xs,
+    fontFamily: theme.typography.fonts.regular,
+    color: theme.colors.text,
     lineHeight: 18,
-  },
-  weatherAdaptSection: {
-    backgroundColor: 'rgba(96, 165, 250, 0.15)',
-    borderRadius: 12,
-    padding: 12,
-    marginBottom: 16,
-  },
-  weatherAdaptHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-    marginBottom: 6,
-  },
-  weatherAdaptTitle: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: '#60a5fa',
-  },
-  weatherAdaptText: {
-    fontSize: 13,
-    color: 'rgba(255,255,255,0.9)',
-    lineHeight: 18,
-  },
-  styleTipsToggle: {
-    backgroundColor: 'rgba(167, 139, 250, 0.15)',
-    borderRadius: 12,
-    padding: 12,
-    marginBottom: 16,
-  },
-  styleTipsHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 6,
-  },
-  styleTipsTitle: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: '#a78bfa',
-    flex: 1,
-  },
-  styleTipsText: {
-    fontSize: 13,
-    color: 'rgba(255,255,255,0.9)',
-    lineHeight: 18,
-    marginTop: 8,
   },
   actions: {
     flexDirection: 'row',
     gap: 10,
     alignItems: 'center',
   },
-  actionButton: {
-    height: 40,
-    borderRadius: 20,
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
   secondaryActionButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'rgba(255,255,255,0.2)',
+    backgroundColor: theme.colors.surfaceLight,
     paddingHorizontal: 16,
     paddingVertical: 10,
-    borderRadius: 20,
+    borderRadius: theme.borderRadius.full,
     gap: 6,
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.3)',
+    borderWidth: 1.5,
+    borderColor: theme.colors.border,
   },
   secondaryActionText: {
-    fontSize: 14,
-    fontWeight: '500',
-    color: '#fff',
+    fontSize: theme.typography.sizes.sm,
+    fontFamily: theme.typography.fonts.medium,
+    color: theme.colors.primary,
   },
   disabledButton: {
-    backgroundColor: 'rgba(255,255,255,0.3)',
-    borderColor: 'rgba(255,255,255,0.4)',
+    opacity: 0.6,
   },
-  primaryAction: {
+  primaryActionButton: {
     flexDirection: 'row',
     flex: 1,
     paddingHorizontal: 20,
-    backgroundColor: 'rgba(255,255,255,0.9)',
+    paddingVertical: 10,
+    backgroundColor: theme.colors.primary,
+    borderRadius: theme.borderRadius.full,
+    alignItems: 'center',
+    justifyContent: 'center',
     gap: 8,
+    ...theme.shadows.sm,
   },
   primaryActionText: {
-    fontSize: 14,
-    fontWeight: '600',
-    color: '#667eea',
+    fontSize: theme.typography.sizes.sm,
+    fontFamily: theme.typography.fonts.medium,
+    color: '#fff',
   },
   loadingCard: {
     padding: 60,
-    borderRadius: 20,
+    borderRadius: theme.borderRadius.xl,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: 'rgba(255,255,255,0.1)',
-    borderWidth: 1,
-    borderColor: 'rgba(255,255,255,0.2)',
+    backgroundColor: theme.colors.surface,
+    borderWidth: 1.5,
+    borderColor: theme.colors.border,
   },
   loadingText: {
     marginTop: 12,
-    fontSize: 16,
-    color: 'rgba(255,255,255,0.8)',
+    fontSize: theme.typography.sizes.base,
+    fontFamily: theme.typography.fonts.regular,
+    color: theme.colors.textSecondary,
   },
   emptyCard: {
-    borderRadius: 20,
+    borderRadius: theme.borderRadius.xl,
     padding: 40,
     alignItems: 'center',
     justifyContent: 'center',
     borderWidth: 2,
-    borderColor: 'rgba(102,126,234,0.2)',
+    borderColor: theme.colors.border,
     borderStyle: 'dashed',
+    backgroundColor: theme.colors.surface,
   },
   emptyIconContainer: {
-    marginBottom: 20,
-  },
-  emptyIconGradient: {
     width: 64,
     height: 64,
     borderRadius: 32,
+    backgroundColor: theme.colors.background,
     alignItems: 'center',
     justifyContent: 'center',
+    marginBottom: 20,
   },
   emptyTitle: {
-    fontSize: 20,
-    fontWeight: '600',
-    color: '#667eea',
+    fontSize: theme.typography.sizes.lg,
+    fontFamily: theme.typography.fonts.semiBold,
+    color: theme.colors.primaryDark,
     marginBottom: 8,
   },
   emptySubtext: {
-    fontSize: 14,
-    color: '#9ca3af',
+    fontSize: theme.typography.sizes.sm,
+    fontFamily: theme.typography.fonts.regular,
+    color: theme.colors.textSecondary,
     textAlign: 'center',
     marginBottom: 20,
     paddingHorizontal: 20,
@@ -753,9 +519,9 @@ const styles = StyleSheet.create({
     gap: 8,
   },
   emptyActionText: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#667eea',
+    fontSize: theme.typography.sizes.base,
+    fontFamily: theme.typography.fonts.medium,
+    color: theme.colors.primary,
   },
   loadingOverlay: {
     position: 'absolute',
@@ -763,8 +529,8 @@ const styles = StyleSheet.create({
     left: 0,
     right: 0,
     bottom: 0,
-    backgroundColor: 'rgba(0,0,0,0.7)',
-    borderRadius: 24,
+    backgroundColor: 'rgba(255, 255, 255, 0.9)',
+    borderRadius: theme.borderRadius.xl,
     alignItems: 'center',
     justifyContent: 'center',
   },
@@ -772,11 +538,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     padding: 20,
   },
-  loadingText: {
+  overlayLoadingText: {
     marginTop: 16,
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#fff',
+    fontSize: theme.typography.sizes.base,
+    fontFamily: theme.typography.fonts.medium,
+    color: theme.colors.primary,
     textAlign: 'center',
   },
 });

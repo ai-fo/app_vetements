@@ -9,9 +9,10 @@ import {
   Platform,
   Alert,
   ActivityIndicator,
+  SafeAreaView,
 } from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient';
 import { useAuth } from '../hooks/useAuth';
+import { theme } from '../../../shared/styles/theme';
 import Svg, { Path } from 'react-native-svg';
 
 export default function LoginScreen({ navigation }) {
@@ -56,67 +57,70 @@ export default function LoginScreen({ navigation }) {
   );
 
   return (
-    <LinearGradient
-      colors={['#667eea', '#764ba2']}
-      style={styles.container}
-    >
+    <SafeAreaView style={styles.container}>
       <KeyboardAvoidingView
         behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
         style={styles.keyboardView}
       >
         <View style={styles.content}>
-          <Text style={styles.title}>Liquid Design</Text>
-          <Text style={styles.subtitle}>Connexion</Text>
+          <View style={styles.headerSection}>
+            <Text style={styles.title}>Liquid Design</Text>
+            <Text style={styles.subtitle}>Bienvenue</Text>
+          </View>
 
           <View style={styles.form}>
-            <TextInput
-              style={styles.input}
-              placeholder="Email"
-              placeholderTextColor="#rgba(255,255,255,0.7)"
-              value={email}
-              onChangeText={setEmail}
-              keyboardType="email-address"
-              autoCapitalize="none"
-            />
+            <View style={styles.inputContainer}>
+              <TextInput
+                style={styles.input}
+                placeholder="Email"
+                placeholderTextColor={theme.colors.textMuted}
+                value={email}
+                onChangeText={setEmail}
+                keyboardType="email-address"
+                autoCapitalize="none"
+              />
+            </View>
 
-            <TextInput
-              style={styles.input}
-              placeholder="Mot de passe"
-              placeholderTextColor="#rgba(255,255,255,0.7)"
-              value={password}
-              onChangeText={setPassword}
-              secureTextEntry
-            />
+            <View style={styles.inputContainer}>
+              <TextInput
+                style={styles.input}
+                placeholder="Mot de passe"
+                placeholderTextColor={theme.colors.textMuted}
+                value={password}
+                onChangeText={setPassword}
+                secureTextEntry
+              />
+            </View>
 
             <TouchableOpacity
-              style={styles.button}
+              style={[styles.button, styles.primaryButton]}
               onPress={handleLogin}
               disabled={loading}
             >
               {loading ? (
-                <ActivityIndicator color="#667eea" />
+                <ActivityIndicator color="#fff" />
               ) : (
-                <Text style={styles.buttonText}>Se connecter</Text>
+                <Text style={styles.primaryButtonText}>Se connecter</Text>
               )}
             </TouchableOpacity>
 
             <View style={styles.divider}>
               <View style={styles.dividerLine} />
-              <Text style={styles.dividerText}>OU</Text>
+              <Text style={styles.dividerText}>ou continuer avec</Text>
               <View style={styles.dividerLine} />
             </View>
 
             <TouchableOpacity
-              style={styles.googleButton}
+              style={[styles.button, styles.googleButton]}
               onPress={handleGoogleLogin}
               disabled={googleLoading}
             >
               {googleLoading ? (
-                <ActivityIndicator color="#667eea" />
+                <ActivityIndicator color={theme.colors.primary} />
               ) : (
                 <View style={styles.googleButtonContent}>
                   <GoogleIcon />
-                  <Text style={styles.googleButtonText}>Continuer avec Google</Text>
+                  <Text style={styles.googleButtonText}>Google</Text>
                 </View>
               )}
             </TouchableOpacity>
@@ -126,19 +130,21 @@ export default function LoginScreen({ navigation }) {
               onPress={() => navigation.navigate('SignUp')}
             >
               <Text style={styles.linkText}>
-                Pas de compte ? Inscrivez-vous
+                Pas encore de compte ?{' '}
+                <Text style={styles.linkTextBold}>S'inscrire</Text>
               </Text>
             </TouchableOpacity>
           </View>
         </View>
       </KeyboardAvoidingView>
-    </LinearGradient>
+    </SafeAreaView>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
+    backgroundColor: theme.colors.background,
   },
   keyboardView: {
     flex: 1,
@@ -146,85 +152,105 @@ const styles = StyleSheet.create({
   content: {
     flex: 1,
     justifyContent: 'center',
-    paddingHorizontal: 30,
+    paddingHorizontal: theme.spacing.xl,
+  },
+  headerSection: {
+    alignItems: 'center',
+    marginBottom: 48,
   },
   title: {
-    fontSize: 36,
-    fontWeight: 'bold',
-    color: '#fff',
-    textAlign: 'center',
-    marginBottom: 10,
+    fontSize: 32,
+    fontFamily: theme.typography.fonts.semiBold,
+    color: theme.colors.primaryDark,
+    letterSpacing: theme.typography.letterSpacing.tight,
+    marginBottom: 8,
   },
   subtitle: {
-    fontSize: 24,
-    color: '#fff',
-    textAlign: 'center',
-    marginBottom: 40,
+    fontSize: theme.typography.sizes.lg,
+    fontFamily: theme.typography.fonts.regular,
+    color: theme.colors.textMuted,
+    letterSpacing: theme.typography.letterSpacing.normal,
   },
   form: {
     width: '100%',
   },
+  inputContainer: {
+    marginBottom: theme.spacing.md,
+  },
   input: {
-    height: 50,
-    backgroundColor: 'rgba(255, 255, 255, 0.2)',
-    borderRadius: 25,
-    paddingHorizontal: 20,
-    color: '#fff',
-    fontSize: 16,
-    marginBottom: 15,
+    height: 52,
+    backgroundColor: theme.colors.surface,
+    borderRadius: theme.borderRadius.lg,
+    paddingHorizontal: theme.spacing.lg,
+    fontSize: theme.typography.sizes.base,
+    fontFamily: theme.typography.fonts.regular,
+    color: theme.colors.text,
+    borderWidth: 1.5,
+    borderColor: theme.colors.border,
   },
   button: {
-    height: 50,
-    backgroundColor: '#fff',
-    borderRadius: 25,
+    height: 52,
+    borderRadius: theme.borderRadius.full,
     justifyContent: 'center',
     alignItems: 'center',
-    marginTop: 20,
-  },
-  buttonText: {
-    color: '#667eea',
-    fontSize: 18,
-    fontWeight: 'bold',
-  },
-  linkButton: {
-    marginTop: 20,
-    alignItems: 'center',
-  },
-  linkText: {
-    color: '#fff',
-    fontSize: 14,
-  },
-  divider: {
     flexDirection: 'row',
-    alignItems: 'center',
-    marginVertical: 20,
   },
-  dividerLine: {
-    flex: 1,
-    height: 1,
-    backgroundColor: 'rgba(255, 255, 255, 0.3)',
+  primaryButton: {
+    backgroundColor: theme.colors.primary,
+    marginTop: theme.spacing.sm,
+    marginBottom: theme.spacing.lg,
+    ...theme.shadows.md,
   },
-  dividerText: {
+  primaryButtonText: {
     color: '#fff',
-    paddingHorizontal: 10,
-    fontSize: 14,
+    fontSize: theme.typography.sizes.md,
+    fontFamily: theme.typography.fonts.medium,
+    letterSpacing: theme.typography.letterSpacing.normal,
   },
   googleButton: {
-    height: 50,
-    backgroundColor: '#fff',
-    borderRadius: 25,
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: 20,
+    backgroundColor: theme.colors.surface,
+    borderWidth: 1.5,
+    borderColor: theme.colors.border,
+    marginBottom: theme.spacing.xl,
   },
   googleButtonContent: {
     flexDirection: 'row',
     alignItems: 'center',
   },
   googleButtonText: {
-    color: '#333',
-    fontSize: 16,
-    fontWeight: '600',
+    color: theme.colors.text,
+    fontSize: theme.typography.sizes.md,
+    fontFamily: theme.typography.fonts.medium,
     marginLeft: 10,
+    letterSpacing: theme.typography.letterSpacing.normal,
+  },
+  divider: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginVertical: theme.spacing.lg,
+  },
+  dividerLine: {
+    flex: 1,
+    height: 1,
+    backgroundColor: theme.colors.border,
+  },
+  dividerText: {
+    color: theme.colors.textMuted,
+    paddingHorizontal: theme.spacing.md,
+    fontSize: theme.typography.sizes.sm,
+    fontFamily: theme.typography.fonts.regular,
+  },
+  linkButton: {
+    alignItems: 'center',
+    paddingVertical: theme.spacing.sm,
+  },
+  linkText: {
+    color: theme.colors.textSecondary,
+    fontSize: theme.typography.sizes.base,
+    fontFamily: theme.typography.fonts.regular,
+  },
+  linkTextBold: {
+    color: theme.colors.primary,
+    fontFamily: theme.typography.fonts.medium,
   },
 });

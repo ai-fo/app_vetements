@@ -1,6 +1,6 @@
 import React from 'react';
-import { TouchableOpacity, Text, StyleSheet, ActivityIndicator } from 'react-native';
-import { LinearGradient } from 'expo-linear-gradient';
+import { TouchableOpacity, Text, StyleSheet, ActivityIndicator, View } from 'react-native';
+import { theme } from '../styles/theme';
 
 export default function Button({ 
   title, 
@@ -9,96 +9,105 @@ export default function Button({
   loading = false,
   disabled = false,
   style,
-  textStyle 
+  textStyle,
+  icon
 }) {
   const isPrimary = variant === 'primary';
+  const isSecondary = variant === 'secondary';
+  const isDanger = variant === 'danger';
   
-  if (isPrimary) {
-    return (
-      <TouchableOpacity 
-        onPress={onPress} 
-        disabled={disabled || loading}
-        style={[styles.container, style]}
-        activeOpacity={0.8}
-      >
-        <LinearGradient
-          colors={disabled ? ['#9ca3af', '#6b7280'] : ['#667eea', '#764ba2']}
-          style={styles.gradient}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 1 }}
-        >
-          {loading ? (
-            <ActivityIndicator color="#fff" />
-          ) : (
-            <Text style={[styles.text, textStyle]}>{title}</Text>
-          )}
-        </LinearGradient>
-      </TouchableOpacity>
-    );
-  }
+  const buttonContent = (
+    <>
+      {loading ? (
+        <ActivityIndicator 
+          color={isPrimary ? '#fff' : theme.colors.primary} 
+        />
+      ) : (
+        <View style={styles.contentContainer}>
+          {icon && <View style={styles.iconContainer}>{icon}</View>}
+          <Text style={[
+            styles.text,
+            isPrimary && styles.primaryText,
+            isSecondary && styles.secondaryText,
+            isDanger && styles.dangerText,
+            disabled && styles.disabledText,
+            textStyle
+          ]}>
+            {title}
+          </Text>
+        </View>
+      )}
+    </>
+  );
 
   return (
     <TouchableOpacity 
       onPress={onPress} 
       disabled={disabled || loading}
       style={[
-        styles.container, 
-        styles.secondaryContainer,
+        styles.container,
+        isPrimary && styles.primaryContainer,
+        isSecondary && styles.secondaryContainer,
+        isDanger && styles.dangerContainer,
         disabled && styles.disabledContainer,
         style
       ]}
       activeOpacity={0.7}
     >
-      {loading ? (
-        <ActivityIndicator color={variant === 'secondary' ? '#667eea' : '#ef4444'} />
-      ) : (
-        <Text style={[
-          styles.text, 
-          styles.secondaryText,
-          variant === 'danger' && styles.dangerText,
-          disabled && styles.disabledText,
-          textStyle
-        ]}>
-          {title}
-        </Text>
-      )}
+      {buttonContent}
     </TouchableOpacity>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
-    borderRadius: 12,
-    overflow: 'hidden',
-  },
-  gradient: {
+    borderRadius: theme.borderRadius.full,
     paddingVertical: 14,
     paddingHorizontal: 24,
     alignItems: 'center',
     justifyContent: 'center',
+    flexDirection: 'row',
+  },
+  contentContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  iconContainer: {
+    marginRight: 8,
+  },
+  primaryContainer: {
+    backgroundColor: theme.colors.primary,
+    ...theme.shadows.md,
   },
   secondaryContainer: {
-    paddingVertical: 14,
-    paddingHorizontal: 24,
-    backgroundColor: '#f3f4f6',
-    alignItems: 'center',
-    justifyContent: 'center',
+    backgroundColor: theme.colors.surfaceLight,
+    borderWidth: 1.5,
+    borderColor: theme.colors.border,
+  },
+  dangerContainer: {
+    backgroundColor: 'rgba(239, 68, 68, 0.1)',
+    borderWidth: 1.5,
+    borderColor: theme.colors.error,
   },
   disabledContainer: {
-    backgroundColor: '#e5e7eb',
+    backgroundColor: theme.colors.border,
+    opacity: 0.6,
   },
   text: {
-    fontSize: 16,
-    fontWeight: '600',
+    fontSize: theme.typography.sizes.base,
+    fontFamily: theme.typography.fonts.medium,
+    letterSpacing: theme.typography.letterSpacing.normal,
+  },
+  primaryText: {
     color: '#fff',
   },
   secondaryText: {
-    color: '#667eea',
+    color: theme.colors.primary,
   },
   dangerText: {
-    color: '#ef4444',
+    color: theme.colors.error,
   },
   disabledText: {
-    color: '#9ca3af',
+    color: theme.colors.textSecondary,
   },
 });

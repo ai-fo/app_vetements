@@ -322,9 +322,8 @@ const getSeasonLabel = (season) => {
 
 const styles = StyleSheet.create({
   container: {
-    backgroundColor: '#fff',
-    borderBottomWidth: 1,
-    borderBottomColor: '#f5f5f5',
+    backgroundColor: '#f5f3ff',
+    paddingBottom: 4,
   },
   scrollContent: {
     paddingHorizontal: 20,
@@ -338,15 +337,15 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     marginRight: 10,
     borderWidth: 1.5,
-    borderColor: '#e5e7eb',
-    backgroundColor: 'transparent',
+    borderColor: '#d8d0e8',
+    backgroundColor: 'rgba(255, 255, 255, 0.3)',
   },
   filterButtonActive: {
     backgroundColor: '#1a1a1a',
     borderColor: 'transparent',
   },
   filterButtonText: {
-    color: '#6b7280',
+    color: '#6b5b95',
     marginLeft: 6,
     fontSize: 13,
     fontFamily: 'Manrope-Medium',
@@ -361,8 +360,8 @@ const styles = StyleSheet.create({
     borderRadius: 20,
     marginRight: 8,
     borderWidth: 1.5,
-    borderColor: '#e5e7eb',
-    backgroundColor: 'transparent',
+    borderColor: '#d8d0e8',
+    backgroundColor: 'rgba(255, 255, 255, 0.3)',
     flexDirection: 'row',
     alignItems: 'center',
   },
@@ -370,7 +369,7 @@ const styles = StyleSheet.create({
     borderColor: 'transparent',
   },
   quickFilterText: {
-    color: '#6b7280',
+    color: '#6b5b95',
     fontSize: 13,
     fontFamily: 'Manrope-Medium',
     letterSpacing: -0.2,
@@ -402,7 +401,7 @@ const styles = StyleSheet.create({
     marginLeft: 10,
   },
   clearButtonText: {
-    color: '#6b7280',
+    color: '#6b5b95',
     fontSize: 13,
     fontFamily: 'Manrope-Medium',
     letterSpacing: -0.2,
@@ -413,7 +412,7 @@ const styles = StyleSheet.create({
     justifyContent: 'flex-end',
   },
   modalContent: {
-    backgroundColor: '#fff',
+    backgroundColor: '#fdfcff',
     borderTopLeftRadius: 24,
     borderTopRightRadius: 24,
     maxHeight: '80%',

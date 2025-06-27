@@ -15,6 +15,7 @@ import {
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
+import { BlurView } from 'expo-blur';
 import { useFocusEffect } from '@react-navigation/native';
 import { useAuth } from '../../auth';
 import { useWardrobe } from '../hooks/useWardrobe';
@@ -188,62 +189,6 @@ export default function WardrobeScreen({ navigation }) {
 
   return (
     <View style={styles.container}>
-      <View style={styles.header}>
-        <View style={styles.headerContent}>
-          <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
-            <Ionicons name="chevron-back" size={22} color="#1a1a1a" />
-          </TouchableOpacity>
-          
-          <View style={styles.headerTitleWrapper}>
-            <View style={styles.headerTitleContainer}>
-              <Text style={styles.headerTitlePrefix}>Ma</Text>
-              <Text style={styles.headerTitle}>Garde-robe</Text>
-            </View>
-          </View>
-          
-          <TouchableOpacity 
-            onPress={() => setShowMenu(true)}
-            style={styles.menuButton}
-          >
-            <Ionicons 
-              name="ellipsis-horizontal" 
-              size={20} 
-              color="#6b7280" 
-            />
-          </TouchableOpacity>
-        </View>
-      </View>
-
-      
-      {/* Stats */}
-      <View style={styles.searchSection}>
-        <View style={styles.statsContainer}>
-          <View style={styles.statItem}>
-            <Text style={styles.statNumber}>{items.filter(item => item.itemType !== 'OUTFIT').length}</Text>
-            <Text style={styles.statLabel}>Pièces</Text>
-          </View>
-          <View style={styles.statDivider} />
-          <View style={styles.statItem}>
-            <Text style={styles.statNumber}>{items.filter(item => item.itemType === 'OUTFIT').length}</Text>
-            <Text style={styles.statLabel}>Tenues</Text>
-          </View>
-          <View style={styles.statDivider} />
-          <View style={styles.statItem}>
-            <Text style={styles.statNumber}>{items.filter(i => i.isFavorite).length}</Text>
-            <Text style={styles.statLabel}>Favoris</Text>
-          </View>
-        </View>
-      </View>
-
-      {deleteMode && (
-        <View style={styles.deleteModeBar}>
-          <Text style={styles.deleteModeText}>Mode suppression activé</Text>
-          <TouchableOpacity onPress={() => setDeleteMode(false)}>
-            <Text style={styles.deleteModeCancel}>Terminer</Text>
-          </TouchableOpacity>
-        </View>
-      )}
-
       <ScrollView
         style={styles.content}
         showsVerticalScrollIndicator={false}
@@ -251,6 +196,37 @@ export default function WardrobeScreen({ navigation }) {
           <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />
         }
       >
+        {/* Espace pour le contenu sous le header flottant */}
+        <View style={{ height: 120 }} />
+        
+        {/* Stats */}
+        <View style={styles.searchSection}>
+          <View style={styles.statsContainer}>
+            <View style={styles.statItem}>
+              <Text style={styles.statNumber}>{items.filter(item => item.itemType !== 'OUTFIT').length}</Text>
+              <Text style={styles.statLabel}>Pièces</Text>
+            </View>
+            <View style={styles.statDivider} />
+            <View style={styles.statItem}>
+              <Text style={styles.statNumber}>{items.filter(item => item.itemType === 'OUTFIT').length}</Text>
+              <Text style={styles.statLabel}>Tenues</Text>
+            </View>
+            <View style={styles.statDivider} />
+            <View style={styles.statItem}>
+              <Text style={styles.statNumber}>{items.filter(i => i.isFavorite).length}</Text>
+              <Text style={styles.statLabel}>Favoris</Text>
+            </View>
+          </View>
+        </View>
+
+        {deleteMode && (
+          <View style={styles.deleteModeBar}>
+            <Text style={styles.deleteModeText}>Mode suppression activé</Text>
+            <TouchableOpacity onPress={() => setDeleteMode(false)}>
+              <Text style={styles.deleteModeCancel}>Terminer</Text>
+            </TouchableOpacity>
+          </View>
+        )}
         <Animated.View style={{ opacity: fadeAnim, flex: 1 }}>
         {(() => {
           // Filtrer les items visibles (sans les tenues)
@@ -337,6 +313,35 @@ export default function WardrobeScreen({ navigation }) {
         })()}
         </Animated.View>
       </ScrollView>
+      
+      {/* Header flottant */}
+      <View style={styles.floatingHeader}>
+        <BlurView intensity={80} tint="light" style={styles.blurContainer}>
+          <View style={styles.headerContent}>
+            <TouchableOpacity onPress={() => navigation.goBack()} style={styles.backButton}>
+              <Ionicons name="chevron-back" size={22} color="#4a4458" />
+            </TouchableOpacity>
+            
+            <View style={styles.headerTitleWrapper}>
+              <View style={styles.headerTitleContainer}>
+                <Text style={styles.headerTitlePrefix}>Ma</Text>
+                <Text style={styles.headerTitle}>Garde-robe</Text>
+              </View>
+            </View>
+            
+            <TouchableOpacity 
+              onPress={() => setShowMenu(true)}
+              style={styles.menuButton}
+            >
+              <Ionicons 
+                name="ellipsis-horizontal" 
+                size={20} 
+                color="#6b5b95" 
+              />
+            </TouchableOpacity>
+          </View>
+        </BlurView>
+      </View>
 
       {selectedItem && (
         <ItemDetailsModal
@@ -413,20 +418,26 @@ export default function WardrobeScreen({ navigation }) {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f8f9fa',
+    backgroundColor: '#f5f3ff',
   },
   loadingContainer: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
   },
-  header: {
-    paddingTop: 50,
+  floatingHeader: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    zIndex: 100,
+  },
+  blurContainer: {
+    paddingTop: 60,
     paddingBottom: 16,
     paddingHorizontal: 20,
-    backgroundColor: '#fff',
-    borderBottomWidth: 1,
-    borderBottomColor: '#f0f0f0',
+    borderBottomWidth: 0.5,
+    borderBottomColor: 'rgba(139, 122, 168, 0.2)',
   },
   headerContent: {
     flexDirection: 'row',
@@ -456,14 +467,14 @@ const styles = StyleSheet.create({
   headerTitlePrefix: {
     fontSize: 18,
     fontFamily: 'Manrope-Regular',
-    color: '#6b7280',
+    color: '#8b7aa8',
     letterSpacing: -0.3,
     marginRight: 5,
   },
   headerTitle: {
     fontSize: 18,
     fontFamily: 'Manrope-SemiBold',
-    color: '#1a1a1a',
+    color: '#4a4458',
     letterSpacing: -0.3,
   },
   content: {
@@ -511,7 +522,7 @@ const styles = StyleSheet.create({
     letterSpacing: -0.2,
   },
   carouselContainer: {
-    paddingTop: 16,
+    paddingTop: 8,
     paddingBottom: 100,
   },
   floatingButton: {
@@ -525,11 +536,11 @@ const styles = StyleSheet.create({
     borderRadius: 28,
     justifyContent: 'center',
     alignItems: 'center',
-    backgroundColor: '#1a1a1a',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
+    backgroundColor: '#b794f4',
+    shadowColor: '#b794f4',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.25,
+    shadowRadius: 8,
     elevation: 4,
   },
   noResultsContainer: {
@@ -576,7 +587,7 @@ const styles = StyleSheet.create({
     paddingRight: 20,
   },
   menuContainer: {
-    backgroundColor: '#fff',
+    backgroundColor: '#fdfcff',
     borderRadius: 16,
     paddingVertical: 8,
     minWidth: 200,
@@ -599,14 +610,14 @@ const styles = StyleSheet.create({
     marginLeft: 12,
   },
   deleteModeBar: {
-    backgroundColor: '#fef2f2',
+    backgroundColor: '#fff5f5',
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
     paddingHorizontal: 20,
     paddingVertical: 8,
     borderBottomWidth: 1,
-    borderBottomColor: '#fecaca',
+    borderBottomColor: '#fed0d0',
   },
   deleteModeText: {
     fontSize: 13,
@@ -621,9 +632,10 @@ const styles = StyleSheet.create({
   searchSection: {
     paddingHorizontal: 16,
     paddingVertical: 16,
-    backgroundColor: '#fff',
-    borderBottomWidth: 1,
-    borderBottomColor: '#f5f5f5',
+    backgroundColor: 'rgba(255, 255, 255, 0.5)',
+    borderRadius: 20,
+    marginHorizontal: 16,
+    marginBottom: 16,
   },
   statsContainer: {
     flexDirection: 'row',
@@ -637,19 +649,19 @@ const styles = StyleSheet.create({
   statNumber: {
     fontSize: 18,
     fontFamily: 'Manrope-SemiBold',
-    color: '#1a1a1a',
+    color: '#4a4458',
     letterSpacing: -0.3,
   },
   statLabel: {
     fontSize: 11,
     fontFamily: 'Manrope-Regular',
-    color: '#6b7280',
+    color: '#8b7aa8',
     marginTop: 1,
   },
   statDivider: {
     width: 1,
     height: 30,
-    backgroundColor: '#e5e7eb',
+    backgroundColor: '#d8d0e8',
     marginHorizontal: 20,
   },
 });

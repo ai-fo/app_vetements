@@ -13,8 +13,9 @@ import {
   Alert,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { LinearGradient } from 'expo-linear-gradient';
+import { BlurView } from 'expo-blur';
 import { useWardrobe } from '../hooks/useWardrobe';
+import { theme } from '../../../shared/styles/theme';
 
 // Options prédéfinies pour chaque attribut
 const PREDEFINED_OPTIONS = {
@@ -270,23 +271,27 @@ export default function ItemAttributesEditor({ visible, item, onClose, onSave })
       presentationStyle="fullScreen"
       onRequestClose={onClose}
     >
-      <SafeAreaView style={styles.container}>
-        <LinearGradient
-          colors={['#667eea', '#764ba2']}
-          style={styles.header}
-        >
-          <TouchableOpacity onPress={onClose}>
-            <Ionicons name="close" size={28} color="#fff" />
-          </TouchableOpacity>
-          <Text style={styles.headerTitle}>Modifier les attributs</Text>
-          <TouchableOpacity onPress={handleSave} disabled={loading}>
-            {loading ? (
-              <Text style={styles.saveText}>...</Text>
-            ) : (
-              <Text style={styles.saveText}>Enregistrer</Text>
-            )}
-          </TouchableOpacity>
-        </LinearGradient>
+      <View style={styles.container}>
+        {/* Header flottant */}
+        <View style={styles.floatingHeader}>
+          <BlurView intensity={80} tint="light" style={styles.blurContainer}>
+            <SafeAreaView>
+              <View style={styles.headerContent}>
+                <TouchableOpacity onPress={onClose} style={styles.closeButton}>
+                  <Ionicons name="close" size={24} color={theme.colors.primaryDark} />
+                </TouchableOpacity>
+                <Text style={styles.headerTitle}>Modifier les attributs</Text>
+                <TouchableOpacity onPress={handleSave} disabled={loading} style={styles.saveButton}>
+                  {loading ? (
+                    <Text style={styles.saveText}>...</Text>
+                  ) : (
+                    <Text style={styles.saveText}>Enregistrer</Text>
+                  )}
+                </TouchableOpacity>
+              </View>
+            </SafeAreaView>
+          </BlurView>
+        </View>
         
         <KeyboardAvoidingView
           behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
@@ -390,7 +395,7 @@ export default function ItemAttributesEditor({ visible, item, onClose, onSave })
             <View style={styles.bottomPadding} />
           </ScrollView>
         </KeyboardAvoidingView>
-      </SafeAreaView>
+      </View>
     </Modal>
   );
 }
@@ -398,47 +403,74 @@ export default function ItemAttributesEditor({ visible, item, onClose, onSave })
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f9fafb',
+    backgroundColor: theme.colors.background,
   },
-  header: {
+  floatingHeader: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    zIndex: 100,
+  },
+  blurContainer: {
+    paddingBottom: 16,
+    borderBottomWidth: 0.5,
+    borderBottomColor: theme.colors.borderLight,
+  },
+  headerContent: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
     alignItems: 'center',
-    paddingTop: 50,
-    paddingHorizontal: 20,
-    paddingBottom: 20,
+    justifyContent: 'space-between',
+    paddingTop: theme.spacing.md,
+    paddingHorizontal: theme.spacing.lg,
+  },
+  closeButton: {
+    width: 40,
+    height: 40,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   headerTitle: {
-    color: '#fff',
-    fontSize: 18,
-    fontWeight: '600',
+    fontSize: theme.typography.sizes.lg,
+    fontFamily: theme.typography.fonts.semiBold,
+    color: theme.colors.primaryDark,
+    letterSpacing: theme.typography.letterSpacing.tight,
+  },
+  saveButton: {
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    backgroundColor: theme.colors.primary,
+    borderRadius: theme.borderRadius.full,
   },
   saveText: {
     color: '#fff',
-    fontSize: 16,
-    fontWeight: '600',
+    fontSize: theme.typography.sizes.sm,
+    fontFamily: theme.typography.fonts.medium,
   },
   content: {
     flex: 1,
+    marginTop: 100,
   },
   section: {
-    padding: 20,
-    paddingBottom: 10,
+    padding: theme.spacing.lg,
+    paddingBottom: theme.spacing.sm,
   },
   sectionTitle: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#1f2937',
-    marginBottom: 12,
+    fontSize: theme.typography.sizes.base,
+    fontFamily: theme.typography.fonts.semiBold,
+    color: theme.colors.primaryDark,
+    marginBottom: theme.spacing.md,
+    letterSpacing: theme.typography.letterSpacing.tight,
   },
   textInput: {
-    backgroundColor: '#fff',
-    borderRadius: 12,
-    padding: 15,
-    fontSize: 16,
-    borderWidth: 1,
-    borderColor: '#e5e7eb',
-    color: '#1f2937',
+    backgroundColor: theme.colors.surface,
+    borderRadius: theme.borderRadius.lg,
+    padding: theme.spacing.md,
+    fontSize: theme.typography.sizes.base,
+    fontFamily: theme.typography.fonts.regular,
+    borderWidth: 1.5,
+    borderColor: theme.colors.border,
+    color: theme.colors.text,
   },
   textArea: {
     minHeight: 80,
@@ -452,27 +484,28 @@ const styles = StyleSheet.create({
   optionChip: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#fff',
+    backgroundColor: theme.colors.surface,
     paddingHorizontal: 16,
     paddingVertical: 10,
-    borderRadius: 25,
-    borderWidth: 2,
-    borderColor: '#e5e7eb',
+    borderRadius: theme.borderRadius.full,
+    borderWidth: 1.5,
+    borderColor: theme.colors.border,
     marginRight: 10,
     marginBottom: 10,
+    ...theme.shadows.sm,
   },
   optionChipSelected: {
-    borderColor: '#667eea',
-    backgroundColor: 'rgba(102, 126, 234, 0.1)',
+    borderColor: theme.colors.primary,
+    backgroundColor: `${theme.colors.primary}15`,
   },
   optionText: {
-    fontSize: 14,
-    color: '#4b5563',
-    fontWeight: '500',
+    fontSize: theme.typography.sizes.sm,
+    fontFamily: theme.typography.fonts.medium,
+    color: theme.colors.textSecondary,
   },
   optionTextSelected: {
-    color: '#667eea',
-    fontWeight: '600',
+    color: theme.colors.primary,
+    fontFamily: theme.typography.fonts.semiBold,
   },
   optionIcon: {
     fontSize: 16,
@@ -484,7 +517,7 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     marginRight: 8,
     borderWidth: 1,
-    borderColor: '#e5e7eb',
+    borderColor: theme.colors.border,
   },
   bottomPadding: {
     height: 50,

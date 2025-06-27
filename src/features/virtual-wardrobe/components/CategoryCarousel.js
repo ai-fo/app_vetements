@@ -65,7 +65,7 @@ export default function CategoryCarousel({
       
       <View style={styles.cardContent}>
         <Text style={styles.itemName} numberOfLines={1}>{item.name}</Text>
-        {item.brand && (
+        {item.brand && item.itemType !== 'OUTFIT' && (
           <Text style={styles.itemBrand} numberOfLines={1}>{item.brand}</Text>
         )}
       </View>
@@ -75,7 +75,7 @@ export default function CategoryCarousel({
   const getCategoryIcon = () => {
     const iconMap = {
       'Hauts': 'shirt',
-      'Bas': 'md-menu',
+      'Bas': 'man',
       'Robes': 'woman',
       'Vestes': 'snow',
       'Chaussures': 'walk',
@@ -138,15 +138,15 @@ const styles = StyleSheet.create({
   sectionTitle: {
     fontSize: 18,
     fontFamily: 'Manrope-SemiBold',
-    color: '#1a1a1a',
+    color: '#4a4458',
     letterSpacing: -0.3,
   },
   itemCount: {
     fontSize: 14,
     fontFamily: 'Manrope-Regular',
-    color: '#6b7280',
+    color: '#6b5b95',
     marginLeft: 8,
-    backgroundColor: '#f3f4f6',
+    backgroundColor: '#ede9f5',
     paddingHorizontal: 8,
     paddingVertical: 2,
     borderRadius: 10,
@@ -180,10 +180,10 @@ const styles = StyleSheet.create({
     height: CARD_WIDTH * 1.3,
     borderRadius: 16,
     overflow: 'hidden',
-    backgroundColor: '#fff',
-    shadowColor: '#000',
+    backgroundColor: '#fdfcff',
+    shadowColor: '#6b5b95',
     shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.08,
+    shadowOpacity: 0.1,
     shadowRadius: 8,
     elevation: 3,
   },
@@ -191,7 +191,7 @@ const styles = StyleSheet.create({
     width: '100%',
     height: '100%',
     resizeMode: 'cover',
-    backgroundColor: '#f8f9fa',
+    backgroundColor: '#f5f3ff',
   },
   imageOverlay: {
     position: 'absolute',
@@ -219,14 +219,14 @@ const styles = StyleSheet.create({
   itemName: {
     fontSize: 14,
     fontFamily: 'Manrope-Medium',
-    color: '#1a1a1a',
+    color: '#4a4458',
     letterSpacing: -0.2,
     marginBottom: 2,
   },
   itemBrand: {
     fontSize: 12,
     fontFamily: 'Manrope-Regular',
-    color: '#6b7280',
+    color: '#8b7aa8',
     letterSpacing: -0.1,
   },
 });
