@@ -30,13 +30,13 @@ export default function FilterBar({ filters, onFiltersChange }) {
   };
 
   const quickFilters = [
-    { key: 'isFavorite', value: true, label: '✨ Favoris', special: true },
-    { key: 'category', value: 'top', label: '👕 Hauts' },
-    { key: 'category', value: 'bottom', label: '👖 Bas' },
-    { key: 'category', value: 'dress', label: '👗 Robes' },
-    { key: 'category', value: 'outerwear', label: '🧥 Vestes' },
-    { key: 'category', value: 'shoes', label: '👟 Chaussures' },
-    { key: 'category', value: 'accessory', label: '👜 Accessoires' },
+    { key: 'isFavorite', value: true, label: 'Favoris', icon: 'heart', color: '#f59e0b', special: true },
+    { key: 'category', value: 'top', label: 'Hauts', icon: 'shirt', color: '#3b82f6' },
+    { key: 'category', value: 'bottom', label: 'Bas', icon: 'md-menu', color: '#8b5cf6' },
+    { key: 'category', value: 'dress', label: 'Robes', icon: 'woman', color: '#ec4899' },
+    { key: 'category', value: 'outerwear', label: 'Vestes', icon: 'snow', color: '#06b6d4' },
+    { key: 'category', value: 'shoes', label: 'Chaussures', icon: 'walk', color: '#10b981' },
+    { key: 'category', value: 'accessory', label: 'Accessoires', icon: 'glasses', color: '#f59e0b' },
   ];
 
   return (
@@ -51,7 +51,7 @@ export default function FilterBar({ filters, onFiltersChange }) {
             style={[styles.filterButton, activeFiltersCount > 0 && styles.filterButtonActive]}
             onPress={() => setShowFilterModal(true)}
           >
-            <Ionicons name="options" size={18} color={activeFiltersCount > 0 ? '#fff' : '#667eea'} />
+            <Ionicons name="options" size={16} color={activeFiltersCount > 0 ? '#fff' : '#6b7280'} />
             <Text style={[styles.filterButtonText, activeFiltersCount > 0 && styles.filterButtonTextActive]}>
               Filtres {activeFiltersCount > 0 && `(${activeFiltersCount})`}
             </Text>
@@ -74,16 +74,12 @@ export default function FilterBar({ filters, onFiltersChange }) {
                     });
                   }}
                 >
-                  <LinearGradient
-                    colors={['#667eea', '#764ba2']}
-                    style={styles.quickFilterSpecialGradient}
-                    start={{ x: 0, y: 0 }}
-                    end={{ x: 1, y: 1 }}
-                  >
-                    <Text style={styles.quickFilterTextSpecial}>
+                  <View style={[styles.quickFilterSpecialGradient, { backgroundColor: filter.color }]}>
+                    <Ionicons name={filter.icon} size={16} color="#fff" />
+                    <Text style={[styles.quickFilterTextSpecial, { color: '#fff' }]}>
                       {filter.label}
                     </Text>
-                  </LinearGradient>
+                  </View>
                 </TouchableOpacity>
               );
             }
@@ -93,7 +89,8 @@ export default function FilterBar({ filters, onFiltersChange }) {
                 key={index}
                 style={[
                   styles.quickFilter, 
-                  isActive && styles.quickFilterActive
+                  isActive && styles.quickFilterActive,
+                  isActive && { backgroundColor: filter.color }
                 ]}
                 onPress={() => {
                   if (filter.key === 'isFavorite') {
@@ -109,6 +106,11 @@ export default function FilterBar({ filters, onFiltersChange }) {
                   }
                 }}
               >
+                <Ionicons 
+                  name={filter.icon} 
+                  size={16} 
+                  color={isActive ? '#fff' : filter.color} 
+                />
                 <Text style={[
                   styles.quickFilterText, 
                   isActive && styles.quickFilterTextActive
@@ -138,7 +140,7 @@ export default function FilterBar({ filters, onFiltersChange }) {
             <View style={styles.modalHeader}>
               <Text style={styles.modalTitle}>Filtres avancés</Text>
               <TouchableOpacity onPress={() => setShowFilterModal(false)}>
-                <Ionicons name="close" size={24} color="#4b5563" />
+                <Ionicons name="close" size={22} color="#6b7280" />
               </TouchableOpacity>
             </View>
 
@@ -322,50 +324,61 @@ const styles = StyleSheet.create({
   container: {
     backgroundColor: '#fff',
     borderBottomWidth: 1,
-    borderBottomColor: '#e5e7eb',
+    borderBottomColor: '#f5f5f5',
   },
   scrollContent: {
     paddingHorizontal: 20,
-    paddingVertical: 12,
+    paddingVertical: 10,
   },
   filterButton: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#f3f4f6',
     paddingHorizontal: 16,
     paddingVertical: 8,
     borderRadius: 20,
     marginRight: 10,
+    borderWidth: 1.5,
+    borderColor: '#e5e7eb',
+    backgroundColor: 'transparent',
   },
   filterButtonActive: {
-    backgroundColor: '#667eea',
+    backgroundColor: '#1a1a1a',
+    borderColor: 'transparent',
   },
   filterButtonText: {
-    color: '#667eea',
+    color: '#6b7280',
     marginLeft: 6,
-    fontSize: 14,
-    fontWeight: '500',
+    fontSize: 13,
+    fontFamily: 'Manrope-Medium',
+    letterSpacing: -0.2,
   },
   filterButtonTextActive: {
     color: '#fff',
   },
   quickFilter: {
-    backgroundColor: '#f3f4f6',
-    paddingHorizontal: 14,
+    paddingHorizontal: 16,
     paddingVertical: 8,
     borderRadius: 20,
     marginRight: 8,
+    borderWidth: 1.5,
+    borderColor: '#e5e7eb',
+    backgroundColor: 'transparent',
+    flexDirection: 'row',
+    alignItems: 'center',
   },
   quickFilterActive: {
-    backgroundColor: '#667eea',
+    borderColor: 'transparent',
   },
   quickFilterText: {
-    color: '#4b5563',
+    color: '#6b7280',
     fontSize: 13,
-    fontWeight: '500',
+    fontFamily: 'Manrope-Medium',
+    letterSpacing: -0.2,
+    marginLeft: 6,
   },
   quickFilterTextActive: {
     color: '#fff',
+    fontFamily: 'Manrope-SemiBold',
   },
   quickFilterSpecialContainer: {
     marginRight: 10,
@@ -374,11 +387,14 @@ const styles = StyleSheet.create({
     paddingHorizontal: 16,
     paddingVertical: 8,
     borderRadius: 20,
+    flexDirection: 'row',
+    alignItems: 'center',
   },
   quickFilterTextSpecial: {
-    color: '#fff',
-    fontSize: 14,
-    fontWeight: '600',
+    fontSize: 13,
+    fontFamily: 'Manrope-SemiBold',
+    letterSpacing: -0.2,
+    marginLeft: 6,
   },
   clearButton: {
     paddingHorizontal: 16,
@@ -386,9 +402,10 @@ const styles = StyleSheet.create({
     marginLeft: 10,
   },
   clearButtonText: {
-    color: '#ef4444',
-    fontSize: 14,
-    fontWeight: '500',
+    color: '#6b7280',
+    fontSize: 13,
+    fontFamily: 'Manrope-Medium',
+    letterSpacing: -0.2,
   },
   modalOverlay: {
     flex: 1,
@@ -397,8 +414,8 @@ const styles = StyleSheet.create({
   },
   modalContent: {
     backgroundColor: '#fff',
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
+    borderTopLeftRadius: 24,
+    borderTopRightRadius: 24,
     maxHeight: '80%',
   },
   modalHeader: {
@@ -411,8 +428,9 @@ const styles = StyleSheet.create({
   },
   modalTitle: {
     fontSize: 18,
-    fontWeight: 'bold',
-    color: '#1f2937',
+    fontFamily: 'Manrope-SemiBold',
+    color: '#1a1a1a',
+    letterSpacing: -0.3,
   },
   modalBody: {
     padding: 20,
@@ -421,29 +439,34 @@ const styles = StyleSheet.create({
     marginBottom: 24,
   },
   filterSectionTitle: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#1f2937',
+    fontSize: 15,
+    fontFamily: 'Manrope-SemiBold',
+    color: '#1a1a1a',
     marginBottom: 12,
+    letterSpacing: -0.2,
   },
   filterOptions: {
     flexDirection: 'row',
     flexWrap: 'wrap',
   },
   filterOption: {
-    backgroundColor: '#f3f4f6',
     paddingHorizontal: 16,
     paddingVertical: 8,
     borderRadius: 20,
     marginRight: 8,
     marginBottom: 8,
+    borderWidth: 1.5,
+    borderColor: '#e5e7eb',
+    backgroundColor: 'transparent',
   },
   filterOptionActive: {
-    backgroundColor: '#667eea',
+    backgroundColor: '#1a1a1a',
+    borderColor: 'transparent',
   },
   filterOptionText: {
     color: '#4b5563',
     fontSize: 14,
+    fontFamily: 'Manrope-Regular',
   },
   filterOptionTextActive: {
     color: '#fff',
@@ -457,18 +480,22 @@ const styles = StyleSheet.create({
   modalButton: {
     flex: 1,
     paddingVertical: 12,
-    borderRadius: 8,
+    borderRadius: 12,
     alignItems: 'center',
     marginHorizontal: 6,
-    backgroundColor: '#f3f4f6',
+    borderWidth: 1.5,
+    borderColor: '#e5e7eb',
+    backgroundColor: 'transparent',
   },
   modalButtonPrimary: {
-    backgroundColor: '#667eea',
+    backgroundColor: '#1a1a1a',
+    borderColor: 'transparent',
   },
   modalButtonText: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#4b5563',
+    fontSize: 14,
+    fontFamily: 'Manrope-Medium',
+    color: '#6b7280',
+    letterSpacing: -0.2,
   },
   modalButtonTextPrimary: {
     color: '#fff',

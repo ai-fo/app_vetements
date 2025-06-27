@@ -1,35 +1,98 @@
-import React from 'react';
+import React, { useRef, useEffect } from 'react';
 import {
   TouchableOpacity,
   StyleSheet,
   View,
+  Animated,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { LinearGradient } from 'expo-linear-gradient';
 
-export default function FavoriteButton({ isFavorite, onToggle, size = 24, style }) {
+export default function FavoriteButton({ isFavorite, onToggle, size = 20, style }) {
+  const scaleAnim = useRef(new Animated.Value(1)).current;
+  const rotateAnim = useRef(new Animated.Value(0)).current;
+
+  useEffect(() => {
+    if (isFavorite) {
+      // Animation lors de l'ajout aux favoris
+      Animated.sequence([
+        Animated.parallel([
+          Animated.spring(scaleAnim, {
+            toValue: 1.2,
+            duration: 200,
+            useNativeDriver: true,
+          }),
+          Animated.timing(rotateAnim, {
+            toValue: 1,
+            duration: 200,
+            useNativeDriver: true,
+          }),
+        ]),
+        Animated.spring(scaleAnim, {
+          toValue: 1,
+          duration: 200,
+          useNativeDriver: true,
+        }),
+      ]).start();
+    } else {
+      // Reset animation
+      Animated.timing(scaleAnim, {
+        toValue: 1,
+        duration: 100,
+        useNativeDriver: true,
+      }).start();
+      rotateAnim.setValue(0);
+    }
+  }, [isFavorite]);
+
+  const handlePress = () => {
+    // Animation de pression
+    Animated.sequence([
+      Animated.timing(scaleAnim, {
+        toValue: 0.9,
+        duration: 50,
+        useNativeDriver: true,
+      }),
+      Animated.timing(scaleAnim, {
+        toValue: 1,
+        duration: 50,
+        useNativeDriver: true,
+      }),
+    ]).start();
+    onToggle();
+  };
+
+  const spin = rotateAnim.interpolate({
+    inputRange: [0, 1],
+    outputRange: ['0deg', '360deg'],
+  });
+
   return (
     <TouchableOpacity
       style={[styles.container, style]}
-      onPress={onToggle}
+      onPress={handlePress}
       activeOpacity={0.7}
     >
-      <View style={styles.iconContainer}>
+      <Animated.View
+        style={[
+          styles.iconContainer,
+          {
+            transform: [
+              { scale: scaleAnim },
+              { rotate: spin },
+            ],
+          },
+        ]}
+      >
         {isFavorite ? (
-          <LinearGradient
-            colors={['#667eea', '#764ba2']}
-            style={styles.gradientBackground}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 1 }}
-          >
-            <Ionicons name="star" size={size} color="#fff" />
-          </LinearGradient>
+          <View style={styles.filledBackground}>
+            <Ionicons name="heart" size={size} color="#fbbf24" />
+          </View>
         ) : (
           <View style={styles.outlineBackground}>
-            <Ionicons name="star-outline" size={size} color="#9ca3af" />
+            <Ionicons name="heart-outline" size={size} color="#9ca3af" />
           </View>
         )}
-      </View>
+      </Animated.View>
     </TouchableOpacity>
   );
 }
@@ -43,19 +106,12 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
   },
-  gradientBackground: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
+  filledBackground: {
     alignItems: 'center',
     justifyContent: 'center',
   },
   outlineBackground: {
-    width: 28,
-    height: 28,
-    borderRadius: 14,
     alignItems: 'center',
     justifyContent: 'center',
-    backgroundColor: 'transparent',
   },
 });
