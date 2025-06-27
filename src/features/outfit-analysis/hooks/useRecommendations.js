@@ -8,6 +8,12 @@ import * as Location from 'expo-location';
 // Cache local pour les recommandations en cours de tracking
 const pendingRecommendations = new Set();
 
+// Nettoyer le cache toutes les heures
+setInterval(() => {
+  pendingRecommendations.clear();
+  console.log('Cleared recommendation cache');
+}, 3600000); // 1 heure
+
 // Fonction pour normaliser les IDs de combo (trier les UUIDs)
 const normalizeComboId = (comboId) => {
   if (!comboId || !comboId.startsWith('combo-')) return comboId;
@@ -254,6 +260,48 @@ export const useRecommendations = (userId) => {
               // En cas d'erreur, retirer du cache
               pendingRecommendations.delete(normalizedId);
             });
+        }
+        
+        // Vérifier s'il reste des recommandations après filtrage
+        if (processedRecommendations.length === 0 && data.recommendations.length > 0) {
+          console.warn('All recommendations were filtered out as duplicates. Using first one anyway.');
+          
+          // Prendre la première recommandation même si c'est un doublon
+          const rec = data.recommendations[0];
+          if (rec.id.startsWith('combo-')) {
+            const comboString = rec.id.replace('combo-', '');
+            const uuidRegex = /[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/g;
+            const ids = comboString.match(uuidRegex) || [];
+            const pieces = ids.map(id => items.find(item => item.id === id)).filter(Boolean);
+            
+            if (pieces.length > 0) {
+              processedRecommendations.push({
+                id: rec.id,
+                name: rec.name || 'Tenue recommandée',
+                pieces: pieces,
+                isMultiplePieces: true,
+                reason: rec.reason,
+                weatherAdaptation: rec.weather_adaptation,
+                styleTips: rec.style_tips,
+                wasRecentlyRecommended: true,
+                lastRecommendedDays: 0,
+                weatherContext: data.weather
+              });
+            }
+          } else {
+            const item = items.find(i => i.id === rec.id);
+            if (item) {
+              processedRecommendations.push({
+                ...item,
+                reason: rec.reason,
+                weatherAdaptation: rec.weather_adaptation,
+                styleTips: rec.style_tips,
+                wasRecentlyRecommended: true,
+                lastRecommendedDays: 0,
+                weatherContext: data.weather
+              });
+            }
+          }
         }
         
         // Ensuite seulement, afficher les recommandations

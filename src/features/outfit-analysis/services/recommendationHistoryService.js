@@ -93,19 +93,21 @@ class RecommendationHistoryService {
   }
 
   /**
-   * Récupère les recommandations d'aujourd'hui pour éviter les doublons
+   * Récupère les recommandations récentes pour éviter les doublons (dernières 3 heures)
    */
   async getTodayRecommendations(userId) {
     try {
-      const today = new Date();
-      today.setHours(0, 0, 0, 0);
+      // Récupérer seulement les recommandations des 3 dernières heures
+      const threeHoursAgo = new Date();
+      threeHoursAgo.setHours(threeHoursAgo.getHours() - 3);
       
       const { data, error } = await supabase
         .from('recommendation_tracking')
         .select('original_recommendation_id, item_ids')
         .eq('user_id', userId)
-        .gte('recommended_at', today.toISOString())
-        .order('recommended_at', { ascending: false });
+        .gte('recommended_at', threeHoursAgo.toISOString())
+        .order('recommended_at', { ascending: false })
+        .limit(10); // Limiter pour éviter trop de filtrage
 
       if (error) throw error;
       
