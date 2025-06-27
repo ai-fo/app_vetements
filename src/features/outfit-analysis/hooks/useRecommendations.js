@@ -167,7 +167,6 @@ export const useRecommendations = (userId) => {
                 name: rec.name || 'Tenue recommandée',
                 pieces: pieces,
                 isMultiplePieces: true,
-                score: rec.score,
                 reason: rec.reason,
                 weatherAdaptation: rec.weather_adaptation,
                 styleTips: rec.style_tips,
@@ -178,11 +177,6 @@ export const useRecommendations = (userId) => {
               };
               
               processedRecommendations.push(recommendation);
-              
-              // Tracker la recommandation dans Supabase
-              if (userId) {
-                recommendationHistoryService.trackRecommendation(userId, recommendation);
-              }
             }
           } else {
             // C'est un item unique ou une tenue complète
@@ -190,7 +184,6 @@ export const useRecommendations = (userId) => {
             if (item) {
               const recommendation = {
                 ...item,
-                score: rec.score,
                 reason: rec.reason,
                 weatherAdaptation: rec.weather_adaptation,
                 styleTips: rec.style_tips,
@@ -201,17 +194,17 @@ export const useRecommendations = (userId) => {
               };
               
               processedRecommendations.push(recommendation);
-              
-              // Tracker la recommandation dans Supabase
-              if (userId) {
-                recommendationHistoryService.trackRecommendation(userId, recommendation);
-              }
             }
           }
         }
         
         // Prendre toutes les recommandations de l'IA (pas de limite arbitraire)
         setRecommendations(processedRecommendations);
+        
+        // Tracker SEULEMENT la première recommandation affichée (pas toutes)
+        if (userId && processedRecommendations.length > 0) {
+          recommendationHistoryService.trackRecommendation(userId, processedRecommendations[0]);
+        }
       }
     } catch (error) {
       console.error('Error generating recommendations:', error);
@@ -374,7 +367,7 @@ export const useRecommendations = (userId) => {
   };
 
   useEffect(() => {
-    if (!wardrobeLoading && items && items.length > 0) {
+    if (!wardrobeLoading && items && items.length > 0 && userId) {
       generateRecommendations();
     }
   }, [wardrobeLoading, userId]);

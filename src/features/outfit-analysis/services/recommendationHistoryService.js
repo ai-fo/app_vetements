@@ -6,6 +6,23 @@ class RecommendationHistoryService {
    */
   async trackRecommendation(userId, recommendation) {
     try {
+      // Vérifier si cette recommandation a déjà été trackée aujourd'hui
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      
+      const { data: existing } = await supabase
+        .from('recommendation_tracking')
+        .select('id')
+        .eq('user_id', userId)
+        .eq('recommendation_id', recommendation.id)
+        .gte('recommended_at', today.toISOString())
+        .limit(1);
+      
+      if (existing && existing.length > 0) {
+        console.log('Recommendation already tracked today:', recommendation.id);
+        return { data: existing[0], error: null };
+      }
+      
       // Déterminer le type de recommandation
       let recommendationType = 'single_item';
       let itemIds = [];
@@ -38,7 +55,6 @@ class RecommendationHistoryService {
         recommendation_type: recommendationType,
         item_ids: itemIds,
         weather_data: recommendation.weatherContext || null,
-        score: recommendation.score || null,
         reason: recommendation.reason || null
       };
 
