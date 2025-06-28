@@ -10,7 +10,7 @@ import {
   ScrollView,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { useWardrobe, ItemType } from '../../virtual-wardrobe';
+import { ItemType } from '../../../shared/types';
 import { useAuth } from '../../auth';
 import { useMood } from '../hooks/useMood';
 import { useWeather } from '../hooks/useWeather';

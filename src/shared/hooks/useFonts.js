@@ -7,6 +7,12 @@ export default function useLoadFonts() {
   useEffect(() => {
     async function loadFonts() {
       try {
+        // Vérifier si les fonts sont déjà chargées
+        if (Font.isLoaded('Manrope-Regular')) {
+          setFontsLoaded(true);
+          return;
+        }
+
         await Font.loadAsync({
           'Manrope-Regular': require('../../../assets/fonts/Manrope-Regular.ttf'),
           'Manrope-Medium': require('../../../assets/fonts/Manrope-Medium.ttf'),
@@ -14,7 +20,7 @@ export default function useLoadFonts() {
         });
         setFontsLoaded(true);
       } catch (error) {
-        console.error('Error loading fonts:', error);
+        console.warn('Fonts loading failed, using system fonts:', error.message);
         // Fallback to system fonts if custom fonts fail to load
         setFontsLoaded(true);
       }

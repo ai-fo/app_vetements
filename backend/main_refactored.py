@@ -1,10 +1,8 @@
 """
 Application principale - Architecture modulaire
 """
-from fastapi import FastAPI, Request, UploadFile, File, Depends
+from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from typing import Optional
-from uuid import UUID
 
 # Import des modules
 from modules.outfit_analysis import router as outfit_analysis_router
@@ -13,7 +11,6 @@ from modules.recommendations import router as recommendations_router
 
 # Import de la configuration
 from core.config import settings
-from core.database import get_db
 
 # Créer l'application FastAPI
 app = FastAPI(
@@ -62,76 +59,52 @@ async def health_check():
 
 # Routes de compatibilité pour l'ancien système
 @app.post("/analyze-outfit")
-async def analyze_outfit_legacy(
-    file: UploadFile = File(...), 
-    item_type: Optional[str] = None
-):
+async def analyze_outfit_legacy(*args, **kwargs):
     """Route de compatibilité - redirige vers le nouveau endpoint"""
     from modules.outfit_analysis.router import analyze_outfit
-    return await analyze_outfit(file=file, item_type=item_type)
+    return await analyze_outfit(*args, **kwargs)
 
 @app.post("/daily-recommendations")
-async def daily_recommendations_legacy(request: Request):
+async def daily_recommendations_legacy(*args, **kwargs):
     """Route de compatibilité - redirige vers le nouveau endpoint"""
-    from modules.recommendations.router import DailyRecommendationRequest, get_daily_recommendations
-    # Récupérer le body de la requête
-    body = await request.json()
-    # Convertir le dict en modèle Pydantic
-    recommendation_request = DailyRecommendationRequest(**body)
-    return await get_daily_recommendations(recommendation_request)
+    from modules.recommendations.router import get_daily_recommendations
+    return await get_daily_recommendations(*args, **kwargs)
 
 @app.post("/save-clothing")
-async def save_clothing_legacy(request: Request, db = Depends(get_db)):
+async def save_clothing_legacy(*args, **kwargs):
     """Route de compatibilité - redirige vers le nouveau endpoint"""
-    from modules.wardrobe.router import save_clothing, SaveClothingRequest
-    body = await request.json()
-    save_request = SaveClothingRequest(**body)
-    return await save_clothing(request=save_request, db=db)
+    from modules.wardrobe.router import save_clothing
+    return await save_clothing(*args, **kwargs)
 
 @app.get("/wardrobe/{user_id}/pieces")
-async def get_user_pieces_legacy(
-    user_id: UUID,
-    piece_type: Optional[str] = None,
-    db = Depends(get_db)
-):
+async def get_user_pieces_legacy(*args, **kwargs):
     """Route de compatibilité - redirige vers le nouveau endpoint"""
     from modules.wardrobe.router import get_user_pieces
-    return await get_user_pieces(user_id=user_id, piece_type=piece_type, db=db)
+    return await get_user_pieces(*args, **kwargs)
 
 @app.get("/wardrobe/{user_id}/looks")
-async def get_user_looks_legacy(
-    user_id: UUID,
-    db = Depends(get_db)
-):
+async def get_user_looks_legacy(*args, **kwargs):
     """Route de compatibilité - redirige vers le nouveau endpoint"""
     from modules.wardrobe.router import get_user_looks
-    return await get_user_looks(user_id=user_id, db=db)
+    return await get_user_looks(*args, **kwargs)
 
 @app.put("/wardrobe/items/{item_id}")
-async def update_clothing_item_legacy(
-    item_id: UUID,
-    request: Request,
-    db = Depends(get_db)
-):
+async def update_clothing_item_legacy(*args, **kwargs):
     """Route de compatibilité - redirige vers le nouveau endpoint"""
-    from modules.wardrobe.router import update_clothing_item, UpdateClothingItemRequest
-    body = await request.json()
-    update_request = UpdateClothingItemRequest(**body)
-    return await update_clothing_item(item_id=item_id, request=update_request, db=db)
+    from modules.wardrobe.router import update_clothing_item
+    return await update_clothing_item(*args, **kwargs)
 
 @app.post("/generate-outfit-suggestions")
-async def generate_suggestions_legacy(request: Request):
+async def generate_suggestions_legacy(*args, **kwargs):
     """Route de compatibilité - redirige vers le nouveau endpoint"""
     from modules.recommendations.router import generate_suggestions
-    preferences = await request.json()
-    return await generate_suggestions(preferences=preferences)
+    return await generate_suggestions(*args, **kwargs)
 
 @app.post("/match-outfit")
-async def match_outfit_legacy(request: Request):
+async def match_outfit_legacy(*args, **kwargs):
     """Route de compatibilité - redirige vers le nouveau endpoint"""
     from modules.recommendations.router import match_outfit
-    body = await request.json()
-    return await match_outfit(request=body)
+    return await match_outfit(*args, **kwargs)
 
 if __name__ == "__main__":
     import uvicorn

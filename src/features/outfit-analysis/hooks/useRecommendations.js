@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
-import { useWardrobe } from '../../virtual-wardrobe';
-import { ItemType, ClothingCategory } from '../../virtual-wardrobe';
+import { useWardrobeData } from '../../../shared/hooks/useWardrobeData';
+import { ItemType, ClothingCategory } from '../../../shared/types';
 import { dailyRecommendationService } from '../services/dailyRecommendationService';
 import { recommendationHistoryService } from '../services/recommendationHistoryService';
 import * as Location from 'expo-location';
@@ -28,7 +28,7 @@ const normalizeComboId = (comboId) => {
 };
 
 export const useRecommendations = (userId) => {
-  const { items = [], loading: wardrobeLoading } = useWardrobe(userId);
+  const { items = [], loading: wardrobeLoading } = useWardrobeData(userId);
   const [recommendations, setRecommendations] = useState([]);
   const [loading, setLoading] = useState(true);
   const [weather, setWeather] = useState(null);

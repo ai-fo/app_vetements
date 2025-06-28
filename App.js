@@ -121,10 +121,10 @@ export default function App() {
   }
 
   return (
-    <NavigationContainer>
-      <AuthProvider>
+    <AuthProvider>
+      <NavigationContainer>
         <RootNavigator />
-      </AuthProvider>
-    </NavigationContainer>
+      </NavigationContainer>
+    </AuthProvider>
   );
 }
