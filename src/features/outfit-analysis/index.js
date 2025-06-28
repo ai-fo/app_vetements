@@ -1,16 +1,25 @@
-// Outfit Analysis module exports
+/**
+ * Point d'entrée du module outfit-analysis
+ * Exporte toutes les interfaces publiques du module
+ */
+
+// Composants
+export { default as DailyRecommendation } from './components/DailyRecommendation';
 export { default as CameraScreen } from './components/CameraScreen';
 export { default as AnalysisResultScreen } from './components/AnalysisResultScreen';
-export { default as DailyRecommendation } from './components/DailyRecommendation';
 export { default as RecommendationDetailScreen } from './components/RecommendationDetailScreen';
-export { default as AddItemTypeSelector } from './components/AddItemTypeSelector';
 export { default as ClothingDetailView } from './components/ClothingDetailView';
-export { default as ClothingZoomView } from './components/ClothingZoomView';
-export { useOutfitAnalysis } from './hooks/useOutfitAnalysis';
-export { useClothingAnalysis } from './hooks/useClothingAnalysis';
+
+// Hooks
 export { useRecommendations } from './hooks/useRecommendations';
+export { useOutfitAnalysis } from './hooks/useOutfitAnalysis';
 export { useMood } from './hooks/useMood';
 export { useWeather } from './hooks/useWeather';
-export { outfitAnalysisAPI } from './api';
-export { clothingAnalysisAPI } from './api/clothingAnalysisAPI';
+
+// Services
+export { dailyRecommendationService } from './services/dailyRecommendationService';
+export { outfitAnalysisService } from './services/outfitAnalysisService';
+export { recommendationHistoryService } from './services/recommendationHistoryService';
+
+// Types (si spécifiques au module)
 export * from './types';
