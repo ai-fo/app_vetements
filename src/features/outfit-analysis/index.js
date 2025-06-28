@@ -9,6 +9,8 @@ export { default as CameraScreen } from './components/CameraScreen';
 export { default as AnalysisResultScreen } from './components/AnalysisResultScreen';
 export { default as RecommendationDetailScreen } from './components/RecommendationDetailScreen';
 export { default as ClothingDetailView } from './components/ClothingDetailView';
+export { default as AddItemTypeSelector } from './components/AddItemTypeSelector';
+export { default as ClothingZoomView } from './components/ClothingZoomView';
 
 // Hooks
 export { useRecommendations } from './hooks/useRecommendations';
