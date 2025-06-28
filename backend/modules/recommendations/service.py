@@ -30,6 +30,7 @@ class RecommendationService:
         user_prompt = self._create_user_prompt(
             weather, weather_description, weather_icon,
             request.current_season, request.user_needs,
+            request.recently_worn_ids,
             request.recently_recommended_ids, request.recently_recommended_combos,
             request.wardrobe_items
         )
@@ -179,7 +180,8 @@ Priorise les tenues complètes (outfits) quand c'est pertinent.
 Réponds UNIQUEMENT avec un JSON valide."""
     
     def _create_user_prompt(self, weather, weather_description, weather_icon,
-                           current_season, user_needs, recently_recommended_ids,
+                           current_season, user_needs, recently_worn_ids,
+                           recently_recommended_ids,
                            recently_recommended_combos, wardrobe_items) -> str:
         """Crée le prompt utilisateur pour GPT-4"""
         return f"""Conditions actuelles:
@@ -194,6 +196,9 @@ MÉTÉO À {weather['city']}:
 SAISON: {current_season or 'all_season'}
 
 {f"BESOINS SPÉCIFIQUES: {user_needs}" if user_needs else ""}
+
+VÊTEMENTS RÉCEMMENT PORTÉS (à éviter):
+{json.dumps(recently_worn_ids) if recently_worn_ids else "Aucun"}
 
 VÊTEMENTS ET COMBOS RÉCEMMENT RECOMMANDÉS (à éviter absolument):
 Items: {json.dumps(recently_recommended_ids) if recently_recommended_ids else "Aucun"}
