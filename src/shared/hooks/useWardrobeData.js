@@ -37,7 +37,7 @@ export const useWardrobeData = (userId) => {
 
       // Charger les tenues complètes
       const { data: looks, error: looksError } = await supabase
-        .from('complete_looks')
+        .from('outfit_looks')
         .select(`
           *,
           items:look_items(
