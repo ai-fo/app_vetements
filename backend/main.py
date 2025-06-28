@@ -1,7 +1,7 @@
 """
 Application principale - Architecture modulaire
 """
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 
 # Import des modules
@@ -65,10 +65,14 @@ async def analyze_outfit_legacy(*args, **kwargs):
     return await analyze_outfit(*args, **kwargs)
 
 @app.post("/daily-recommendations")
-async def daily_recommendations_legacy(*args, **kwargs):
+async def daily_recommendations_legacy(request: Request):
     """Route de compatibilité - redirige vers le nouveau endpoint"""
-    from modules.recommendations.router import get_daily_recommendations
-    return await get_daily_recommendations(*args, **kwargs)
+    from modules.recommendations.router import DailyRecommendationRequest, get_daily_recommendations
+    # Récupérer le body de la requête
+    body = await request.json()
+    # Convertir le dict en modèle Pydantic
+    recommendation_request = DailyRecommendationRequest(**body)
+    return await get_daily_recommendations(recommendation_request)
 
 @app.post("/save-clothing")
 async def save_clothing_legacy(*args, **kwargs):
