@@ -7,7 +7,7 @@ from PIL import Image
 import io
 import base64
 
-from schemas.clothing_analysis import SinglePieceResponse, CompleteLookResponse
+from ...schemas.clothing_analysis import SinglePieceResponse, CompleteLookResponse
 from .service import OutfitAnalysisService
 
 router = APIRouter(prefix="/outfit-analysis", tags=["outfit-analysis"])
