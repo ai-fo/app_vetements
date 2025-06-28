@@ -307,12 +307,20 @@ Génère EXACTEMENT 1 SEULE recommandation de TENUE COMPLÈTE.
 
 RÈGLES OBLIGATOIRES pour les recommandations:
 1. Si c'est une tenue complète (itemType: OUTFIT) : recommande-la directement
-2. Si c'est une combinaison : elle DOIT contenir AU MINIMUM :
-   - 1 haut (t-shirt, chemise, top, etc.)
-   - 1 bas (pantalon, short, jupe, etc.)
-   - Optionnel : veste/cardigan, chaussures, accessoires
+2. Si c'est une combinaison, elle DOIT être une tenue complète :
+   - SOIT : 1 haut (t-shirt, chemise, top, etc.) + 1 bas (pantalon, short, jupe, etc.)
+   - SOIT : 1 robe SEULE (car la robe compte comme haut + bas)
+   - Optionnel dans tous les cas : veste/cardigan, chaussures, accessoires
 3. JAMAIS recommander seulement des hauts ou seulement des bas
-4. Les combinaisons peuvent inclure 2-5 pièces (ex: t-shirt + chemise + pantalon + chaussures)
+4. Les combinaisons peuvent inclure 2-5 pièces selon le type
+
+COMPATIBILITÉ VESTIMENTAIRE - INTERDICTIONS ABSOLUES:
+- JAMAIS combiner une robe avec un t-shirt/chemise/top (une robe se porte seule ou avec veste)
+- JAMAIS combiner une robe avec un pantalon/short/jupe
+- Une robe peut SEULEMENT être combinée avec : veste, cardigan, chaussures, accessoires
+- JAMAIS superposer plusieurs bas ensemble (pantalon + short, jupe + pantalon, etc.)
+- JAMAIS combiner plusieurs pièces du même type sauf pour le layering de hauts
+- Si tu recommandes plusieurs hauts, assure-toi qu'ils sont compatibles pour le layering (ex: t-shirt sous chemise ouverte)
 
 Retourne UNIQUEMENT ce JSON:
 {{
