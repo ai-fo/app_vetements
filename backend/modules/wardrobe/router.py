@@ -6,9 +6,9 @@ from pydantic import BaseModel
 from typing import List, Optional, Union
 from uuid import UUID
 
-from ...schemas.clothing_analysis import SinglePieceResponse, CompleteLookResponse
-from ...database.models import ClothingItem
-from ...core.database import get_db
+from schemas.clothing_analysis import SinglePieceResponse, CompleteLookResponse
+from database.models import ClothingItem
+from core.database import get_db
 from .service import WardrobeServiceModule
 
 router = APIRouter(prefix="/wardrobe", tags=["wardrobe"])

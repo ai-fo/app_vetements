@@ -1,9 +1,9 @@
 """
 Service d'analyse de tenues
 """
-from ...services.clothing_analyzer import ClothingAnalyzer
+from services.clothing_analyzer import ClothingAnalyzer
 from openai import OpenAI
-from ...core.config import settings
+from core.config import settings
 
 class OutfitAnalysisService:
     """Service pour l'analyse d'images de vêtements"""
